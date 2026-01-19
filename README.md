@@ -17,17 +17,53 @@
 
 ## 📂 โครงสร้างโปรเจค
 
-```text
-src/
-├─ components/        // คอมโพเนนต์ที่นำกลับมาใช้ซ้ำได้
-├─ pages/             // หน้าแต่ละหน้า (Login, Register, Dashboard)
-├─ layouts/           // โครง layout เช่น Sidebar, Navbar
-├─ routes/            // การจัดการเส้นทาง (Routing)
-├─ theme/             // ตั้งค่า theme ของ MUI
-│  └─ theme.js
-├─ App.jsx            // คอมโพเนนต์หลัก
-└─ main.jsx           // จุดเริ่มต้นของแอป
 ```
+src/
+├─ assets/
+│  ├─ images/            # รูปภาพ เช่น logo
+│  └─ styles/
+│
+├─ components/           # UI ที่นำกลับมาใช้ซ้ำได้
+│  ├─ buttons/
+│  ├─ cards/
+│  └─ common/
+│
+├─ layouts/              # Layout ของแต่ละกลุ่มหน้า
+│  ├─ PublicLayout.jsx   # Landing / Welcome
+│  └─ DashboardLayout.jsx
+│
+├─ pages/                # Page ตาม route
+│  ├─ Landing/
+│  │  └─ Landing.jsx
+│  ├─ Welcome/
+│  │  └─ Welcome.jsx
+│  ├─ Register/
+│  │  └─ Register.jsx
+│  ├─ MemberRegister/
+│  │  └─ MemberRegister.jsx
+│  └─ Dashboard/
+│     └─ Dashboard.jsx
+│
+├─ routes/
+│  └─ AppRoutes.jsx      # รวม Route ทั้งหมด
+│
+├─ theme/
+│  └─ theme.js           # MUI Theme
+│
+├─ App.jsx
+└─ main.jsx
+```
+📦 แพ็กเกจที่ต้องติดตั้ง (Required Dependencies)
+
+หลังจาก clone โปรเจค ให้ติดตั้งแพ็กเกจดังนี้
+
+npm install
+
+หรือถ้าติดตั้งเองทีละตัว
+
+npm install react-router-dom
+npm install @mui/material @emotion/react @emotion/styled
+npm install @mui/icons-material
 
 ---
 
@@ -64,6 +100,17 @@ npm install @mui/material @emotion/react @emotion/styled
 npm install @mui/icons-material
 ```
 
+🔗 Path Alias (@)
+
+โปรเจคนี้ตั้งค่า alias ให้ใช้ @ แทน path src
+
+ตัวอย่าง:
+
+import Landing from "@/pages/Landing/Landing";
+import Sidebar from "@/components/common/Sidebar";
+
+Alias @ ชี้ไปที่โฟลเดอร์ src/
+
 ---
 
 ## 🎨 การตั้งค่า Material UI Theme
@@ -82,4 +129,5 @@ src/theme/theme.js
 <ThemeProvider theme={theme}>
   <App />
 </ThemeProvider>
+
 
