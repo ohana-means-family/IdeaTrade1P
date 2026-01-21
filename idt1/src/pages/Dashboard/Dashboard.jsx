@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import logo from "@/assets/images/logo.png";
 import ToggleIcon from "@/assets/icons/Vector.svg";
 import WhatsNew from "@/pages/Dashboard/WhatsNew";
+import mitIcon from "@/assets/icons/elements.png";
 
 export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false);
@@ -125,48 +126,55 @@ export default function Dashboard() {
             </div>
 
             <button
-              onClick={() => setActivePage("dashboard")}
-              className={`flex items-center justify-between w-full px-4 py-2 rounded-lg
-                ${
-                  activePage === "dashboard"
-                    ? "bg-sky-500/20 text-sky-300"
-                    : "hover:bg-white/5 text-gray-300"
-                }`}
-            >
-              MIT
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-400 text-black">
-                FREE
-              </span>
-            </button>
+            onClick={() => setActivePage("dashboard")}
+            className={`flex items-center justify-between w-full px-4 py-2 rounded-lg
+              ${
+                activePage === "dashboard"
+                  ? "bg-sky-500/20 text-sky-300"
+                  : "hover:bg-white/5 text-gray-300"
+              }`}
+          >
+            <div className="flex items-center gap-3">
+              <img
+                src={mitIcon}
+                alt="MIT"
+                className="w-5 h-5 object-contain"
+              />
+              <span>MIT</span>
+            </div>
+
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-400 text-black">
+              FREE
+            </span>
+          </button>
 
             <div className="text-gray-400 uppercase text-xs mt-6 mb-2">
               Premium Tools
             </div>
-
             {[
-  "หมอดูหุ้น",
-  "Petroleum",
-  "Rubber Thai",
-  "Flow Intraday",
-  "S50",
-  "Gold",
-  "BidAsk",
-  "TickMatch",
-  "DR",
-].map((item) => (
-  <button
-    key={item}
-    className="flex items-center justify-between w-full px-4 py-2 rounded-lg
-               hover:bg-white/5 text-gray-300"
-  >
-    <div className="flex items-center gap-3">
-      <span className="text-sky-400">{menuIcons[item]}</span>
-      <span>{item}</span>
-    </div>
+            "หมอดูหุ้น",
+            "Petroleum",
+            "Rubber Thai",
+            "Flow Intraday",
+            "S50",
+            "Gold",
+            "BidAsk",
+            "TickMatch",
+            "DR",
+          ].map((item) => (
+            <button
+              key={item}
+              className="flex items-center justify-between w-full px-4 py-2 rounded-lg
+                        hover:bg-white/5 text-gray-300"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-sky-400">{menuIcons[item]}</span>
+                <span>{item}</span>
+              </div>
 
-    <span className="text-xs">👑</span>
-  </button>
-))}
+              <span className="text-xs">👑</span>
+            </button>
+          ))}
           </nav>
 
           {/* Footer */}

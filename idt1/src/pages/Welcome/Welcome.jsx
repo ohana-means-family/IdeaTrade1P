@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/images/logo.png";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/firebase";
+import googleIcon from "@/assets/icons/google.png";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -8,6 +11,21 @@ export default function Welcome() {
   const [remember, setRemember] = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
   const [popupType, setPopupType] = useState(""); 
+
+  const handleGoogleLogin = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+
+    const user = result.user;
+    console.log("Google User:", user);
+
+    // 👉 ล็อกอินสำเร็จ พาไป dashboard
+    navigate("/dashboard");
+  } catch (error) {
+    console.error("Google Sign-In Error:", error);
+    alert("Google Sign-In failed");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-700">
@@ -111,9 +129,17 @@ export default function Welcome() {
               <div className="flex-1 h-px bg-white/20" />
             </div>
 
-            {/* Gmail */}
-            <button className="py-3 rounded-lg bg-white/10 text-gray-300">
-              Sign in with Gmail
+            {/* Google */}
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center gap-3
+                        py-3 rounded-lg
+                        bg-white text-gray-800
+                        hover:bg-gray-100
+                        transition font-medium"
+            >
+              <img src={googleIcon} alt="Google" className="w-5 h-5" />
+              <span>Sign in with Google</span>
             </button>
 
             <p className="text-sm text-center text-gray-400">
