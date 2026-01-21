@@ -134,7 +134,9 @@ export default function Welcome() {
             🚀 TRY FREE VERSION
           </button>
 
-          <button className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold">
+          <button 
+          onClick={() => navigate("/member-register")}
+          className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold">
             ⚪ JOIN MEMBERSHIP
           </button>
         </div>

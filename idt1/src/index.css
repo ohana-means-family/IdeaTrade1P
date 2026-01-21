@@ -2,70 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Styles */
-body {
-  background-color: var(--bg-page);
-  color: var(--text-main);
-}
-
-/* Custom Scrollbar */
+/* scrollbar (optional) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #18181b;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #3f3f46;
   border-radius: 10px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
-}
 
-/* Hide horizontal scrollbar */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-body {
-  font-family: 'Inter','Kanit',sans-serif;
-  background:#0B0C15;
-  color:white;
-}
-
-@layer components {
-  .gradient-text-primary {
-    @apply bg-gradient-to-r from-yellow-300 via-orange-400 to-pink-500
-           bg-clip-text text-transparent;
-  }
-
-  .gradient-text-secondary {
-    @apply bg-gradient-to-r from-yellow-300 to-pink-400
-           bg-clip-text text-transparent;
-  }
-}
-
-/* gradients */
-.brand-gradient {
-  background: linear-gradient(90deg, #9333EA 0%, #EC4899 100%);
-}
-.btn-gradient-blue {
-  background: linear-gradient(90deg, #6366F1 0%, #A855F7 100%);
-}
-
-/* inputs */
-.input-dark {
-  @apply bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-lg w-full outline-none transition;
-}
-.input-dark:focus {
-  border-color:#818CF8;
-}
-
-/* hide scrollbar */
-.no-scrollbar::-webkit-scrollbar { display:none; }
-.no-scrollbar { scrollbar-width:none; }
