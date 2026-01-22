@@ -157,6 +157,97 @@ import { Button } from "@mui/material";
 
 ---
 
+🔥 Firebase Integration
+
+โปรเจคนี้ใช้ Firebase สำหรับระบบ Authentication และสามารถต่อยอดไปใช้ Firestore / Storage ได้ในอนาคต
+
+📦 Firebase Packages
+
+ติดตั้ง Firebase SDK
+
+npm install firebase
+
+⚙️ Firebase Project Setup
+
+ไปที่ Firebase Console
+
+สร้าง Project ใหม่
+
+เพิ่ม Web App (</>)
+
+คัดลอก Firebase Config
+
+🔐 Firebase Configuration
+
+สร้างไฟล์
+
+src/firebase.js
+
+📄 ตัวอย่าง firebase.js
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+
+// Firebase config (ใช้ env เพื่อความปลอดภัย)
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Auth
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+🌱 Environment Variables (.env)
+
+สร้างไฟล์ .env ที่ root ของโปรเจค
+
+VITE_FIREBASE_API_KEY=xxxxxxxxxxxx
+VITE_FIREBASE_AUTH_DOMAIN=xxxxxxxxxxxx
+VITE_FIREBASE_PROJECT_ID=xxxxxxxxxxxx
+VITE_FIREBASE_STORAGE_BUCKET=xxxxxxxxxxxx
+VITE_FIREBASE_MESSAGING_SENDER_ID=xxxxxxxxxxxx
+VITE_FIREBASE_APP_ID=xxxxxxxxxxxx
+
+
+⚠️ ห้าม commit .env ขึ้น GitHub
+ควรเพิ่มใน .gitignore
+
+.env
+
+🔑 Firebase Authentication
+✅ เปิดใช้งาน Google Sign-In
+
+Firebase Console → Authentication
+
+ไปที่แท็บ Sign-in method
+
+เปิด Google
+
+Save
+
+🧪 ตัวอย่างการใช้งาน Google Login
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/firebase";
+
+const handleGoogleLogin = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    console.log("Google User:", user);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+---
+
 ## 🚀 การรันโปรเจค
 
 ```bash
@@ -169,7 +260,3 @@ npm run dev
 ```
 http://localhost:5173
 ```
-
-
-
-
