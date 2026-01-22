@@ -1,5 +1,6 @@
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import mitIcon from "@/assets/icons/elements.png";
+import mitIcon from "@/assets/icons/mit.svg"; 
 
 const projects = [
   {
@@ -21,55 +22,55 @@ const projects = [
     premium: false,
   },
   {
-    id: "หมอดูหุ้น",
+    id: "fortune", // แก้ ID ให้ตรงกับ Sidebar
     name: "หมอดูหุ้น",
     desc: "Track smart money and institutional order flow.",
     premium: true,
   },
   {
-    id: "Petroleum",
+    id: "petroleum", // แก้ ID ให้ตรงกับ Sidebar
     name: "Petroleum",
     desc: "Simulate portfolio risk under different market scenarios.",
     premium: true,
   },
   {
-    id: "Rubber Thai",
+    id: "rubber", // แก้ ID ให้ตรงกับ Sidebar
     name: "Rubber Thai",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "Flow Intraday",
+    id: "flow", // แก้ ID ให้ตรงกับ Sidebar
     name: "Flow Intraday",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "S50",
+    id: "s50", // แก้ ID ให้ตรงกับ Sidebar
     name: "S50",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "Gold",
+    id: "gold", // แก้ ID ให้ตรงกับ Sidebar
     name: "Gold",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "BidAsk",
+    id: "bidask", // แก้ ID ให้ตรงกับ Sidebar
     name: "BidAsk",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "TickMatch",
+    id: "tickmatch", // แก้ ID ให้ตรงกับ Sidebar
     name: "TickMatch",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
   },
   {
-    id: "DR",
+    id: "dr", // แก้ ID ให้ตรงกับ Sidebar
     name: "DR",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
@@ -78,6 +79,36 @@ const projects = [
 
 export default function PreviewProjects() {
   const navigate = useNavigate();
+  
+  // --- Logic เช็คสิทธิ์การเข้าถึง (เหมือน Sidebar) ---
+  const [isMember, setIsMember] = useState(false);
+  const [unlockedList, setUnlockedList] = useState([]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      // 1. เช็ค Member เหมาจ่าย
+      if (user.role === "member") setIsMember(true);
+      // 2. เช็คซื้อแยก
+      if (user.unlockedItems) setUnlockedList(user.unlockedItems);
+    }
+  }, []);
+
+  // ฟังก์ชันกดปุ่ม
+  const handleOpenTool = (project) => {
+    // เงื่อนไข: เข้าได้ถ้า (ฟรี) หรือ (เป็น Member) หรือ (ซื้อแยกชิ้นนี้แล้ว)
+    const isUnlocked = !project.premium || isMember || unlockedList.includes(project.id);
+
+    if (isUnlocked) {
+      alert(`Opening ${project.name}... (Ready to use)`);
+      // navigate(`/tools/${project.id}`); // ใส่ path จริงในอนาคต
+    } else {
+      // ถ้ายังไม่ปลดล็อค ให้ไปหน้าจ่ายเงิน
+      navigate("/member-register");
+    }
+  };
+
   return (
     <div className="space-y-10">
 
@@ -91,7 +122,8 @@ export default function PreviewProjects() {
         <div className="bg-[#1f3446] rounded-2xl p-6 flex flex-col gap-6">
           <div className="flex items-start justify-between">
             <div className="flex gap-4">
-              <img src={mitIcon} className="w-12 h-12" />
+              {/* ใช้ตัวแปร mitIcon ที่ import มา */}
+              <img src={mitIcon} className="w-12 h-12 rounded-lg" alt="icon" /> 
               <div>
                 <h2 className="text-xl font-semibold text-white">
                   MIT : Multi-Agent Intelligent Analyst
@@ -102,7 +134,10 @@ export default function PreviewProjects() {
               </div>
             </div>
 
-            <button className="bg-sky-600 hover:bg-sky-500 px-5 py-2 rounded-full text-white text-sm">
+            <button 
+              onClick={() => alert("Opening MIT...")}
+              className="bg-sky-600 hover:bg-sky-500 px-5 py-2 rounded-full text-white text-sm transition"
+            >
               Open MIT
             </button>
           </div>
@@ -151,49 +186,47 @@ export default function PreviewProjects() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {projects.map((project) => {
-  const isPremium = project.premium;
+            const isPremium = project.premium;
+            // เช็คสถานะเพื่อเปลี่ยนข้อความปุ่ม
+            const isUnlocked = !isPremium || isMember || unlockedList.includes(project.id);
 
-  return (
-    <div
-      key={project.id}
-      className="bg-[#3f3f3f] rounded-2xl p-6 flex flex-col gap-4"
-    >
-      <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center
-          ${isPremium ? "bg-yellow-500/20 text-yellow-400" : "bg-slate-600 text-white"}`}
-      >
-        ⭐
-      </div>
+            return (
+              <div
+                key={project.id}
+                className="bg-[#3f3f3f] rounded-2xl p-6 flex flex-col gap-4"
+              >
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center
+                    ${isPremium ? "bg-yellow-500/20 text-yellow-400" : "bg-slate-600 text-white"}`}
+                >
+                  {isPremium ? "⭐" : "🚀"}
+                </div>
 
-      <h3 className="text-white font-semibold">
-        {project.name} {isPremium && <span className="text-yellow-400 text-sm"> (Premium) </span>}
-      </h3>
+                <h3 className="text-white font-semibold">
+                  {project.name} {isPremium && <span className="text-yellow-400 text-sm"> (Premium) </span>}
+                </h3>
 
-      <p className="text-sm text-slate-300">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam quos deleniti culpa nisi dicta minima, adipisci asperiores. Officiis esse, dignissimos modi temporibus maiores ipsum repellendus excepturi itaque aliquam, enim optio?
-      </p>
+                <p className="text-sm text-slate-300">
+                  {project.desc}
+                </p>
 
-      <button onClick={() => {
-                   if (isPremium) {
-                     // ถ้าเป็น Premium ให้ไปหน้าจ่ายเงิน
-                     navigate("/member-register");
-                   } else {
-                     // ถ้าฟรี ให้เปิดเครื่องมือ (หรือ alert ไปก่อน)
-                     alert("Opening " + project.name);
-                   }
-                 }}
-        className={`mt-auto rounded-full py-2 text-sm
-          ${
-            isPremium
-              ? "bg-yellow-500/80 hover:bg-yellow-400 text-black"
-              : "bg-sky-600 hover:bg-sky-500 text-white"
-          }`}
-        >
-        {isPremium ? "Open premium tool" : "Open tool"}
-      </button>
-    </div>
-  );
-})}
+                <button
+                  onClick={() => handleOpenTool(project)}
+                  className={`mt-auto rounded-full py-2 text-sm font-medium transition
+                    ${
+                      isPremium
+                        ? isUnlocked 
+                            ? "bg-sky-600 hover:bg-sky-500 text-white" // ซื้อแล้ว -> ปุ่มฟ้า
+                            : "bg-yellow-500/80 hover:bg-yellow-400 text-black" // ยังไม่ซื้อ -> ปุ่มทอง
+                        : "bg-sky-600 hover:bg-sky-500 text-white" // ของฟรี -> ปุ่มฟ้า
+                    }`}
+                >
+                  {/* เปลี่ยนข้อความตามสถานะ */}
+                  {isUnlocked ? "Open tool" : "Unlock Premium"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
