@@ -4,6 +4,8 @@ import logo from "@/assets/images/logo.png";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase";
 import googleIcon from "@/assets/icons/google.png";
+import Rocket from "@/assets/icons/rocket-lunch 1.svg";
+import Crown from "@/assets/icons/crown 1.svg";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -95,15 +97,6 @@ export default function Welcome() {
               />
                 Remember me
               </label>
-              <span
-                onClick={() => {
-                  setPopupType("forgot");
-                  setOpenForgot(true);
-                }}
-                className="text-white cursor-pointer hover:underline"
-              >
-                Forgot password
-              </span>
             </div>
 
             {/* Sign in */}
@@ -156,16 +149,25 @@ export default function Welcome() {
 
         {/* Bottom CTA */}
         <div className="bg-slate-700/50 px-16 py-10 flex flex-col md:flex-row gap-8 justify-between">
-          <button className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold">
-            🚀 TRY FREE VERSION
-          </button>
+  <button
+    onClick={() => navigate("/Dashboard")}
+    className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold
+               flex items-center justify-center gap-3"
+  >
+    <img src={Rocket} alt="rocket" className="w-6 h-6" />
+    TRY FREE VERSION
+  </button>
 
-          <button 
-          onClick={() => navigate("/member-register")}
-          className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold">
-            ⚪ JOIN MEMBERSHIP
-          </button>
-        </div>
+  <button
+    onClick={() => navigate("/member-register")}
+    className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold
+               flex items-center justify-center gap-3"
+  >
+    <img src={Crown} alt="crown" className="w-6 h-6" />
+    JOIN MEMBERSHIP
+  </button>
+</div>
+
       </div>
 
       {/* ================= POPUP ================= */}
@@ -187,7 +189,7 @@ export default function Welcome() {
             Forget your ID or password?
           </h3>
 
-          <p className="text-sm text-gray-300 mb-5">
+          {/* <p className="text-sm text-gray-300 mb-5">
             <br />
             Your ID is:{" "}
             <span className="font-semibold text-sky-600">
@@ -198,7 +200,7 @@ export default function Welcome() {
             <span className="font-semibold text-sky-600">
               your Phone number.
             </span>
-          </p>
+          </p> */}
         </>
       )}
 
