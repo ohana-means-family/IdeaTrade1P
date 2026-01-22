@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
-// ✅ แก้ ID และชื่อให้ตรงกับ Sidebar เพื่อให้ระบบรู้ว่าซื้อตัวไหน
 const TOOLS = [
   { id: "fortune", name: "หมอดูหุ้น", monthly: 2500, yearly: 25000 },
   { id: "petroleum", name: "Petroleum", monthly: 2500, yearly: 25000 },
@@ -15,10 +13,16 @@ const TOOLS = [
 ];
 
 export default function MemberRegister() {
-  const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedTools, setSelectedTools] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const toggleTool = (id) => {
+    setSelectedTools((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const totalPrice = selectedTools.reduce((sum, id) => {
     const tool = TOOLS.find((t) => t.id === id);
@@ -28,208 +32,226 @@ export default function MemberRegister() {
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    alert("Copied account number!");
+    alert("คัดลอกเลขบัญชีแล้ว 📋");
   };
 
-  const toggleTool = (id) => {
-    setSelectedTools((prev) =>
-      prev.includes(id)
-        ? prev.filter((toolId) => toolId !== id)
-        : [...prev, id]
-    );
-  };
-
-  // 🔥 LOGIC จ่ายเงิน: บันทึกเฉพาะรายการที่เลือก (selectedTools) ลงเครื่อง
   const handleConfirmPayment = () => {
-    // 1. ดึงข้อมูลเก่ามาดูว่ามีอะไรอยู่แล้วบ้าง
-    const savedUser = localStorage.getItem("userProfile");
-    let currentUser = savedUser ? JSON.parse(savedUser) : { role: "free", unlockedItems: [] };
+    const saved = localStorage.getItem("userProfile");
+    const current = saved
+      ? JSON.parse(saved)
+      : { role: "free", unlockedItems: [] };
 
-    // 2. รวมรายการของเก่า + ของใหม่ (ใช้ Set เพื่อกันซ้ำ)
-    const updatedUnlockedItems = [...new Set([...(currentUser.unlockedItems || []), ...selectedTools])];
+    const unlockedItems = [
+      ...new Set([...(current.unlockedItems || []), ...selectedTools]),
+    ];
 
-    // 3. บันทึกกลับลงไป
-    const userProfile = {
-      ...currentUser,
-      role: "free", // สถานะยังเป็น Free (เพราะซื้อแยกชิ้น)
-      unlockedItems: updatedUnlockedItems 
-    };
-    localStorage.setItem("userProfile", JSON.stringify(userProfile));
+    localStorage.setItem(
+      "userProfile",
+      JSON.stringify({
+        ...current,
+        role: "free",
+        unlockedItems,
+      })
+    );
 
-    alert(`Payment Successful! Unlocked: ${selectedTools.length} items`);
-    
-    navigate("/dashboard");
-    window.location.reload(); // รีโหลดเพื่อให้ Sidebar อัปเดตสีมงกุฎ
+    alert("Payment Successful 🎉");
+    setShowModal(false);
+    window.location.href = "/dashboard";
   };
 
   const paymentMethods = [
     { id: "bank", label: "Bank Account" },
-    { id: "promptpay", label: "PromptPay (พร้อมเพย์)" },
-    { id: "card", label: "Mastercard / Visa / Credit Card" },
+    { id: "promptpay", label: "PromptPay" },
+    { id: "card", label: "Credit / Debit Card" },
   ];
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white">
-      <div className="h-full grid grid-cols-12 gap-6 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white p-8">
+      <div className="max-w-[1440px] mx-auto grid grid-cols-12 gap-6">
 
         {/* LEFT */}
-        <div className="col-span-8 flex flex-col gap-6">
-
-          {/* Header */}
-          <div>
-            <h1 className="text-4xl font-bold">Subscription & Checkout</h1>
-            <p className="text-sm text-[#9FB3C8]">เลือกเครื่องมือที่คุณต้องการใช้งาน</p>
-          </div>
+        <div className="col-span-8 space-y-6">
+          <h1 className="text-4xl font-bold">Subscription & Checkout</h1>
 
           {/* Billing */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Billing Cycle</h2>
-            <div className="flex bg-[#0F1B2D] rounded-xl p-1 w-[420px]">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`flex-1 py-2 rounded-lg transition
-                  ${
-                    billingCycle === "monthly"
-                      ? "bg-gradient-to-r from-[#0E6BA8] to-[#0B5C90]"
+            <div className="flex bg-[#0F1B2D] rounded-xl p-1 w-[360px]">
+              {["monthly", "yearly"].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBillingCycle(t)}
+                  className={`flex-1 py-2 rounded-lg ${
+                    billingCycle === t
+                      ? "bg-[#0E6BA8]"
                       : "text-[#9FB3C8]"
                   }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`flex-1 py-2 rounded-lg transition
-                  ${
-                    billingCycle === "yearly"
-                      ? "bg-gradient-to-r from-[#0E6BA8] to-[#0B5C90]"
-                      : "text-[#9FB3C8]"
-                  }`}
-              >
-                Yearly
-              </button>
+                >
+                  {t === "monthly" ? "Monthly" : "Yearly"}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Tools List (Scrollable) */}
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <h2 className="text-xl font-semibold mb-3">Select Your Tools</h2>
+          {/* Tools */}
+          <div className="bg-[#0F1B2D] p-5 rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Select Your Tools</h2>
             <div className="grid grid-cols-2 gap-4">
               {TOOLS.map((tool) => {
-                const selected = selectedTools.includes(tool.id);
-                const price =
-                  billingCycle === "monthly"
-                    ? `${tool.monthly.toLocaleString()}฿/mo`
-                    : `${tool.yearly.toLocaleString()}฿/yr`;
-
+                const active = selectedTools.includes(tool.id);
                 return (
                   <div
                     key={tool.id}
                     onClick={() => toggleTool(tool.id)}
-                    className={`cursor-pointer flex items-center justify-between px-5 py-4 rounded-xl border transition
+                    className={`cursor-pointer px-5 py-4 rounded-xl border flex justify-between
                       ${
-                        selected
-                          ? "border-[#0E6BA8] bg-gradient-to-r from-[#0F2C4D] to-[#0B1F36]"
+                        active
+                          ? "border-[#0E6BA8] bg-[#102B46]"
                           : "border-[#1F3354] bg-[#13233A]"
                       }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center
-                          ${
-                            selected
-                              ? "border-[#0E6BA8]"
-                              : "border-[#1F3354]"
-                          }`}
-                      >
-                        {selected && (
-                          <div className="w-2.5 h-2.5 bg-[#0E6BA8] rounded-full" />
-                        )}
-                      </div>
-                      <span className="font-medium">{tool.name}</span>
-                    </div>
-                    <span className="text-sm text-[#9FB3C8]">{price}</span>
+                    <span>{tool.name}</span>
+                    <span className="text-sm text-[#9FB3C8]">
+                      {billingCycle === "monthly"
+                        ? `${tool.monthly}฿/m`
+                        : `${tool.yearly}฿/y`}
+                    </span>
                   </div>
                 );
               })}
             </div>
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Payment method</h2>
-            <div className="grid grid-cols-3 gap-4">
-              {paymentMethods.map((method) => {
-                const selected = selectedPayment === method.id;
-                return (
-                  <div
-                    key={method.id}
-                    onClick={() => setSelectedPayment(method.id)}
-                    className={`cursor-pointer h-20 rounded-xl border flex items-center justify-between px-4 transition
-                      ${
-                        selected
-                          ? "border-[#0E6BA8] bg-gradient-to-r from-[#0F2C4D] to-[#0B1F36]"
-                          : "border-[#1F3354] bg-[#13233A]"
-                      }`}
-                  >
-                    <span className="font-medium text-sm">{method.label}</span>
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selected ? "border-[#0E6BA8]" : "border-[#1F3354]"}`}>
-                      {selected && <div className="w-2.5 h-2.5 bg-[#0E6BA8] rounded-full" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Bank Detail */}
-            {selectedPayment === "bank" && (
-              <div className="mt-4 bg-[#0F1B2D] rounded-xl p-4 flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#39D98A] rounded-lg flex items-center justify-center font-bold text-[#042F2E]">K+</div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">Bank Account Detail</p>
-                  <p className="text-sm text-[#9FB3C8] mt-1">ชื่อบัญชี: พี่เดีย ใจดี</p>
-                  <p className="text-sm text-[#9FB3C8]">เลขบัญชี: 123-4-56789-0</p>
-                </div>
-                <button onClick={() => handleCopy("1234567890")} className="w-9 h-9 rounded-md bg-[#1F3354] hover:bg-[#2B4A78] flex items-center justify-center" title="Copy">📋</button>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* RIGHT (Summary) */}
-        <div className="col-span-4 bg-[#0F1B2D] rounded-2xl p-6 flex flex-col border border-[#1F3354]">
-          <h2 className="text-2xl font-semibold mb-4">Order Summary</h2>
-          <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
-            {selectedTools.length === 0 && <p className="text-sm text-[#9FB3C8]">ยังไม่ได้เลือก Project</p>}
+        {/* RIGHT */}
+        <div className="col-span-4 space-y-4">
+          {/* Payment Method */}
+          <div className="bg-[#0F1B2D] p-5 rounded-xl">
+            <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {paymentMethods.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedPayment(m.id)}
+                  className={`cursor-pointer h-16 rounded-xl border flex items-center justify-center text-sm
+                    ${
+                      selectedPayment === m.id
+                        ? "border-[#0E6BA8] bg-[#102B46]"
+                        : "border-[#1F3354]"
+                    }`}
+                >
+                  {m.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="bg-[#0F1B2D] p-6 rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+
             {selectedTools.map((id) => {
-              const tool = TOOLS.find((t) => t.id === id);
-              const price = billingCycle === "monthly" ? tool.monthly : tool.yearly;
+              const t = TOOLS.find((x) => x.id === id);
               return (
-                <div key={id} className="flex justify-between text-sm">
-                  <span>{tool.name}</span>
-                  <span>{price.toLocaleString()}฿</span>
+                <div key={id} className="flex justify-between text-sm mb-2">
+                  <span>{t.name}</span>
+                  <span>
+                    {billingCycle === "monthly" ? t.monthly : t.yearly}฿
+                  </span>
                 </div>
               );
             })}
+
+            <div className="border-t border-[#1F3354] my-4" />
+
+            <div className="flex justify-between text-lg font-semibold">
+              <span>Total</span>
+              <span>{totalPrice.toLocaleString()} ฿</span>
+            </div>
+
+            <button
+              disabled={!selectedPayment || selectedTools.length === 0}
+              onClick={() => setShowModal(true)}
+              className="mt-5 w-full h-12 rounded-lg bg-[#0E6BA8] disabled:bg-[#1F3354]"
+            >
+              Confirm Payment
+            </button>
           </div>
-          <div className="border-t border-[#1F3354] my-4" />
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total Price</span>
-            <span>
-              {totalPrice.toLocaleString()} ฿
-              <span className="text-sm text-[#9FB3C8] ml-1">
-                {billingCycle === "monthly" ? "/month" : "/year"}
-              </span>
-            </span>
-          </div>
-          <button
-            onClick={handleConfirmPayment}
-            disabled={selectedTools.length === 0 || !selectedPayment}
-            className="mt-6 h-12 rounded-lg font-semibold bg-[#0E6BA8] hover:bg-[#0B5C90] disabled:bg-[#1F3354] disabled:cursor-not-allowed"
-          >
-            Confirm Payment
-          </button>
         </div>
       </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#0F1B2D] p-6 rounded-xl w-[420px] space-y-4">
+
+            <h3 className="text-xl font-semibold">
+              Payment :{" "}
+              {selectedPayment === "bank"
+                ? "Bank Account"
+                : selectedPayment === "promptpay"
+                ? "PromptPay"
+                : "Credit / Debit Card"}
+            </h3>
+
+            {selectedPayment === "bank" && (
+              <div className="space-y-2">
+                <p className="font-medium">Mr.Chalearmpol Neamsri</p>
+                <div className="flex items-center justify-between bg-[#13233A] px-4 py-3 rounded-lg">
+                  <span className="text-[#9FB3C8]">047-2-27169-7</span>
+                  <button
+                    onClick={() => handleCopy("047-2-27169-7")}
+                    className="px-3 py-1 text-sm bg-[#1F3354] rounded"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedPayment === "promptpay" && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white p-3 rounded-lg w-full aspect-[4/3] flex justify-center">
+                  <img
+                    src="/qr-promptpay.png"
+                    alt="QR"
+                    className="max-h-full"
+                  />
+                </div>
+                <p className="text-sm text-[#9FB3C8]">
+                  Mr.Chalearmpol Neamsri
+                </p>
+              </div>
+            )}
+
+            {selectedPayment === "card" && (
+              <div className="space-y-3">
+                <input className="w-full h-10 bg-[#13233A] px-3 rounded" placeholder="Card Number" />
+                <input className="w-full h-10 bg-[#13233A] px-3 rounded" placeholder="Cardholder Name" />
+                <div className="flex gap-3">
+                  <input className="flex-1 h-10 bg-[#13233A] px-3 rounded" placeholder="MM / YY" />
+                  <input className="flex-1 w-full h-10 bg-[#13233A] px-3 rounded" placeholder="CVV / CVC" />
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 h-11 bg-[#1F3354] rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPayment}
+                className="flex-1 h-11 bg-[#0E6BA8] rounded font-semibold"
+              >
+                Pay Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
