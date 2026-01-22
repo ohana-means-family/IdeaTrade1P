@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import logo from "@/assets/images/logo.png";
 import ToggleIcon from "@/assets/icons/Vector.svg";
-import WhatsNew from "@/pages/Dashboard/WhatsNew";
+import WhatsNew from "@/pages/Dashboard/PreviewProjects.jsx";
 import mitIcon from "@/assets/icons/elements.png";
+import Navbar from "@/layouts/Navbar.jsx";
 
 export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState("whatsnew");
+  const [activeTab, setActiveTab] = useState("Shortcuts");
 
  const menuIcons = {
     "หมอดูหุ้น": (
@@ -196,25 +198,20 @@ export default function Dashboard() {
           </button>
         )}
 
+      {/* Navbar */}
+      <div>
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Content ตาม tab */}
+      {activeTab === "MIT" && <div>MIT Content</div>}
+      {activeTab === "Stock Mover" && <div>Stock Mover Content</div>}
+      {activeTab === "Project Name" && <div>Project Content</div>}
+      </div>
+
         {/* Render Page */}
         {activePage === "whatsnew" && <WhatsNew />}
 
         {activePage === "dashboard" && (
           <>
-            {/* Tabs */}
-            <div className="flex gap-3 mb-10">
-              <button className="px-5 py-2 rounded-full bg-sky-600/30 text-sky-300">
-                Shortcuts
-              </button>
-              {["MIT", "Stock Mover", "Project Name"].map((tab) => (
-                <button
-                  key={tab}
-                  className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-sm"
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
 
             {/* Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
