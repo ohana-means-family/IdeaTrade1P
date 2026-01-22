@@ -1,25 +1,25 @@
 import { createTheme } from "@mui/material/styles";
-import { colors } from "./colors";
+import { colors } from "./theme";
 
 export const muiTheme = createTheme({
   palette: {
     mode: "dark",
     background: {
-      default: colors.bg.primary,
+      default: colors.bg.main,
       paper: colors.bg.card,
     },
     primary: {
       main: colors.primary,
     },
     secondary: {
-      main: colors.accent,
+      main: colors.premium,
     },
     text: {
       primary: colors.text.main,
-      secondary: colors.text.secondary,
+      secondary: colors.text.soft,
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 16,
   },
 });

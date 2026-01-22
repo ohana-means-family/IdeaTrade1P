@@ -5,25 +5,30 @@
 @layer base {
   :root {
     /* ===== Background ===== */
-    --bg-main: #0f111a;
-    --bg-sidebar: #09090b;
-    --bg-panel: #18181b;
-    --bg-soft: #1e212b;
-    --bg-card: #52525b;
-    --bg-card-hover: #60606a;
+    --bg-main: #0B0F14;
+    --bg-sidebar: #0A0D12;
+    --bg-panel: #1E2F3F;
+    --bg-card: #2A2A2A;
+    --bg-card-hover: #333333;
+    --bg-card-premium: #3A3320;
 
-    /* ===== Accent ===== */
-    --accent-purple: #a855f7;
-    --accent-purple-hover: #9333ea;
+    /* ===== Primary (MIT) ===== */
+    --primary: #0EA5E9;
+    --primary-hover: #38BDF8;
 
-    /* ===== Status ===== */
-    --status-green-bg: #052e16;
-    --status-green-text: #4ade80;
+    /* ===== Premium ===== */
+    --premium: #C89B1F;
+    --premium-hover: #EAB308;
+
+    /* ===== Text ===== */
+    --text-main: #FFFFFF;
+    --text-soft: #A1A1AA;
+    --text-muted: #71717A;
 
     /* ===== Scrollbar ===== */
-    --scroll-track: #18181b;
-    --scroll-thumb: #3f3f46;
-    --scroll-thumb-hover: #52525b;
+    --scroll-track: #0F172A;
+    --scroll-thumb: #334155;
+    --scroll-thumb-hover: #475569;
   }
 }
 
@@ -32,34 +37,33 @@
   .bg-main { background-color: var(--bg-main); }
   .bg-sidebar { background-color: var(--bg-sidebar); }
   .bg-panel { background-color: var(--bg-panel); }
-  .bg-soft { background-color: var(--bg-soft); }
   .bg-card { background-color: var(--bg-card); }
-  .bg-card-hover:hover { background-color: var(--bg-card-hover); }
+  .bg-card-premium { background-color: var(--bg-card-premium); }
 
-  /* Accent */
-  .bg-accent { background-color: var(--accent-purple); }
-  .hover\:bg-accent-hover:hover {
-    background-color: var(--accent-purple-hover);
-  }
+  /* Buttons */
+  .bg-primary { background-color: var(--primary); }
+  .hover\:bg-primary-hover:hover { background-color: var(--primary-hover); }
+
+  .bg-premium { background-color: var(--premium); }
+  .hover\:bg-premium-hover:hover { background-color: var(--premium-hover); }
 
   /* Text */
-  .text-accent { color: var(--accent-purple); }
+  .text-main { color: var(--text-main); }
+  .text-soft { color: var(--text-soft); }
+  .text-muted { color: var(--text-muted); }
 }
 
 @layer components {
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
-
   .custom-scrollbar::-webkit-scrollbar-track {
     background: var(--scroll-track);
   }
-
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
-    border-radius: 10px;
+    border-radius: 9999px;
   }
-
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: var(--scroll-thumb-hover);
   }

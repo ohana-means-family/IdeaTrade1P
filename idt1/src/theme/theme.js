@@ -1,18 +1,18 @@
-// idt1/src/theme/theme.js
+// src/theme/theme.js
 export const colors = {
   bg: {
-    main: "#0A1224",
-    card: "#0F1B2D",
-    soft: "#13233A",
+    main: "#0B0F14",
+    sidebar: "#0A0D12",
+    panel: "#1E2F3F",
+    card: "#2A2A2A",
+    premiumCard: "#3A3320",
   },
-  primary: {
-    DEFAULT: "#0E6BA8",
-    hover: "#0B5C90",
-  },
-  accent: "#39D98A",
-  border: "#1F3354",
+  primary: "#0EA5E9",
+  premium: "#C89B1F",
   text: {
     main: "#FFFFFF",
-    soft: "#9FB3C8",
+    soft: "#A1A1AA",
+    muted: "#71717A",
   },
+  border: "#27272A",
 };
