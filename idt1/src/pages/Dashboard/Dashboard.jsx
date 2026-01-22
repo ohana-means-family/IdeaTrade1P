@@ -7,7 +7,7 @@ import Navbar from "@/layouts/Navbar.jsx";
 
 export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false);
-  const [activePage, setActivePage] = useState("whatsnew");
+  const [activePage, setActivePage] = useState("previewProjects");
   const [activeTab, setActiveTab] = useState("Shortcuts");
 
  const menuIcons = {
@@ -109,7 +109,7 @@ export default function Dashboard() {
 
           {/* Menu */}
           <nav className="flex-1 px-4 py-4 text-sm space-y-2 overflow-y-auto">
-            {/* What's New */}
+            {/* Preview Projects */}
             <button
               onClick={() => setActivePage("whatsnew")}
               className={`flex items-center justify-between w-full px-4 py-2 rounded-lg
@@ -119,7 +119,7 @@ export default function Dashboard() {
                     : "hover:bg-white/5 text-gray-300"
                 }`}
             >
-              What's New
+              Preview Projects
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </button>
 
