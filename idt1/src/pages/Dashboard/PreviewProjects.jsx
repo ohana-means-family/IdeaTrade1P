@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import mitIcon from "@/assets/icons/elements.png";
 
 const projects = [
@@ -76,6 +77,7 @@ const projects = [
 ];
 
 export default function PreviewProjects() {
+  const navigate = useNavigate();
   return (
     <div className="space-y-10">
 
@@ -171,14 +173,22 @@ export default function PreviewProjects() {
         Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam quos deleniti culpa nisi dicta minima, adipisci asperiores. Officiis esse, dignissimos modi temporibus maiores ipsum repellendus excepturi itaque aliquam, enim optio?
       </p>
 
-      <button
+      <button onClick={() => {
+                   if (isPremium) {
+                     // ถ้าเป็น Premium ให้ไปหน้าจ่ายเงิน
+                     navigate("/member-register");
+                   } else {
+                     // ถ้าฟรี ให้เปิดเครื่องมือ (หรือ alert ไปก่อน)
+                     alert("Opening " + project.name);
+                   }
+                 }}
         className={`mt-auto rounded-full py-2 text-sm
           ${
             isPremium
               ? "bg-yellow-500/80 hover:bg-yellow-400 text-black"
               : "bg-sky-600 hover:bg-sky-500 text-white"
           }`}
-      >
+        >
         {isPremium ? "Open premium tool" : "Open tool"}
       </button>
     </div>
