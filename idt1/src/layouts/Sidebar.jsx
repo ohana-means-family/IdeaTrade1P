@@ -16,6 +16,7 @@ export default function Sidebar({
 
   return (
     <aside className="fixed top-0 left-0 z-40 w-72 h-screen bg-slate-900/70 border-r border-sky-400/20 flex flex-col">
+      
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/10 flex justify-between">
         <img src={logo} alt="Idea Trade" className="w-40" />
@@ -38,7 +39,7 @@ export default function Sidebar({
       <div className="px-6 py-4">
         <input
           placeholder="Search Something..."
-          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-sky-500 outline-none text-sm"
+          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10"
         />
       </div>
 
@@ -46,12 +47,10 @@ export default function Sidebar({
       <nav className="flex-1 px-4 py-4 text-sm space-y-2 overflow-y-auto">
         <button
           onClick={() => setActivePage("whatsnew")}
-          className={`flex items-center justify-between w-full px-4 py-2 rounded-lg
-          ${
-            activePage === "whatsnew"
+          className={`w-full px-4 py-2 rounded-lg flex justify-between
+            ${activePage === "whatsnew"
               ? "bg-sky-500/20 text-sky-300"
-              : "hover:bg-white/5 text-gray-300"
-          }`}
+              : "hover:bg-white/5 text-gray-300"}`}
         >
           Preview Projects
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -63,18 +62,16 @@ export default function Sidebar({
 
         <button
           onClick={() => setActivePage("dashboard")}
-          className={`flex items-center justify-between w-full px-4 py-2 rounded-lg
-          ${
-            activePage === "dashboard"
+          className={`w-full px-4 py-2 rounded-lg flex justify-between
+            ${activePage === "dashboard"
               ? "bg-sky-500/20 text-sky-300"
-              : "hover:bg-white/5 text-gray-300"
-          }`}
+              : "hover:bg-white/5 text-gray-300"}`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex gap-3">
             <img src={mitIcon} className="w-5 h-5" />
             <span>MIT</span>
           </div>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-400 text-black">
+          <span className="text-xs px-2 py-0.5 rounded bg-emerald-400 text-black">
             FREE
           </span>
         </button>
@@ -87,9 +84,9 @@ export default function Sidebar({
           <button
             key={project.id}
             onClick={() => openProject(project)}
-            className="flex items-center justify-between w-full px-4 py-2 rounded-lg hover:bg-white/5 text-gray-300"
+            className="w-full px-4 py-2 rounded-lg flex justify-between hover:bg-white/5 text-gray-300"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex gap-3">
               <span className="text-sky-400">
                 {menuIcons[project.name]}
               </span>
