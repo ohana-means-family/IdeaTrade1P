@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Idea Trade</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; }
+        .container { display: flex; width: 100%; }
+        .left { width: 40%; background: #000; color: #fff; padding: 40px; display: flex; align-items: center; justify-content: center; }
+        .right { width: 60%; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
+        button { padding: 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <h1>Join Idea Trade</h1>
+        </div>
+        <div class="right">
+            <h2>Create Account</h2>
+            <input type="text" id="reg-username" placeholder="Username" />
+            <input type="email" id="reg-email" placeholder="Email" />
+            <input type="password" id="reg-pass" placeholder="Password" />
+            
+            <button onclick="doRegister()">REGISTER</button>
+            <p style="text-align:center; margin-top:20px;">
+                <a href="welcome.html">Back to Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function doRegister() {
+            const name = document.getElementById("reg-username").value;
+            if(!name) return alert("กรุณาใส่ Username");
+
+            // สร้าง User ใหม่ (เริ่มเป็น User ธรรมดา ยังไม่ Member)
+            const newUser = {
+                username: name,
+                role: "user", 
+                unlockedItems: []
+            };
+
+            localStorage.setItem("userProfile", JSON.stringify(newUser));
+            alert("สมัครสมาชิกสำเร็จ!");
+            window.location.href = "dashboard.html";
+        }
+    </script>
+</body>
+</html>

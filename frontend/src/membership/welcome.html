@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Idea Trade</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           1. CORE VARIABLES & RESET
+           ========================================= */
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', 'Kanit', sans-serif;
+        }
+
+        :root {
+            --bg-main: #0B0C15;
+            --bg-card: #13141F;
+            --border-dark: #1F2937;
+            --text-muted: #9CA3AF;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-main);
+            color: white;
+        }
+
+        /* =========================================
+           2. CONTAINER & LAYOUT
+           ========================================= */
+        .container {
+            width: 900px;
+            height: 600px; /* เพิ่มความสูงนิดหน่อยกันตก */
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            padding: 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            padding-bottom: 140px; /* เว้นที่ให้แถบสีเทา */
+            background: linear-gradient(145deg, #1f2738, #161c2a);
+            border: 1px solid var(--border-dark);
+        }
+
+        .left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 20px;
+            z-index: 2;
+        }
+
+        .right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 20px;
+            z-index: 2;
+        }
+
+        /* =========================================
+           3. TYPOGRAPHY & LOGO
+           ========================================= */
+        .logo {
+            width: 240px;
+            height: auto;
+            flex-shrink: 0;
+            margin-bottom: 20px;
+        }
+
+        .t1 {
+            background: linear-gradient(90deg, #facc15, #f8fafc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .t2 {
+            background: linear-gradient(90deg, #38bdf8, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .special {
+            background: linear-gradient(90deg, #fb923c, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 600;
+            font-size: 1.5rem;
+            margin-top: 0;
+        }
+
+        .right h2 {
+            margin-bottom: 24px;
+            font-weight: 500;
+            font-size: 24px;
+        }
+
+        /* =========================================
+           4. INPUT FORMS
+           ========================================= */
+        .input-group {
+            position: relative;
+            width: 100%;
+            margin-bottom: 28px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 0;
+            background: transparent;
+            color: #ffffff;
+            border: none;
+            border-bottom: 2px solid #555;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.25s ease;
+        }
+
+        .input-group input:focus {
+            border-bottom-color: #a855f7;
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            font-size: 14px;
+            color: #bbb;
+            pointer-events: none;
+            transition: 0.25s ease;
+        }
+
+        /* Floating Label Logic */
+        .input-group input:focus + label,
+        .input-group input:valid + label {
+            top: -12px;
+            font-size: 12px;
+            color: #a855f7;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            margin: -10px 0 24px;
+            color: #bbb;
+        }
+
+        .forgot {
+            background: linear-gradient(90deg, #facc15, #38bdf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .forgot:hover { text-decoration: underline; }
+
+        /* =========================================
+           5. BUTTONS
+           ========================================= */
+        /* ปุ่ม Sign In หลัก */
+        .signin {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+        }
+
+        /* ลิงก์ Sign Up */
+        .signup {
+            margin-top: 16px;
+            font-size: 14px;
+            text-align: center;
+            color: #bbb;
+        }
+        .signup-link {
+            color: #fb923c;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        .signup-link:hover { text-decoration: underline; }
+
+        /* =========================================
+           6. GRAY ZONE (BOTTOM AREA)
+           ========================================= */
+        .gray-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 130px;
+            background: #e5e5e5;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            border-top: 4px solid #1F2937;
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .free-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .bottom-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* ปุ่ม Try Free */
+        .btn-try {
+            background: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        .btn-try:hover {
+            background: #f3f4f6;
+            transform: translateY(-2px);
+        }
+
+        /* ปุ่ม Membership */
+        .btn-mem {
+            background: #111827;
+            color: #fbbf24; /* สีทอง */
+            border: 1px solid #111;
+        }
+        .btn-mem:hover {
+            background: #000;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+    </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="left">
+      <picture>
+        <img class="logo"src="logo.png" alt="Idea Trade Logo"/>
+      </picture>
+
+      <div style="height: 20px;"></div>
+      <h3 class="special">Special Features <br>for our customers</h3>
+    
+    </div>
+
+    <div class="right">
+      <h2>
+        <span class="t1">Welcome to</span>
+        <span class="t2"> Idea Trade</span>
+      </h2>
+
+      <div class="input-group">
+        <input type="text" id="username" required />
+        <label>Username / Email</label>
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="password" required />
+        <label>Password</label>
+      </div>
+
+      <div class="options">
+        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+            <input type="checkbox" /> Remember me
+        </label>
+        <span class="forgot" onclick="alert('Contact Admin for reset password')">Forgot password?</span>
+      </div>
+
+      <button class="signin" onclick="login()">Sign in</button>
+      
+      <div class="signup">
+          Don't have an account?
+          <a href="register.html" class="signup-link">Sign up</a>
+      </div>
+    </div>
+
+    <div class="gray-zone">
+      <div class="disclaimer">Choose your access type</div>
+      <div class="free-row">
+        <button class="bottom-btn btn-try" onclick="goGuest()">
+            <i class="fa-solid fa-user-secret"></i> TRY FREE GUEST
+        </button>
+        <button class="bottom-btn btn-mem" onclick="goUpgrade()">
+            <i class="fa-solid fa-crown"></i> MEMBERSHIP
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. ฟังก์ชัน Login (สำหรับคนที่มีบัญชี)
+    function login(){
+        const username = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+
+        if(!username) {
+            alert("Please enter username");
+            return;
+        }
+
+        // จำลองการ Login: สร้าง User Profile ว่าเป็น User ทั่วไป (ยังไม่ Member)
+        // เพื่อให้เข้าไปแล้วเห็นปุ่มล็อก
+        const user = {
+            username: username,
+            role: "user", 
+            unlockedItems: []
+        };
+
+        // 🔥 สำคัญ: บันทึกสถานะลงเครื่อง 🔥
+        localStorage.setItem("userProfile", JSON.stringify(user));
+        
+        // ไปหน้า Dashboard
+        window.location.href = "dashboard.html";
+    }
+
+    // 2. ฟังก์ชันเข้าแบบ Guest (ดูของฟรี)
+    function goGuest() {
+        // สร้าง Profile Guest
+        const guest = {
+            username: "Guest Visitor",
+            role: "guest",
+            unlockedItems: []
+        };
+        
+        localStorage.setItem("userProfile", JSON.stringify(guest));
+        window.location.href = "dashboard.html";
+    }
+
+    // 3. ฟังก์ชันไปหน้าซื้อ Package
+    function goUpgrade() {
+        // พาไปหน้าจ่ายเงินเลย (หรือหน้า Register ก่อนก็ได้)
+        window.location.href = "upgrade.html";
+    }
+  </script>
+
+</body>
+</html>

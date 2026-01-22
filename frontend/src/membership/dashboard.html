@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Idea Trade Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .locked-card { position: relative; filter: grayscale(100%) brightness(0.6); pointer-events: none; border: 1px solid #333 !important; }
+        .lock-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 1rem; pointer-events: auto; }
+    </style>
+</head>
+<body class="bg-[#0f111a] text-gray-300 font-sans antialiased overflow-hidden">
+    <div class="flex h-screen">
+        <aside id="sidebar" class="w-54 bg-[#09090b] border-r border-gray-800 flex-col hidden md:flex h-screen shrink-0 p-5">
+            <div class="flex justify-center w-full mb-4">
+                        <img src="logo.png" alt="IDEA TRADE" class="h-24 w-auto object-contain">
+                    </div>
+            <div class="flex flex-col gap-2 mb-4 text-[10px] font-bold">
+                <div class="text-center text-gray-400 text-sm mb-1">User: <span id="username-display" class="text-white">...</span></div>
+                <div id="status-badge-container" class="flex justify-center"></div>
+                <span class="bg-[#052e16] text-green-400 px-2 py-0.5 rounded border border-green-900/50 text-center">Status: ONLINE</span>
+            </div>
+            <div class="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar">
+                <div>
+                    <h3 class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">MENU</h3>
+                    <ul class="space-y-1"><li class="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-purple-500/10 border border-purple-500/30 text-white"><i class="fa-solid fa-house text-sm"></i><span class="text-sm font-medium">Dashboard</span></li></ul>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-800 space-y-1" id="auth-action"></div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+            <header class="p-6 pb-2 flex items-center gap-4">
+                <button id="openSidebarMobile" class="md:hidden text-white bg-[#1e212b] p-2 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+                <h2 class="text-2xl font-bold text-white">Trading Tools</h2>
+            </header>
+            <div class="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
+                <div id="project-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20"></div>
+            </div>
+        </main>
+        <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass"></div>
+    </div>
+
+    <script>
+        const allProjects = [
+            { id: "mit", name: "MIT", type: "free", icon: "fa-chart-pie", desc: "วิเคราะห์ข้อมูลพื้นฐาน (ฟรี)" },
+            { id: "stockmover", name: "Stock Mover", type: "free", icon: "fa-arrow-trend-up", desc: "หุ้นเคลื่อนไหวสูงสุด (ฟรี)" },
+            { id: "caldr", name: "Cal DR", type: "free", icon: "fa-calculator", desc: "คำนวณ DR (ฟรี)" },
+            // PREMIUM
+            { id: "realtime", name: "หมอดูหุ้น", type: "premium", icon: "fa-wand-magic-sparkles", desc: "AI ทำนายกราฟ" },
+            { id: "petroleum", name: "Petroleum", type: "premium", icon: "fa-oil-well", desc: "วิเคราะห์ราคาน้ำมัน" },
+            { id: "rubber", name: "Rubber Thai", type: "premium", icon: "fa-tree", desc: "ราคายางพาราไทย" },
+            { id: "flow", name: "Flow Intraday", type: "premium", icon: "fa-water", desc: "กระแสเงินไหลเข้า-ออก" },
+            { id: "gold", name: "Gold Signal", type: "premium", icon: "fa-coins", desc: "สัญญาณเทรดทองคำ" },
+            { id: "tickmatch", name: "Tick Match", type: "premium", icon: "fa-list-ol", desc: "จับคู่ราคา Bid/Offer" },
+            // 🔥 NEW ITEMS 🔥
+            { id: "sniper", name: "Sniper Trade", type: "premium", icon: "fa-crosshairs", desc: "ระบบจับจุดเข้า-ออกแม่นยำ" },
+            { id: "volume", name: "Volume Profile", type: "premium", icon: "fa-chart-bar", desc: "อ่านใจเจ้ามือด้วย Volume" }
+        ];
+
+        let user = JSON.parse(localStorage.getItem("userProfile"));
+        if (!user) { user = { username: "Guest", role: "guest", unlockedItems: [] }; }
+
+        document.getElementById("username-display").innerText = user.username;
+        const statusBadgeContainer = document.getElementById("status-badge-container");
+        const authAction = document.getElementById("auth-action");
+
+        if (user.role === "member") {
+            statusBadgeContainer.innerHTML = `<span class="bg-gradient-to-r from-yellow-700 to-yellow-600 text-white px-3 py-1 rounded border border-yellow-500/50 flex items-center gap-1 w-full justify-center shadow-lg shadow-yellow-900/50">PREMIUM MEMBER <i class="fa-solid fa-crown"></i></span>`;
+            authAction.innerHTML = `<button onclick="logout()" class="w-full flex items-center gap-3 p-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition text-left"><i class="fa-solid fa-right-from-bracket text-lg w-5 text-center"></i> <span>Log Out</span></button>`;
+        } else {
+            statusBadgeContainer.innerHTML = `<span class="bg-[#2e1065] text-purple-400 px-2 py-1 rounded border border-purple-900/50 flex items-center gap-1 w-full justify-center">FREE ACCESS <i class="fa-regular fa-circle-check"></i></span>`;
+            if(user.role === "guest") {
+                authAction.innerHTML = `<a href="welcome.html" class="w-full flex items-center justify-center gap-2 p-2 text-sm bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition"><i class="fa-solid fa-right-to-bracket"></i> Login / Register</a>`;
+            } else {
+                authAction.innerHTML = `<button onclick="logout()" class="w-full flex items-center gap-3 p-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition text-left"><i class="fa-solid fa-right-from-bracket text-lg w-5 text-center"></i> <span>Log Out</span></button>`;
+            }
+        }
+
+        const grid = document.getElementById("project-grid");
+        const unlockedList = user.unlockedItems || [];
+
+        allProjects.forEach(proj => {
+            const isUnlocked = proj.type === "free" || unlockedList.includes(proj.id);
+            const card = document.createElement("div");
+            card.className = "relative h-full group"; 
+            let html = `
+                <div class="bg-[#52525b] rounded-2xl p-5 flex flex-col justify-between h-64 transition shadow-lg relative overflow-hidden ${isUnlocked ? 'hover:bg-[#60606a]' : 'locked-card'}">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-[#1e212b] flex items-center justify-center border ${isUnlocked ? 'border-purple-500/50 group-hover:border-purple-400' : 'border-gray-600'} transition">
+                                <i class="fa-solid ${proj.icon} ${isUnlocked ? 'text-purple-400' : 'text-gray-500'}"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">${proj.name}</h3>
+                        </div>
+                        <p class="text-gray-300 text-xs leading-relaxed">${proj.desc}</p>
+                    </div>
+                    <button onclick="openTool('${proj.name}')" class="w-full font-bold py-2.5 rounded-lg mt-4 transition transform active:scale-95 ${isUnlocked ? 'bg-[#a855f7] hover:bg-[#9333ea] text-white shadow-lg shadow-purple-900/50' : 'bg-gray-700 text-gray-400'}">
+                        ${isUnlocked ? 'OPEN TOOL' : 'LOCKED'}
+                    </button>
+                </div>
+            `;
+            if (!isUnlocked) {
+                let link = user.role === "guest" ? "welcome.html" : `upgrade.html?id=${proj.id}`;
+                let btnText = user.role === "guest" ? "LOGIN TO UNLOCK" : "BUY NOW";
+                html += `
+                    <div class="lock-overlay">
+                        <i class="fa-solid fa-lock text-4xl text-yellow-500 mb-2 drop-shadow-md"></i>
+                        <h4 class="text-white font-bold text-lg">PREMIUM</h4>
+                        <button onclick="window.location.href='${link}'" class="mt-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-6 rounded-full text-xs transition transform hover:scale-105 shadow-lg">${btnText}</button>
+                    </div>
+                `;
+            }
+            card.innerHTML = html;
+            grid.appendChild(card);
+        });
+
+        function openTool(name) { alert(`✅ Opening Tool: ${name}`); }
+        function logout() { localStorage.removeItem("userProfile"); window.location.href = "welcome.html"; }
+
+        const sidebar = document.getElementById('sidebar');
+        const openBtn = document.getElementById('openSidebarMobile');
+        const overlay = document.getElementById('mobileOverlay');
+        openBtn.addEventListener('click', () => { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); overlay.classList.remove('hidden'); });
+        overlay.addEventListener('click', () => { sidebar.classList.add('hidden'); sidebar.classList.remove('flex'); overlay.classList.add('hidden'); });
+    </script>
+</body>
+</html>
