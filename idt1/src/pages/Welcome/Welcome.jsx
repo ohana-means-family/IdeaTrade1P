@@ -11,8 +11,31 @@ export default function Welcome() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(false);
+    const [popupType, setPopupType] = useState(""); 
+    const [openError, setOpenError] = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
-  const [popupType, setPopupType] = useState(""); 
+
+   const setFreeAccess = () => {
+    localStorage.setItem(
+      "userProfile",
+      JSON.stringify({
+        role: "free",
+        unlockedItems: [],
+      })
+    );
+    navigate("/dashboard");
+  };
+
+  const setMembership = () => {
+    localStorage.setItem(
+      "userProfile",
+      JSON.stringify({
+        role: "member",
+        unlockedItems: [],
+      })
+    );
+    navigate("/member-register");
+  };
 
   const handleGoogleLogin = async () => {
   try {
@@ -108,7 +131,7 @@ export default function Welcome() {
                   return;
                 }
 
-                navigate("/dashboard");
+                onClick={setFreeAccess}
               }}
               className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
             >
@@ -116,14 +139,14 @@ export default function Welcome() {
             </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 text-sm text-gray-400">
+            {/* <div className="flex items-center gap-3 text-sm text-gray-400">
               <div className="flex-1 h-px bg-white/20" />
               OR
               <div className="flex-1 h-px bg-white/20" />
-            </div>
+            </div> */}
 
             {/* Google */}
-            <button
+            {/* <button
               onClick={handleGoogleLogin}
               className="flex items-center justify-center gap-3
                         py-3 rounded-lg
@@ -133,7 +156,7 @@ export default function Welcome() {
             >
               <img src={googleIcon} alt="Google" className="w-5 h-5" />
               <span>Sign in with Google</span>
-            </button>
+            </button> */}
 
             <p className="text-sm text-center text-gray-400">
               Don&apos;t have an account?{" "}
@@ -150,7 +173,7 @@ export default function Welcome() {
         {/* Bottom CTA */}
         <div className="bg-slate-700/50 px-16 py-10 flex flex-col md:flex-row gap-8 justify-between">
   <button
-    onClick={() => navigate("/Dashboard")}
+    onClick={setFreeAccess}
     className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold
                flex items-center justify-center gap-3"
   >
@@ -159,7 +182,7 @@ export default function Welcome() {
   </button>
 
   <button
-    onClick={() => navigate("/member-register")}
+    onClick={setMembership}
     className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold
                flex items-center justify-center gap-3"
   >

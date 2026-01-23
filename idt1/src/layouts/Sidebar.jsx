@@ -212,6 +212,22 @@ export default function Sidebar({
           );
         })}
       </nav>
+      {/* Upgrade to Pro */}
+      <div className="px-4 pb-6 pt-2">
+        <button
+          onClick={() => {
+            console.log("Upgrade to Pro");
+          }}
+          className="w-full flex items-center justify-center gap-2
+          rounded-xl px-4 py-3
+          bg-gradient-to-r from-amber-400 to-yellow-500
+          text-black font-semibold
+          hover:brightness-110 transition"
+        >
+          <CrownIcon color="#000000" />
+          Upgrade to Pro
+        </button>
+      </div>
     </aside>
   );
 }
