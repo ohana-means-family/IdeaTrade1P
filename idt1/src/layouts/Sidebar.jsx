@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import logo from "@/assets/images/logo.png";
 import ToggleIcon from "@/assets/icons/Vector.svg";
+import { useNavigate } from "react-router-dom";
 
 /* =======================
    Sidebar Icons
@@ -92,6 +93,7 @@ export default function Sidebar({
   setActivePage,
   openProject,
 }) {
+  const navigate = useNavigate();
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
 
@@ -230,7 +232,7 @@ export default function Sidebar({
       <div className="px-4 pb-6 pt-2">
         <button
           onClick={() => {
-            console.log("Upgrade to Pro");
+            navigate("/member-register");
           }}
           className="w-full flex items-center justify-center gap-2
           rounded-xl px-4 py-3
@@ -239,7 +241,7 @@ export default function Sidebar({
           hover:brightness-110 transition"
         >
           <CrownIcon color="#000000" />
-          Upgrade to Pro
+          JOIN MEMBERSHIP
         </button>
       </div>
     </aside>
