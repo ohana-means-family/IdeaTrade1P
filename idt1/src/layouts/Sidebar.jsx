@@ -130,7 +130,7 @@ export default function Sidebar({
           }`}
         >
           {/* เปลี่ยนสีมงกุฎเป็นสีทอง (#facc15) ถ้าเป็น MEMBERSHIP */}
-          <CrownIcon color={isMember ? "#facc15" : "#38bdf8"} />
+          {isMember && <CrownIcon color="#facc15" />}
           {isMember ? "MEMBERSHIP" : "FREE ACCESS"}
         </span>
         <span className="px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300">
@@ -196,12 +196,11 @@ export default function Sidebar({
           const isActive = activePage === project.id;
 
           // ❗ เงื่อนไขการเข้าได้
-          const canAccess = unlocked;
+          const canAccess = true; // ทุกคนเข้าได้
 
           return (
             <button
               key={project.id}
-              disabled={!canAccess}
               onClick={() => {
                 if (!canAccess) return;
                 setActivePage(project.id);
@@ -211,9 +210,7 @@ export default function Sidebar({
               ${
                 isActive
                   ? "bg-sky-500/20 text-sky-300"
-                  : canAccess
-                  ? "hover:bg-white/5 text-gray-400 opacity-90"
-                  : "opacity-40 cursor-not-allowed"
+                  : "hover:bg-white/5 text-gray-400 opacity-90"
               }`}
             >
               <div className="flex gap-3 items-center">

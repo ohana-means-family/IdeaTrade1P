@@ -30,27 +30,14 @@ export default function MemberRegister() {
     return sum + (billingCycle === "monthly" ? tool.monthly : tool.yearly);
   }, 0);
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    alert("คัดลอกเลขบัญชีแล้ว 📋");
-  };
-
   const handleConfirmPayment = () => {
-    const saved = localStorage.getItem("userProfile");
-    const current = saved
-      ? JSON.parse(saved)
-      : { role: "free", unlockedItems: [] };
-
-    const unlockedItems = [
-      ...new Set([...(current.unlockedItems || []), ...selectedTools]),
-    ];
-
+    // ✅ FIX: set membership + unlocked เฉพาะที่ซื้อ
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
-        ...current,
-        role: "free",
-        unlockedItems,
+        role: "membership",
+        billingCycle,
+        unlockedItems: selectedTools,
       })
     );
 
