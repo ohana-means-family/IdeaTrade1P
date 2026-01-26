@@ -124,19 +124,19 @@ export default function Welcome() {
 
             {/* Sign in */}
             <button
-              onClick={() => {
-                if (!email) {
-                  setPopupType("emailRequired");
-                  setOpenForgot(true);
-                  return;
-                }
+            onClick={() => {
+              if (!email) {
+                setPopupType("emailRequired");
+                setOpenForgot(true);
+                return;
+              }
 
-                onClick={setFreeAccess}
-              }}
-              className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
-            >
-              Sign in
-            </button>
+              setFreeAccess();
+            }}
+            className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
+          >
+            Sign in
+          </button>
 
             {/* Divider */}
             {/* <div className="flex items-center gap-3 text-sm text-gray-400">
