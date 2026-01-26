@@ -128,22 +128,22 @@ export default function Register() {
             </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 py-2">
+            {/* <div className="flex items-center gap-3 py-2">
               <div className="h-px bg-gray-600 flex-1"></div>
               <span className="text-xs text-gray-500 uppercase">OR</span>
               <div className="h-px bg-gray-600 flex-1"></div>
-            </div>
+            </div> */}
 
             {/* Google Button */}
-            <button
+            {/* <button
               type="button"
               className="w-full py-3 rounded-lg bg-white text-slate-800 font-semibold flex items-center justify-center gap-3 hover:bg-gray-100 transition border border-gray-200" // เพิ่ม border นิดนึงเพื่อให้ตัดกับพื้นหลัง
-            >
+            > */}
               {/* เรียกใช้ Component ไอคอนตรงนี้ */}
-              <GoogleIcon />
+              {/* <GoogleIcon /> */}
               
-              <span>Sign up with Google</span>
-            </button>
+              {/* <span>Sign up with Google</span>
+            </button> */}
 
           </form>
         </div>
