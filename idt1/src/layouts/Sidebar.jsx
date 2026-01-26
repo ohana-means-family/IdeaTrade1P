@@ -186,10 +186,15 @@ export default function Sidebar({
           const unlocked = unlockedList.includes(project.id);
           const isActive = activePage === project.id;
 
+          // ❗ เงื่อนไขการเข้าได้
+          const canAccess = unlocked;
+
           return (
             <button
               key={project.id}
+              disabled={!canAccess}
               onClick={() => {
+                if (!canAccess) return;
                 setActivePage(project.id);
                 openProject(project);
               }}
@@ -197,7 +202,9 @@ export default function Sidebar({
               ${
                 isActive
                   ? "bg-sky-500/20 text-sky-300"
-                  : "hover:bg-white/5 text-gray-400 opacity-90"
+                  : canAccess
+                  ? "hover:bg-white/5 text-gray-400 opacity-90"
+                  : "opacity-40 cursor-not-allowed"
               }`}
             >
               <div className="flex gap-3 items-center">
