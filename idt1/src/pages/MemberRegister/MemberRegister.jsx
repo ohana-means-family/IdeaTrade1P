@@ -286,7 +286,15 @@ export default function MemberRegister() {
                 {slipImage && (
                   <div className="bg-[#13233A] rounded-xl p-3">
                     <p className="text-xs text-[#9FB3C8] mb-2">Uploaded Slip</p>
-                    <img src={slipImage} alt="slip" className="w-full rounded-lg" />
+
+                    {/* Image Frame */}
+                    <div className="w-full h-[220px] rounded-lg overflow-hidden bg-black/20 flex items-center justify-center">
+                      <img
+                        src={slipImage}
+                        alt="slip"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
                 )}
 
