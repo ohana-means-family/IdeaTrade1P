@@ -11,6 +11,7 @@ export default function Navbar({ activePage, setActivePage }) {
     { label: "S50", id: "s50" },
     { label: "Gold", id: "gold" },
     { label: "BidAsk", id: "bidask" },
+    { label: "TickMatch", id:"tickmatch" },
     { label: "DR", id: "dr" },
   ];
 
