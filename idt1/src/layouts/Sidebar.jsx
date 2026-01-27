@@ -1,48 +1,34 @@
 import React, { useState, useEffect } from "react";
-import logo from "@/assets/images/logo.png";
-import ToggleIcon from "@/assets/icons/Vector.svg";
 import { useNavigate } from "react-router-dom";
 
-/* =======================
-   Sidebar Icons
-======================= */
+import logo from "@/assets/images/logo.png";
+import ToggleIcon from "@/assets/icons/Vector.svg";
+
+/* ================= ICONS ================= */
 import preview from "@/assets/icons/preview.svg";
 import apreview from "@/assets/icons/apreview.svg";
-
-// ถ้ายังไม่มีรูป mit.svg ให้ใช้ preview แทนชั่วคราวได้ หรือปล่อยไว้แบบนี้ก็ได้ (ผมกัน error ไว้ให้แล้วด้านล่าง)
 import mit from "@/assets/icons/mit.svg";
 import amit from "@/assets/icons/amit.svg";
-
 import fortune from "@/assets/icons/fortune.svg";
 import afortune from "@/assets/icons/afortune.svg";
-
 import petroleum from "@/assets/icons/petroleum.svg";
 import apetroleum from "@/assets/icons/apetroleum.svg";
-
 import rubber from "@/assets/icons/rubber.svg";
 import arubber from "@/assets/icons/arubber.svg";
-
 import flow from "@/assets/icons/flow.svg";
 import aflow from "@/assets/icons/aflow.svg";
-
 import s50 from "@/assets/icons/s50.svg";
 import as50 from "@/assets/icons/as50.svg";
-
 import gold from "@/assets/icons/gold.svg";
 import agold from "@/assets/icons/agold.svg";
-
 import bidask from "@/assets/icons/bidask.svg";
 import abidask from "@/assets/icons/abidask.svg";
-
 import tickmatch from "@/assets/icons/tickmatch.svg";
 import atickmatch from "@/assets/icons/atickmatch.svg";
-
 import dr from "@/assets/icons/dr.svg";
 import adr from "@/assets/icons/adr.svg";
 
-/* =======================
-   ICON MAP
-======================= */
+/* ================= ICON MAP ================= */
 const sidebarIcons = {
   preview: { default: preview, active: apreview },
   mit: { default: mit, active: amit },
@@ -57,12 +43,10 @@ const sidebarIcons = {
   dr: { default: dr, active: adr },
 };
 
-const getSidebarIcon = (key, isActive) =>
-  isActive ? sidebarIcons[key]?.active : sidebarIcons[key]?.default;
+const getIcon = (key, active) =>
+  active ? sidebarIcons[key].active : sidebarIcons[key].default;
 
-/* =======================
-   Projects List
-======================= */
+/* ================= PROJECTS ================= */
 const projects = [
   { id: "fortune", name: "หมอดูหุ้น", iconKey: "fortune" },
   { id: "petroleum", name: "Petroleum", iconKey: "petroleum" },
@@ -75,18 +59,14 @@ const projects = [
   { id: "dr", name: "DR", iconKey: "dr" },
 ];
 
-/* =======================
-   Crown Icon Component
-======================= */
+/* ================= CROWN ================= */
 const CrownIcon = ({ color }) => (
   <svg viewBox="0 0 24 24" className="w-4 h-4" fill={color}>
     <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19H5V18H19V19Z" />
   </svg>
 );
 
-/* =======================
-   Sidebar Component
-======================= */
+/* ================= SIDEBAR ================= */
 export default function Sidebar({
   collapsed,
   setCollapsed,
@@ -101,7 +81,6 @@ export default function Sidebar({
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
     if (!savedUser) return;
-
     const user = JSON.parse(savedUser);
     if (user.unlockedItems) setUnlockedList(user.unlockedItems);
     if (user.role === "member" || user.unlockedItems?.length > 0) {
@@ -112,135 +91,130 @@ export default function Sidebar({
   if (collapsed) return null;
 
   return (
-    <aside className="fixed top-0 left-0 z-40 w-72 h-screen bg-slate-900/70 border-r border-sky-400/20 flex flex-col">
-      {/* --- Logo & Toggle --- */}
-      <div className="px-6 py-6 border-b border-white/10 flex justify-between items-center">
-        <img src={logo} className="w-40" alt="Logo" />
+    <aside className="fixed top-0 left-0 z-40 w-[280px] h-screen
+      bg-gradient-to-b from-[#0c0f14] to-[#0a0d11]
+      border-r border-white/10 flex flex-col">
+
+      {/* Logo */}
+      <div className="px-6 py-6 flex justify-between items-center">
+        <img src={logo} className="w-36" />
         <button onClick={() => setCollapsed(true)}>
-          <img src={ToggleIcon} className="w-4 h-4" alt="Collapse" />
+          <img src={ToggleIcon} className="w-4 opacity-60" />
         </button>
       </div>
 
-      {/* --- User Status --- */}
-      <div className="px-6 py-4 flex gap-2 text-xs">
-        <span 
-          className={`px-2 py-0.5 rounded-full flex items-center gap-1 ${
-            isMember 
-              ? "bg-yellow-500/20 text-yellow-400" 
-              : "bg-sky-600/20 text-sky-400"
-          }`}
+      {/* Status */}
+      <div className="px-6 flex gap-2 text-[11px]">
+        <span
+          className={`px-2 py-1 rounded-full
+          ${isMember
+            ? "bg-yellow-500/20 text-yellow-400"
+            : "bg-sky-500/20 text-sky-400"}`}
         >
-          {isMember && <CrownIcon color="#facc15" />}
           {isMember ? "MEMBERSHIP" : "FREE ACCESS"}
         </span>
-        <span className="px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300">
+        <span className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">
           STATUS: ONLINE
         </span>
       </div>
 
-      {/* --- Menu List --- */}
-      <nav className="flex-1 px-4 py-4 text-sm space-y-2 overflow-y-auto">
-        
-        {/* 1. ปุ่ม Preview Projects */}
+      {/* Search */}
+      <div className="px-6 mt-4">
+        <div className="h-9 rounded-lg bg-white/5 px-3 flex items-center text-xs text-gray-400">
+          Search Something...
+        </div>
+      </div>
+
+      {/* Menu */}
+      <nav className="flex-1 px-3 mt-4 text-sm overflow-y-auto">
+
+        {/* Preview */}
         <button
           onClick={() => setActivePage("whatsnew")}
-          className={`w-full px-4 py-2 rounded-lg flex justify-between items-center
-          ${
-            activePage === "whatsnew"
-              ? "bg-sky-500/20 text-sky-300"
-              : "hover:bg-white/5 text-gray-300"
-          }`}
+          className={`w-full h-11 px-4 rounded-lg flex items-center justify-between
+          ${activePage === "whatsnew"
+            ? "bg-slate-800 text-white"
+            : "hover:bg-white/5 text-gray-300"}`}
         >
           <div className="flex gap-3 items-center">
-            <img
-              src={getSidebarIcon("preview", activePage === "whatsnew")}
-              className="w-5 h-5"
-              alt="Preview"
-            />
+            <img src={getIcon("preview", activePage === "whatsnew")} className="w-5" />
             <span>Preview Projects</span>
           </div>
           <span className="w-2 h-2 bg-emerald-400 rounded-full" />
         </button>
 
-        {/* 2. Beta Tools (MIT) */}
-        <div className="text-gray-400 uppercase text-xs mt-6 mb-2">
+        {/* Beta */}
+        <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500">
           Beta Tools
         </div>
 
         <button
-          onClick={() => setActivePage("mit")} // ✅ แก้ไข: ส่งค่า "mit"
-          className={`w-full px-4 py-2 rounded-lg flex justify-between items-center
-          ${
-            activePage === "mit" // ✅ แก้ไข: เช็คค่า "mit"
-              ? "bg-sky-500/20 text-sky-300"
-              : "hover:bg-white/5 text-gray-300"
-          }`}
+          onClick={() => setActivePage("mit")}
+          className={`w-full h-11 px-4 rounded-lg flex items-center justify-between
+          ${activePage === "mit"
+            ? "bg-slate-800 text-white"
+            : "hover:bg-white/5 text-gray-300"}`}
         >
           <div className="flex gap-3 items-center">
-            {/* ป้องกัน error ถ้ารูป mit ไม่มี ให้ใช้รูป preview แทน */}
-            <img
-              src={sidebarIcons.mit?.default ? getSidebarIcon("mit", activePage === "mit") : sidebarIcons.preview.default}
-              className="w-5 h-5"
-              alt="MIT"
-            />
+            <img src={getIcon("mit", activePage === "mit")} className="w-5" />
             <span>MIT</span>
           </div>
-          <span className="text-xs px-2 py-0.5 rounded bg-emerald-400 text-black">
+          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400 text-black">
             FREE
           </span>
         </button>
 
-        {/* 3. Premium Tools */}
-        <div className="text-gray-400 uppercase text-xs mt-6 mb-2">
-          Premium Tools
+        {/* Membership */}
+        <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500">
+          Membership Tools
         </div>
 
-        {projects.map(project => {
-          const unlocked = unlockedList.includes(project.id);
-          const isActive = activePage === project.id;
-          const canAccess = true;
-
+        {projects.map(p => {
+          const active = activePage === p.id;
+          const unlocked = unlockedList.includes(p.id);
           return (
             <button
-              key={project.id}
+              key={p.id}
               onClick={() => {
-                if (!canAccess) return;
-                setActivePage(project.id);
-                openProject(project);
+                setActivePage(p.id);
+                openProject(p);
               }}
-              className={`w-full px-4 py-2 rounded-lg flex justify-between items-center
-              ${
-                isActive
-                  ? "bg-sky-500/20 text-sky-300"
-                  : "hover:bg-white/5 text-gray-400 opacity-90"
-              }`}
+              className={`w-full h-11 px-4 rounded-lg flex items-center justify-between
+              ${active
+                ? "bg-slate-800 text-white"
+                : "hover:bg-white/5 text-gray-400"}`}
             >
               <div className="flex gap-3 items-center">
-                <img
-                  src={getSidebarIcon(project.iconKey, isActive)}
-                  className="w-5 h-5"
-                  alt={project.name}
-                />
-                <span>{project.name}</span>
+                <img src={getIcon(p.iconKey, active)} className="w-5" />
+                <span>{p.name}</span>
               </div>
-              <CrownIcon color={unlocked ? "#38bdf8" : "#fbbf24"} />
+              <CrownIcon color={unlocked ? "#38bdf8" : "#facc15"} />
             </button>
           );
         })}
+
+        {/* Account */}
+        <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500">
+          Account
+        </div>
+
+        <div className="px-4 py-2 text-gray-400">Profile</div>
+        <div className="px-4 py-2 text-gray-400">Sign Out</div>
+
+        {/* Spacer ตาม Figma */}
+        <div className="h-10" />
       </nav>
 
-      {/* --- Upgrade Button --- */}
-      <div className="px-4 pb-6 pt-2">
+      {/* Join */}
+      <div className="px-4 pb-6">
         <button
           onClick={() => navigate("/member-register")}
-          className="w-full flex items-center justify-center gap-2
-          rounded-xl px-4 py-3
-          bg-gradient-to-r from-amber-400 to-yellow-500
-          text-black font-semibold
-          hover:brightness-110 transition"
+          className="w-full h-11 rounded-xl
+          bg-gradient-to-r from-yellow-400 to-amber-400
+          text-black font-semibold flex items-center justify-center gap-2"
         >
-          <CrownIcon color="#000000" />
-          JOIN MEMBERSHIP
+          <CrownIcon color="#000" />
+          Join Membership
         </button>
       </div>
     </aside>
