@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function Navbar({ activePage, setActivePage }) {
-  // ✅ กำหนด ID ให้ตรงกับ Key ใน Dashboard
+  // ใช้ shortcuts เป็นปุ่มแทนหน้า preview-projects
   const tabs = [
     { label: "Shortcuts", id: "shortcuts" },
     { label: "หมอดูหุ้น", id: "fortune" },
@@ -11,7 +11,7 @@ export default function Navbar({ activePage, setActivePage }) {
     { label: "S50", id: "s50" },
     { label: "Gold", id: "gold" },
     { label: "BidAsk", id: "bidask" },
-    { label: "TickMatch", id:"tickmatch" },
+    { label: "TickMatch", id: "tickmatch" },
     { label: "DR", id: "dr" },
   ];
 
@@ -19,13 +19,24 @@ export default function Navbar({ activePage, setActivePage }) {
     <div className="mb-8">
       <div className="flex gap-3 flex-wrap">
         {tabs.map((tab) => {
-          // เช็คว่าหน้าปัจจุบันตรงกับปุ่มนี้ไหม
-          const isActive = activePage === tab.id;
+          // 🔥 mapping logic
+          const isActive =
+            tab.id === "shortcuts"
+              ? activePage === "preview-projects" ||
+                activePage === "whatsnew"
+              : activePage === tab.id;
 
           return (
             <button
               key={tab.id}
-              onClick={() => setActivePage(tab.id)} // ✅ เมื่อกด ให้เปลี่ยน state ใน Dashboard
+              onClick={() => {
+                // 🔥 ถ้ากด Shortcuts → ไปหน้า preview-projects
+                if (tab.id === "shortcuts") {
+                  setActivePage("preview-projects");
+                } else {
+                  setActivePage(tab.id);
+                }
+              }}
               className={`
                 px-5 py-2 rounded-full text-sm font-medium
                 transition-all duration-200 border

@@ -82,10 +82,8 @@ export default function Sidebar({
     const savedUser = localStorage.getItem("userProfile");
     if (!savedUser) return;
     const user = JSON.parse(savedUser);
-    if (user.unlockedItems) setUnlockedList(user.unlockedItems);
-    if (user.role === "member" || user.unlockedItems?.length > 0) {
-      setIsMember(true);
-    }
+    setUnlockedList(user.unlockedItems || []);
+    setIsMember(user.role === "member" || user.unlockedItems?.length > 0);
   }, []);
 
   if (collapsed) return null;
@@ -118,29 +116,19 @@ export default function Sidebar({
         </span>
       </div>
 
-      {/* Search */}
-      <div className="px-6 mt-4">
-        <div className="h-9 rounded-lg bg-white/5 px-3 flex items-center text-xs text-gray-400">
-          Search Something...
-        </div>
-      </div>
-
       {/* Menu */}
-      <nav className="flex-1 px-3 mt-4 text-sm overflow-y-auto">
+      <nav className="flex-1 px-3 mt-6 text-sm overflow-y-auto">
 
         {/* Preview */}
         <button
-          onClick={() => setActivePage("whatsnew")}
-          className={`w-full h-11 px-4 rounded-lg flex items-center justify-between
-          ${activePage === "whatsnew"
+          onClick={() => setActivePage("preview-projects")}
+          className={`w-full h-11 px-4 rounded-lg flex items-center
+          ${activePage === "preview-projects"
             ? "bg-slate-800 text-white"
             : "hover:bg-white/5 text-gray-300"}`}
         >
-          <div className="flex gap-3 items-center">
-            <img src={getIcon("preview", activePage === "whatsnew")} className="w-5" />
-            <span>Preview Projects</span>
-          </div>
-          <span className="w-2 h-2 bg-emerald-400 rounded-full" />
+          <img src={getIcon("preview", activePage === "preview-projects")} className="w-5 mr-3" />
+          Preview Projects
         </button>
 
         {/* Beta */}
@@ -155,9 +143,9 @@ export default function Sidebar({
             ? "bg-slate-800 text-white"
             : "hover:bg-white/5 text-gray-300"}`}
         >
-          <div className="flex gap-3 items-center">
+          <div className="flex items-center gap-3">
             <img src={getIcon("mit", activePage === "mit")} className="w-5" />
-            <span>MIT</span>
+            MIT
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400 text-black">
             FREE
@@ -169,46 +157,38 @@ export default function Sidebar({
           Membership Tools
         </div>
 
-        {projects.map(p => {
+        {projects.map((p) => {
           const active = activePage === p.id;
           const unlocked = unlockedList.includes(p.id);
+
           return (
             <button
               key={p.id}
               onClick={() => {
                 setActivePage(p.id);
-                openProject(p);
+                openProject?.(p);
               }}
               className={`w-full h-11 px-4 rounded-lg flex items-center justify-between
               ${active
                 ? "bg-slate-800 text-white"
                 : "hover:bg-white/5 text-gray-400"}`}
             >
-              <div className="flex gap-3 items-center">
+              <div className="flex items-center gap-3">
                 <img src={getIcon(p.iconKey, active)} className="w-5" />
-                <span>{p.name}</span>
+                {p.name}
               </div>
               <CrownIcon color={unlocked ? "#38bdf8" : "#facc15"} />
             </button>
           );
         })}
 
-        {/* Account */}
-        <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500">
-          Account
-        </div>
-
-        <div className="px-4 py-2 text-gray-400">Profile</div>
-        <div className="px-4 py-2 text-gray-400">Sign Out</div>
-
-        {/* Spacer ตาม Figma */}
         <div className="h-10" />
       </nav>
 
-      {/* Join */}
+      {/* ✅ Join Membership (แก้ตรงนี้สำคัญที่สุด) */}
       <div className="px-4 pb-6">
         <button
-          onClick={() => navigate("/member-register")}
+          onClick={() => setActivePage("premiumtools")}
           className="w-full h-11 rounded-xl
           bg-gradient-to-r from-yellow-400 to-amber-400
           text-black font-semibold flex items-center justify-center gap-2"

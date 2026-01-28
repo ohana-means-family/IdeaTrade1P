@@ -10,8 +10,8 @@ export default function Welcome() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(false);
-    const [popupType, setPopupType] = useState(""); 
-    const [openError, setOpenError] = useState(false);
+  const [popupType, setPopupType] = useState(""); 
+  const [openError, setOpenError] = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
 
    const setFreeAccess = () => {
@@ -33,7 +33,9 @@ export default function Welcome() {
         unlockedItems: [],
       })
     );
-    navigate("/member-register");
+        navigate("/dashboard", {
+      state: { goTo: "premiumtools" },
+    });
   };
 
   const handleGoogleLogin = async () => {
@@ -171,83 +173,83 @@ export default function Welcome() {
 
         {/* Bottom CTA */}
         <div className="bg-slate-700/50 px-16 py-10 flex flex-col md:flex-row gap-8 justify-between">
-  <button
-    onClick={setFreeAccess}
-    className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold
-               flex items-center justify-center gap-3"
-  >
-    <img src={Rocket} alt="rocket" className="w-6 h-6" />
-    TRY FREE VERSION
-  </button>
+        <button
+          onClick={setFreeAccess}
+          className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold
+                    flex items-center justify-center gap-3"
+        >
+          <img src={Rocket} alt="rocket" className="w-6 h-6" />
+          TRY FREE VERSION
+        </button>
 
-  <button
-    onClick={setMembership}
-    className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold
-               flex items-center justify-center gap-3"
-  >
-    <img src={Crown} alt="crown" className="w-6 h-6" />
-    JOIN MEMBERSHIP
-  </button>
-</div>
+        <button
+          onClick={setMembership}
+          className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold
+                    flex items-center justify-center gap-3"
+        >
+          <img src={Crown} alt="crown" className="w-6 h-6" />
+          JOIN MEMBERSHIP
+        </button>
+      </div>
 
       </div>
 
       {/* ================= POPUP ================= */}
       {openForgot && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    {/* Overlay */}
-    <div
-      className="absolute inset-0 bg-black/60"
-      onClick={() => setOpenForgot(false)}
-    />
-
-    {/* Modal */}
-    <div className="relative z-10 w-full max-w-md rounded-2xl
-                    bg-slate-800 text-white p-6 shadow-xl">
-
-      {popupType === "forgot" && (
-        <>
-          <h3 className="text-xl font-semibold mb-2">
-            Forget your ID or password?
-          </h3>
-
-          {/* <p className="text-sm text-gray-300 mb-5">
-            <br />
-            Your ID is:{" "}
-            <span className="font-semibold text-sky-600">
-              your Email address.
-            </span>
-            <br />
-            Your Password is:{" "}
-            <span className="font-semibold text-sky-600">
-              your Phone number.
-            </span>
-          </p> */}
-        </>
-      )}
-
-      {popupType === "emailRequired" && (
-        <>
-          <h3 className="text-xl font-semibold mb-2 text-red-400">
-            กรุณาใส่อีเมลก่อน
-          </h3>
-
-          <p className="text-sm text-gray-300 mb-5">
-            โปรดกรอกอีเมลของคุณก่อนทำการ Sign in
-          </p>
-        </>
-      )}
-
-      <div className="flex justify-end">
-        <button
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* Overlay */}
+        <div
+          className="absolute inset-0 bg-black/60"
           onClick={() => setOpenForgot(false)}
-          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
-        >
-          Close
-        </button>
+        />
+
+        {/* Modal */}
+        <div className="relative z-10 w-full max-w-md rounded-2xl
+                        bg-slate-800 text-white p-6 shadow-xl">
+
+          {popupType === "forgot" && (
+            <>
+              <h3 className="text-xl font-semibold mb-2">
+                Forget your ID or password?
+              </h3>
+
+              {/* <p className="text-sm text-gray-300 mb-5">
+                <br />
+                Your ID is:{" "}
+                <span className="font-semibold text-sky-600">
+                  your Email address.
+                </span>
+                <br />
+                Your Password is:{" "}
+                <span className="font-semibold text-sky-600">
+                  your Phone number.
+                </span>
+              </p> */}
+            </>
+          )}
+
+          {popupType === "emailRequired" && (
+            <>
+              <h3 className="text-xl font-semibold mb-2 text-red-400">
+                กรุณาใส่อีเมลก่อน
+              </h3>
+
+              <p className="text-sm text-gray-300 mb-5">
+                โปรดกรอกอีเมลของคุณก่อนทำการ Sign in
+              </p>
+            </>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={() => setOpenForgot(false)}
+              className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 )}
     </div>
   );

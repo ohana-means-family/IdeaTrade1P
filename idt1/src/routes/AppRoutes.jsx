@@ -4,7 +4,7 @@ import Welcome from "@/pages/Welcome/Welcome";
 import Register from "@/pages/Register/Register"; 
 import MemberRegister from "@/pages/MemberRegister/MemberRegister";
 import Dashboard from "@/pages/Dashboard/Dashboard";
-import PreviewProjects from "@/pages/Dashboard/Shortcut"; 
+import PreviewProjects from "@/pages/Dashboard/PremiumTools"; 
 
 export default function AppRoutes() {
   return (
