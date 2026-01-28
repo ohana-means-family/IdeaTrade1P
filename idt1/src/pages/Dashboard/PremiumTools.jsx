@@ -75,7 +75,7 @@ export default function Shortcuts() {
               onClick={() => handleOpenTool(tool.id)}
               className="w-full mt-2 py-2.5 rounded-full bg-[#cca300] hover:bg-[#b38f00] text-white font-semibold transition shadow-md"
             >
-              Open premium tool
+              JOIN MEMBERSHIP
             </button>
           </div>
         ))}

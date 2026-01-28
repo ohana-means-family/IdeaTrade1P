@@ -8,11 +8,12 @@ import mitIcon from "@/assets/icons/mit.svg";
 ======================= */
 const projects = [
   {
-    id: "stock-mover",
-    name: "Stock Mover",
-    desc: "Detect unusual price movements and volume spikes in real time.",
-    premium: false,
-  },
+      id: "stock-mover",
+      name: "Stock Mover",
+      desc: "ดูหุ้นที่มีการเคลื่อนไหวแรงแบบ Real-time",
+      external: true,
+      url: "https://stockmover.com",
+    },
   {
     id: "Project-Name",
     name: "Project Name",
@@ -78,14 +79,6 @@ const projects = [
     name: "DR",
     desc: "Build and backtest trading strategies without writing code.",
     premium: true,
-  },
-  {
-    id: "external-ai",
-    name: "External AI Tool",
-    desc: "Open external AI analytics platform.",
-    premium: false,
-    external: true,
-    url: "https://external-site.com",
   },
 ];
 
@@ -225,7 +218,7 @@ export default function PreviewProjects() {
                               flex items-center justify-center gap-2 transition
                     ${
                       project.external
-                        ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                        ? "bg-sky-600 hover:bg-sky-500 text-white"
                         : project.premium
                           ? isUnlocked
                             ? "bg-sky-600 hover:bg-sky-500 text-white"
