@@ -36,6 +36,14 @@ export default function Shortcuts() {
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </div>
+
+        {/* MIT Button */}
+          <button
+            onClick={() => navigate("/mit")}
+            className="bg-[#cca300] hover:bg-[#b38f00] text-white px-6 py-2.5 rounded-full font-semibold transition shadow-md whitespace-nowrap"
+          >
+            MIT
+          </button>
         
         <button
           onClick={() => navigate("/member-register")}

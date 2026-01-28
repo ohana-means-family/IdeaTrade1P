@@ -14,12 +14,17 @@ export default function AppRoutes() {
       <Route path="/member-register" element={<MemberRegister />} />
       <Route path="/dashboard" element={<Dashboard />} />
 
-      {/*  เพิ่มบรรทัดนี้ เพื่อให้กด tab Shortcuts แล้วมาหน้านี้ */}
+      {/* Shortcuts */}
       <Route path="/shortcuts" element={<PreviewProjects />} />
-      
-      {/* ถ้ามีหน้าอื่นๆ ใน Navbar ก็ต้องมาเพิ่มในนี้ด้วย เช่น */}
-      <Route path="/fortune" element={<div>หน้าหมอดูหุ้น</div>} />
 
+      {/* MIT ✅ */}
+      <Route
+        path="/mit"
+        element={<Dashboard initialPage="mit" />}
+      />
+
+      {/* ตัวอย่างหน้าอื่น */}
+      <Route path="/fortune" element={<div>หน้าหมอดูหุ้น</div>} />
     </Routes>
   );
 }

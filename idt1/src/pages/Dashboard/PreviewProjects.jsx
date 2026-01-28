@@ -118,11 +118,9 @@ export default function PreviewProjects() {
   };
 
   const handleOpenMIT = () => {
-    if (isMember) {
-      alert("Opening MIT...");
-    } else {
-      navigate("/member-register");
-    }
+    navigate("/dashboard", {
+      state: { goTo: "mit" },
+    });
   };
 
   return (
