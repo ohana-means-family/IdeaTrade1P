@@ -33,6 +33,7 @@ export default function MemberRegister() {
   const [cardNumber, setCardNumber] = useState("");
   const [expMonth, setExpMonth] = useState("");
   const [expYear, setExpYear] = useState("");
+  const [cvv, setCvv] = useState("");
 
   // 🔹 Bank Account only
   const [slipImage, setSlipImage] = useState(null);
@@ -430,6 +431,142 @@ export default function MemberRegister() {
 
 
             {/* ================= Credit / Debit Card ================= */}
+            {selectedPayment === "card" && (
+              <div className="relative bg-[#0B1629] rounded-2xl p-5 space-y-4">
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="absolute top-3 right-3 z-10"
+                >
+                  <img src={CloseIcon} alt="close" className="w-6 h-6" />
+                </button>
+
+                {/* Header: Card Type Selection */}
+                <div className="bg-[#2A2A2A] rounded-xl p-4 mb-2">
+                  <p className="text-white font-semibold mb-3">Credit Card Detail</p>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setCardType("mastercard")}
+                      className={`h-10 w-14 flex items-center justify-center rounded transition-all ${cardType === 'mastercard' ? 'bg-white ring-2 ring-[#0E6BA8]' : 'bg-white/50 opacity-50'}`}
+                    >
+                       <img src={MastercardIcon} alt="mastercard" className="h-6 object-contain" />
+                    </button>
+                    <button 
+                      onClick={() => setCardType("visa")}
+                      className={`h-10 w-14 flex items-center justify-center rounded transition-all ${cardType === 'visa' ? 'bg-white ring-2 ring-[#0E6BA8]' : 'bg-white/50 opacity-50'}`}
+                    >
+                       <img src={VisaIcon} alt="visa" className="h-4 object-contain" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Inputs */}
+                <div className="space-y-3">
+                  
+                  {/* Cardholder Name */}
+                  <div>
+                    <label className="block text-white font-semibold text-sm mb-1">
+                      Cardholder's name
+                    </label>
+                    <input
+                      type="text"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="Name on card"
+                      className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-3 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]"
+                    />
+                  </div>
+
+                  {/* Card Number */}
+                  <div>
+                    <label className="block text-white font-semibold text-sm mb-1">
+                      Card number
+                    </label>
+                    <input
+                      type="text"
+                      value={cardNumber}
+                      maxLength={19}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="0000 0000 0000 0000"
+                      className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-3 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]"
+                    />
+                  </div>
+
+                  {/* Expiry Date & CVV */}
+                  <div className="flex gap-3">
+                    {/* Month */}
+                    <div className="flex-1">
+                      <label className="block text-white font-semibold text-sm mb-1">
+                        Exp. Month
+                      </label>
+                      <select 
+                        value={expMonth}
+                        onChange={(e) => setExpMonth(e.target.value)}
+                        className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-2 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]"
+                      >
+                        <option value="" disabled>MM</option>
+                        {months.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Year */}
+                    <div className="flex-1">
+                      <label className="block text-white font-semibold text-sm mb-1">
+                        Exp. Year
+                      </label>
+                      <select 
+                        value={expYear}
+                        onChange={(e) => setExpYear(e.target.value)}
+                        className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-2 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]"
+                      >
+                         <option value="" disabled>YYYY</option>
+                         {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+
+                    {/* CVV */}
+                    <div className="flex-1">
+                      <label className="block text-white font-semibold text-sm mb-1">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={3}
+                        value={cvv}
+                        onChange={(e) => setCvv(e.target.value)}
+                        placeholder="123"
+                        className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-3 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8] text-center"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 h-11 bg-[#1F3354] rounded text-white hover:bg-[#2a456e] transition"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleConfirmPayment}
+                    // เช็คว่ากรอกครบหรือยัง ถ้ายังให้ disable ปุ่ม
+                    disabled={!cardName || !cardNumber || !expMonth || !expYear || !cvv}
+                    className={`flex-1 h-11 rounded font-semibold transition
+                      ${
+                        cardName && cardNumber && expMonth && expYear && cvv
+                          ? "bg-[#0E6BA8] text-black hover:bg-[#0c5a8d]"
+                          : "bg-[#3A3A3A] text-[#9CA3AF] cursor-not-allowed"
+                      }`}
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            )}
             
           </div>
         </div>
