@@ -5,6 +5,7 @@ import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase";
 import Rocket from "@/assets/icons/rocket-lunch 1.svg";
 import Crown from "@/assets/icons/crown 1.svg";
+import OtpModal from "@/components/OtpModal";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function Welcome() {
   const [popupType, setPopupType] = useState(""); 
   const [openError, setOpenError] = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
+  const [openOtp, setOpenOtp] = useState(false);
 
    const setFreeAccess = () => {
     localStorage.setItem(
@@ -125,39 +127,20 @@ export default function Welcome() {
 
             {/* Sign in */}
             <button
-            onClick={() => {
-              if (!email) {
-                setPopupType("emailRequired");
-                setOpenForgot(true);
-                return;
-              }
+              onClick={() => {
+                if (!email) {
+                  setPopupType("emailRequired");
+                  setOpenForgot(true);
+                  return;
+                }
 
-              setFreeAccess();
-            }}
-            className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
-          >
-            Sign in
-          </button>
-
-            {/* Divider */}
-            {/* <div className="flex items-center gap-3 text-sm text-gray-400">
-              <div className="flex-1 h-px bg-white/20" />
-              OR
-              <div className="flex-1 h-px bg-white/20" />
-            </div> */}
-
-            {/* Google */}
-            {/* <button
-              onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-3
-                        py-3 rounded-lg
-                        bg-white text-gray-800
-                        hover:bg-gray-100
-                        transition font-medium"
+                // 👉 ส่ง OTP + เปิด modal
+                setOpenOtp(true);
+              }}
+              className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
             >
-              <img src={googleIcon} alt="Google" className="w-5 h-5" />
-              <span>Sign in with Google</span>
-            </button> */}
+              Sign in
+            </button>
 
             <p className="text-sm text-center text-gray-400">
               Don&apos;t have an account?{" "}
@@ -191,8 +174,17 @@ export default function Welcome() {
           JOIN MEMBERSHIP
         </button>
       </div>
-
       </div>
+
+        {/* OTP Modal */}
+          <OtpModal
+            open={openOtp}
+            onClose={() => setOpenOtp(false)}
+            onSuccess={() => {
+              setOpenOtp(false);
+              setFreeAccess(); // หรือ navigate ตาม role
+            }}
+          />
 
       {/* ================= POPUP ================= */}
       {openForgot && (
@@ -228,6 +220,7 @@ export default function Welcome() {
             </>
           )}
 
+          {/* Popup for email required */}
           {popupType === "emailRequired" && (
             <>
               <h3 className="text-xl font-semibold mb-2 text-red-400">
@@ -250,7 +243,7 @@ export default function Welcome() {
           </div>
         </div>
       </div>
-)}
+    )}
     </div>
   );
 }
