@@ -81,12 +81,32 @@ export default function MemberRegister() {
   }, [status, selectedPayment]);
 
   const handleConfirmPayment = () => {
+    // 1. ดึงข้อมูล User Profile เดิมจาก LocalStorage (ถ้ามี)
+    const storedProfile = localStorage.getItem("userProfile");
+    let oldUnlockedItems = [];
+
+    if (storedProfile) {
+      try {
+        const parsedProfile = JSON.parse(storedProfile);
+        if (parsedProfile.unlockedItems && Array.isArray(parsedProfile.unlockedItems)) {
+          oldUnlockedItems = parsedProfile.unlockedItems;
+        }
+      } catch (error) {
+        console.error("Error parsing old profile:", error);
+      }
+    }
+
+    // 2. รวมรายการเดิม + รายการใหม่ (ใช้ Set เพื่อกำจัดตัวซ้ำ)
+    // เช่น ของเดิมมี [A, B] ของใหม่ซื้อ [B, C] -> ผลลัพธ์จะเป็น [A, B, C]
+    const mergedItems = [...new Set([...oldUnlockedItems, ...selectedTools])];
+
+    // 3. บันทึกกลับลงไป
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
         role: "membership",
         billingCycle,
-        unlockedItems: selectedTools,
+        unlockedItems: mergedItems, // ใช้รายการที่รวมเสร็จแล้ว
       })
     );
 
