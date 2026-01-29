@@ -170,7 +170,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-                        Join Membership
+                        Start Using Tool
                     </button>
                 </div>
              </div>
