@@ -2,17 +2,23 @@ import { useEffect, useRef, useState } from "react";
 
 export default function OtpModal({ open, onClose, onSuccess }) {
   const OTP_LENGTH = 6;
+
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
-  const [status, setStatus] = useState("idle"); 
-  // idle | error | success
-  const [timeLeft, setTimeLeft] = useState(300); // 5 นาที
+  const [status, setStatus] = useState("idle"); // idle | error | success
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [resent, setResent] = useState(false);
+  const [showTip, setShowTip] = useState(false);
 
   const inputsRef = useRef([]);
 
   /* ⏱ Timer */
   useEffect(() => {
     if (!open) return;
+
     setTimeLeft(300);
+    setResent(false);
+    setOtp(Array(OTP_LENGTH).fill(""));
+    setStatus("idle");
 
     const interval = setInterval(() => {
       setTimeLeft((t) => {
@@ -39,7 +45,6 @@ export default function OtpModal({ open, onClose, onSuccess }) {
       inputsRef.current[index + 1].focus();
     }
 
-    // Auto submit เมื่อครบ
     if (newOtp.every((n) => n !== "")) {
       verifyOtp(newOtp.join(""));
     }
@@ -51,13 +56,11 @@ export default function OtpModal({ open, onClose, onSuccess }) {
     }
   };
 
-  /* ✅ Fake Verify OTP */
+  /* ✅ Verify OTP */
   const verifyOtp = (code) => {
     if (code === "123456") {
       setStatus("success");
-      setTimeout(() => {
-        onSuccess();
-      }, 800);
+      setTimeout(onSuccess, 600);
     } else {
       setStatus("error");
     }
@@ -67,7 +70,8 @@ export default function OtpModal({ open, onClose, onSuccess }) {
     setOtp(Array(OTP_LENGTH).fill(""));
     setStatus("idle");
     setTimeLeft(300);
-    inputsRef.current[0].focus();
+    setResent(true);
+    inputsRef.current[0]?.focus();
   };
 
   if (!open) return null;
@@ -75,20 +79,41 @@ export default function OtpModal({ open, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-lg rounded-2xl
                       bg-slate-900 text-white p-6 shadow-xl">
+
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">
-            Fill your OTP
-          </h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white">
+        <div className="flex items-center gap-2 mb-4 relative">
+          <h3 className="text-xl font-semibold">Fill your OTP</h3>
+
+          {/* ❓ Tooltip */}
+          <div
+            className="relative"
+            onMouseEnter={() => setShowTip(true)}
+            onMouseLeave={() => setShowTip(false)}
+          >
+            <span className="w-5 h-5 rounded-full border border-white/40
+                             flex items-center justify-center text-xs cursor-pointer">
+              ?
+            </span>
+
+            {showTip && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+                w-72 p-3 rounded-lg text-xs text-gray-200
+                bg-slate-700 shadow-lg z-50
+              ">
+                OTP (One-Time Password) is a one-time code for authenticating online transactions. Delivered through email, it acts as a security key to verify your identity. Keep it secret and never share it with others.
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="ml-auto text-white/40 hover:text-white"
+          >
             ✕
           </button>
         </div>
@@ -104,14 +129,13 @@ export default function OtpModal({ open, onClose, onSuccess }) {
               onKeyDown={(e) => handleKeyDown(e, i)}
               maxLength={1}
               className={`
-                w-12 h-12 text-center text-xl font-bold rounded-md
-                outline-none
+                w-12 h-12 text-center text-xl font-bold rounded-md outline-none
                 ${
                   status === "error"
-                    ? "bg-red-800 text-white"
+                    ? "bg-red-800"
                     : status === "success"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-500 text-white"
+                    ? "bg-blue-600"
+                    : "bg-gray-500"
                 }
               `}
             />
@@ -121,20 +145,26 @@ export default function OtpModal({ open, onClose, onSuccess }) {
         {/* Timer */}
         <p
           className={`text-center text-sm mb-1
-          ${status === "error" ? "text-red-500" : "text-gray-300"}`}
+            ${status === "error" ? "text-red-500" : "text-gray-300"}`}
         >
-          {status === "error"
-            ? `Please fill again within 5 minutes (${(timeLeft / 60).toFixed(2)} min left)`
-            : `Please fill within 5 minutes (${(timeLeft / 60).toFixed(2)} min left)`}
+          Please fill within 5 minutes ({(timeLeft / 60).toFixed(2)} min left)
         </p>
 
-        <p className="text-center text-sm text-gray-400">
-          OTP had sent to your email
+        {/* OTP Sent Text */}
+        <p
+          className={`text-center text-sm
+            ${resent ? "text-sky-400" : "text-gray-300"}`}
+        >
+          {resent
+            ? "OTP had sent to your email again already"
+            : "OTP had sent to your email"}
         </p>
 
+        {/* Resend */}
         <p
           onClick={resendOtp}
-          className="text-center text-sm text-gray-500 mt-2 cursor-pointer hover:text-white"
+          className="text-center text-sm text-gray-500 mt-2
+                     cursor-pointer hover:text-white"
         >
           Don&apos;t get OTP? <span className="underline">Send again</span>
         </p>
