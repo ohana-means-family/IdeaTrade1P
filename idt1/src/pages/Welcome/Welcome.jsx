@@ -224,11 +224,11 @@ export default function Welcome() {
           {popupType === "emailRequired" && (
             <>
               <h3 className="text-xl font-semibold mb-2 text-red-400">
-                กรุณาใส่อีเมลก่อน
+                Please enter your email 
               </h3>
 
               <p className="text-sm text-gray-300 mb-5">
-                โปรดกรอกอีเมลของคุณก่อนทำการ Sign in
+                Please enter your email before signing in.
               </p>
             </>
           )}
