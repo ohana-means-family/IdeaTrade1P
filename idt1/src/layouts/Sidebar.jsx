@@ -153,7 +153,7 @@ export default function Sidebar({
         <nav className={`flex-1 overflow-y-auto no-scrollbar w-full ${collapsed ? "px-2 flex flex-col items-center gap-2" : "px-3 mt-4"}`}>
           
           {/* SEARCH BAR */}
-          <div className={`transition-all duration-300 mb-5 ${collapsed ? "w-10" : "w-full"}`}>
+          <div className={`transition-all duration-300 mb-2 ${collapsed ? "w-10" : "w-full"}`}>
             <div 
               // 🔥 ถ้ากดที่แว่นขยายตอนพับอยู่ ให้กาง Sidebar ออกเพื่อพิมพ์
               onClick={() => collapsed && setCollapsed(false)}
