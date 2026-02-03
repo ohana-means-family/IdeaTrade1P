@@ -266,15 +266,33 @@ export default function Sidebar({
                   ${active ? "bg-slate-800" : "hover:bg-white/5"}
                   ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
                 >
+                   {/* 🔥 ส่วนจัดการสี Text และ Icon (ปรับใหม่ตามเงื่อนไข) 🔥 */}
                    <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
-                     ${unlocked ? "text-yellow-400" : active ? "text-white" : "text-gray-400"}
+                     ${active 
+                        ? (unlocked ? "text-[#facc15]" : "text-white") // ถ้าเลือก: ซื้อแล้ว=ทองสว่าง, ยังไม่ซื้อ=ขาว(เดิม)
+                        : (unlocked ? "text-[#9E7F15]" : "text-gray-400") // ถ้าไม่เลือก: ซื้อแล้ว=ทองด้าน, ยังไม่ซื้อ=เทา
+                      }
                      ${collapsed ? "justify-center w-full" : ""}`}
                    >
                       <img 
                         src={getIcon(p.iconKey, active)} 
                         className="w-5 transition-all" 
                         alt={p.name}
-                        style={unlocked ? { filter: "brightness(0) saturate(100%) invert(88%) sepia(21%) saturate(6972%) hue-rotate(359deg) brightness(101%) contrast(104%)" } : {}}
+                        style={
+                          active 
+                            ? (unlocked 
+                                // Active + Unlocked = สีทองสว่าง (#facc15)
+                                ? { filter: "brightness(0) saturate(100%) invert(87%) sepia(26%) saturate(6838%) hue-rotate(359deg) brightness(101%) contrast(103%)" }
+                                // Active + Locked = สีขาว (Original)
+                                : { filter: "brightness(0) invert(1)" } 
+                              )
+                            : (unlocked 
+                                // Inactive + Unlocked = สีทองหม่นจากภาพ (#9E7F15)
+                                ? { filter: "brightness(0) saturate(100%) invert(49%) sepia(77%) saturate(1634%) hue-rotate(24deg) brightness(93%) contrast(89%)" } 
+                                // Inactive + Locked = สีเดิม (เทา)
+                                : {} 
+                              )
+                        }
                       />
                       {!collapsed && <span>{p.name}</span>}
                    </div>
