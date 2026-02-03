@@ -8,7 +8,14 @@ import TickIcon from "@/assets/icons/tick-01.png";
 import CancelIcon from "@/assets/icons/cancel-01.png";
 import VisaIcon from "@/assets/icons/Visa.png";
 import MastercardIcon from "@/assets/icons/Mastercard.png";
+import BankGray from "@/assets/icons/blbanktrasfer.png";
+import BankBlue from "@/assets/icons/bbanktransfer.png";
+import CardGray from "@/assets/icons/blcredit-card.png";
+import CardBlue from "@/assets/icons/bcredit-card.png";
+import QrGray from "@/assets/icons/blqr.png";
+import QrBlue from "@/assets/icons/bqr.png";
 
+// รายละเอียดเครื่องมือและราคา
 const TOOLS = [
   { id: "fortune", name: "หมอดูหุ้น", monthly: 2500, yearly: 25000 },
   { id: "petroleum", name: "Petroleum", monthly: 2500, yearly: 25000 },
@@ -19,6 +26,27 @@ const TOOLS = [
   { id: "bidask", name: "BidAsk", monthly: 2500, yearly: 25000 },
   { id: "tickmatch", name: "TickMatch", monthly: 2500, yearly: 25000 },
   { id: "dr", name: "DR", monthly: 2500, yearly: 25000 },
+];
+
+const paymentMethods = [
+  {
+    id: "bank",
+    label: "Bank Transfer",
+    icon: BankBlue,
+    activeIcon: BankGray,
+  },
+  {
+    id: "card",
+    label: "Credit Card",
+    icon: CardBlue,
+    activeIcon: CardGray,
+  },
+  {
+    id: "promptpay",
+    label: "PromptPay",
+    icon: QrBlue,
+    activeIcon: QrGray,
+  },
 ];
 
 export default function MemberRegister() {
@@ -116,12 +144,6 @@ export default function MemberRegister() {
     window.location.href = "/dashboard";
   };
 
-  const paymentMethods = [
-    { id: "bank", label: "Bank Account" },
-    { id: "promptpay", label: "PromptPay" },
-    { id: "card", label: "Credit / Debit Card" },
-  ];
-
   const months = Array.from({ length: 12 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
@@ -194,24 +216,43 @@ export default function MemberRegister() {
 
           {/* Payment Method */}
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
-            <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {paymentMethods.map((m) => (
-                <div
+          <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
+
+          <div className="grid grid-cols-3 gap-3">
+            {paymentMethods.map((m) => {
+              const active = selectedPayment === m.id;
+
+              return (
+                <button
                   key={m.id}
                   onClick={() => setSelectedPayment(m.id)}
-                  className={`cursor-pointer h-16 rounded-xl border flex items-center justify-center text-sm
+                  className={`
+                    h-20 rounded-xl border flex flex-col items-center justify-center gap-1
+                    transition-all duration-200
                     ${
-                      selectedPayment === m.id
-                        ? "border-[#0E6BA8] bg-[#102B46]"
-                        : "border-[#1F3354]"
-                    }`}
+                      active
+                        ? "bg-[#0B2A4E] border-[#0E6BA8]"
+                        : "bg-[#E5E7EB] border-transparent"
+                    }
+                  `}
                 >
-                  {m.label}
-                </div>
-              ))}
-            </div>
+                  <img
+                    src={active ? m.activeIcon : m.icon}
+                    alt={m.label}
+                    className="w-12 h-12"
+                  />
+                  <span
+                    className={`text-xs font-medium ${
+                      active ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {m.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
           {/* Summary */}
           <div className="bg-[#0F1B2D] p-6 rounded-xl">
