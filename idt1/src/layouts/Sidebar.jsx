@@ -176,10 +176,10 @@ export default function Sidebar({
             <div 
               onClick={() => collapsed && setCollapsed(false)}
               className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all 
-              ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-3"}`}
+              ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-4"}`}
             >
               <svg 
-                className={`w-4 h-4 text-gray-500 shrink-0 ${!collapsed && "mr-2"}`} 
+                className={`w-4 h-4 text-gray-500 shrink-0 ${!collapsed && "mr-4"}`} 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -266,11 +266,14 @@ export default function Sidebar({
                   ${active ? "bg-slate-800" : "hover:bg-white/5"}
                   ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
                 >
-                   {/* 🔥 ส่วนจัดการสี Text และ Icon (ปรับใหม่ตามเงื่อนไข) 🔥 */}
+                   {/* 🔥 ส่วนจัดการสี Text และ Icon 🔥 */}
                    <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
                      ${active 
-                        ? (unlocked ? "text-[#facc15]" : "text-white") // ถ้าเลือก: ซื้อแล้ว=ทองสว่าง, ยังไม่ซื้อ=ขาว(เดิม)
-                        : (unlocked ? "text-[#9E7F15]" : "text-gray-400") // ถ้าไม่เลือก: ซื้อแล้ว=ทองด้าน, ยังไม่ซื้อ=เทา
+                        // ถ้าเลือก: (ซื้อแล้ว ? สีทองสว่าง : สีขาว)
+                        ? (unlocked ? "text-[#ffcc00]" : "text-white") 
+                        
+                        // ถ้าไม่เลือก: (ซื้อแล้ว ? สีใหม่ #977100 : สีเทา)
+                        : (unlocked ? "text-[#977100]" : "text-gray-400")
                       }
                      ${collapsed ? "justify-center w-full" : ""}`}
                    >
@@ -287,8 +290,8 @@ export default function Sidebar({
                                 : { filter: "brightness(0) invert(1)" } 
                               )
                             : (unlocked 
-                                // Inactive + Unlocked = สีทองหม่นจากภาพ (#9E7F15)
-                                ? { filter: "brightness(0) saturate(100%) invert(49%) sepia(77%) saturate(1634%) hue-rotate(24deg) brightness(93%) contrast(89%)" } 
+                                // Inactive + Unlocked = สีทองใหม่ (#977100)
+                                ? { filter: "brightness(0) saturate(100%) invert(43%) sepia(70%) saturate(2264%) hue-rotate(24deg) brightness(92%) contrast(101%)" } 
                                 // Inactive + Locked = สีเดิม (เทา)
                                 : {} 
                               )

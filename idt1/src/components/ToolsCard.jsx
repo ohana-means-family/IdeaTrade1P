@@ -16,8 +16,8 @@ export default function ToolsCard({
   /* ===== Card Background ===== */
   const cardBackground =
     project.premium && isUnlocked
-      ? "bg-[#3e3205]"
-      : "bg-[#606060]";
+      ? "bg-[#403000]"
+      : "bg-[#666666]";
 
   /* ===== Icon Style ===== */
   const iconStyle = project.external
