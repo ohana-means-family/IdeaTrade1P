@@ -79,6 +79,9 @@ export default function Sidebar({
   const navigate = useNavigate();
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
+  
+  // 🔥 1. เพิ่ม State สำหรับเก็บคำค้นหา
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     try {
@@ -96,16 +99,20 @@ export default function Sidebar({
   const handleSignUp = () => navigate("/register");
   const handleSignIn = () => navigate("/welcome");
 
+  // 🔥 2. สร้าง Logic กรอง Project ตามคำค้นหา (Case Insensitive)
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
-      {/* 🔥 เพิ่ม Style ตรงนี้เพื่อซ่อน Scrollbar แต่ยังเลื่อนได้ 🔥 */}
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
         .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
 
@@ -127,24 +134,55 @@ export default function Sidebar({
         </div>
 
         {/* ================= STATUS BADGES ================= */}
-        <div className={`flex shrink-0 transition-all duration-300 ${collapsed ? "flex-col gap-1 w-full px-2 mb-4" : "flex-row gap-2 px-6 mb-2"}`}>
+        <div className={`flex shrink-0 transition-all duration-300 ${collapsed ? "flex-col gap-1 w-full px-2 mb-3" : "flex-row gap-2 px-6 mb-0"}`}>
+           <div className={`font-bold rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center transition-all whitespace-nowrap overflow-hidden
+             ${collapsed ? "text-[8px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}
+           >
+               {collapsed ? "ONLINE" : "STATUS: ONLINE"}
+           </div>
+
            <div className={`font-bold rounded border flex items-center justify-center transition-all whitespace-nowrap overflow-hidden
              ${isMember ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"}
              ${collapsed ? "text-[8px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}
            >
                {collapsed ? (isMember ? "MEMBER" : "FREE") : (isMember ? "MEMBERSHIP" : "FREE ACCESS")}
            </div>
-           
-           <div className={`font-bold rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center transition-all whitespace-nowrap overflow-hidden
-             ${collapsed ? "text-[8px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}
-           >
-               {collapsed ? "ONLINE" : "STATUS: ONLINE"}
-           </div>
         </div>
 
-        {/* ================= MENU ITEMS (ใส่ class no-scrollbar) ================= */}
+        {/* ================= MENU ITEMS ================= */}
         <nav className={`flex-1 overflow-y-auto no-scrollbar w-full ${collapsed ? "px-2 flex flex-col items-center gap-2" : "px-3 mt-4"}`}>
           
+          {/* SEARCH BAR */}
+          <div className={`transition-all duration-300 mb-5 ${collapsed ? "w-10" : "w-full"}`}>
+            <div 
+              // 🔥 ถ้ากดที่แว่นขยายตอนพับอยู่ ให้กาง Sidebar ออกเพื่อพิมพ์
+              onClick={() => collapsed && setCollapsed(false)}
+              className={`relative flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all 
+              ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-3"}`}
+              title="Search"
+            >
+              <svg 
+                className={`w-4 h-4 text-gray-500 shrink-0 ${!collapsed && "mr-2"}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+
+              {!collapsed && (
+                <input
+                  type="text"
+                  placeholder="Search Something..."
+                  // 🔥 3. ผูกค่า Value และ OnChange
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-gray-300 text-[13px] placeholder-gray-600 focus:outline-none"
+                />
+              )}
+            </div>
+          </div>
+
           {/* Preview Button */}
           <button
             onClick={() => setActivePage("preview-projects")}
@@ -153,8 +191,19 @@ export default function Sidebar({
             ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
             title="Preview Projects"
           >
-            <img src={getIcon("preview", activePage === "preview-projects")} className="w-5 pointer-events-none" alt="preview" />
-            {!collapsed && <span className="pointer-events-none">Preview Projects</span>}
+            <div className="relative flex items-center justify-center pointer-events-none">
+                <img src={getIcon("preview", activePage === "preview-projects")} className="w-5" alt="preview" />
+                {collapsed && (
+                   <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00ff47] rounded-full border-2 border-[#15181e]"></div>
+                )}
+            </div>
+
+            {!collapsed && (
+              <>
+                <span className="pointer-events-none">Preview Projects</span>
+                <div className="ml-auto w-2 h-2 bg-[#00ff47] rounded-full shadow-[0_0_5px_#00ff47]"></div>
+              </>
+            )}
           </button>
 
           {/* Beta Label */}
@@ -172,8 +221,6 @@ export default function Sidebar({
                <img src={getIcon("mit", activePage === "mit")} className="w-5" alt="mit" />
                {!collapsed && <span>MIT</span>}
              </div>
-             
-             {/* Free Badge */}
              {collapsed ? (
                <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-400 pointer-events-none"></span>
              ) : (
@@ -184,37 +231,42 @@ export default function Sidebar({
           {/* Member Label */}
           {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Membership Tools</div>}
 
-          {/* Project List */}
-          {projects.map((p) => {
-            const active = activePage === p.id;
-            const unlocked = unlockedList.includes(p.id);
+          {/* 🔥 4. ใช้ filteredProjects ในการ Map แสดงผลแทน projects ตัวเดิม */}
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((p) => {
+              const active = activePage === p.id;
+              const unlocked = unlockedList.includes(p.id);
 
-            return (
-              <button
-                key={p.id}
-                onClick={() => { setActivePage(p.id); if(openProject) openProject(p); }}
-                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer
-                ${active ? "bg-slate-800" : "hover:bg-white/5"}
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
-                title={p.name}
-              >
-                 <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
-                   ${unlocked ? "text-yellow-400" : active ? "text-white" : "text-gray-400"}
-                   ${collapsed ? "justify-center w-full" : ""}`}
-                 >
-                    <img 
-                      src={getIcon(p.iconKey, active)} 
-                      className="w-5 transition-all" 
-                      alt={p.name}
-                      style={unlocked ? { filter: "brightness(0) saturate(100%) invert(88%) sepia(21%) saturate(6972%) hue-rotate(359deg) brightness(101%) contrast(104%)" } : {}}
-                    />
-                    {!collapsed && <span>{p.name}</span>}
-                 </div>
-                 
-                 {!collapsed && <CrownIcon color="#facc15" />}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => { setActivePage(p.id); if(openProject) openProject(p); }}
+                  className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer
+                  ${active ? "bg-slate-800" : "hover:bg-white/5"}
+                  ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
+                  title={p.name}
+                >
+                   <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
+                     ${unlocked ? "text-yellow-400" : active ? "text-white" : "text-gray-400"}
+                     ${collapsed ? "justify-center w-full" : ""}`}
+                   >
+                      <img 
+                        src={getIcon(p.iconKey, active)} 
+                        className="w-5 transition-all" 
+                        alt={p.name}
+                        style={unlocked ? { filter: "brightness(0) saturate(100%) invert(88%) sepia(21%) saturate(6972%) hue-rotate(359deg) brightness(101%) contrast(104%)" } : {}}
+                      />
+                      {!collapsed && <span>{p.name}</span>}
+                   </div>
+                   
+                   {!collapsed && <CrownIcon color="#facc15" />}
+                </button>
+              );
+            })
+          ) : (
+            // 🔥 แสดงข้อความเมื่อหาไม่เจอ
+            !collapsed && <div className="text-gray-500 text-[12px] text-center mt-4">No projects found</div>
+          )}
 
           {/* Account Label */}
           {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
@@ -243,7 +295,6 @@ export default function Sidebar({
         </nav>
 
         {/* ================= FOOTER ================= */}
-        {/* ใช้ justify-center เพื่อจัดกลาง และ pb-4 เพื่อดันขึ้นจากขอบล่างนิดนึง */}
         <div className={`px-2 pb-2 w-full flex justify-center shrink-0`}>
           <button
             onClick={() => setActivePage("premiumtools")}
@@ -253,7 +304,6 @@ export default function Sidebar({
               : "w-full h-11 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-semibold gap-2"}`}
             title="Join Membership"
           >
-            {/* สีไอคอนสีดำ เพื่อให้ตัดกับพื้นหลังสีทอง */}
             <CrownIcon color="#000" />
             {!collapsed && <span className="whitespace-nowrap pointer-events-none">Join Membership</span>}
           </button>
