@@ -29,24 +29,9 @@ const TOOLS = [
 ];
 
 const paymentMethods = [
-  {
-    id: "bank",
-    label: "Bank Transfer",
-    icon: BankBlue,
-    activeIcon: BankGray,
-  },
-  {
-    id: "card",
-    label: "Credit Card",
-    icon: CardBlue,
-    activeIcon: CardGray,
-  },
-  {
-    id: "promptpay",
-    label: "PromptPay",
-    icon: QrBlue,
-    activeIcon: QrGray,
-  },
+  { id: "bank", label: "Bank Transfer", icon: BankBlue, activeIcon: BankGray },
+  { id: "card", label: "Credit Card", icon: CardBlue, activeIcon: CardGray },
+  { id: "promptpay", label: "PromptPay", icon: QrBlue, activeIcon: QrGray },
 ];
 
 export default function MemberRegister() {
@@ -165,6 +150,9 @@ const totalPrice = selectedTools.reduce((sum, t) => {
     new Date().getFullYear() + i
   );
 
+  const hasMonthly = selectedTools.some(t => t.billing === "monthly");
+  const hasYearly = selectedTools.some(t => t.billing === "yearly");
+
   /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white flex items-center justify-center">
@@ -276,70 +264,100 @@ const totalPrice = selectedTools.reduce((sum, t) => {
           <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
           {/* MONTHLY */}
-          {selectedTools.some(t => t.billing === "monthly") && (
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
+          {hasMonthly && (
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
 
-              {selectedTools
-                .filter(t => t.billing === "monthly")
-                .map((t) => {
-                  const tool = TOOLS.find(x => x.id === t.id);
-                  return (
-                    <div
-                      key={`${t.id}-m`}
-                      className="flex justify-between text-sm text-white mb-1"
-                    >
-                      <span>
-                        {tool.name}
-                        <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
-                      </span>
-                      <span>{tool.monthly.toLocaleString()} ฿</span>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+            {selectedTools
+              .filter(t => t.billing === "monthly")
+              .map((t) => {
+                const tool = TOOLS.find(x => x.id === t.id);
+                return (
+                  <div
+                    key={`${t.id}-m`}
+                    className="flex justify-between text-sm text-white mb-1"
+                  >
+                    <span>
+                      {tool.name}
+                      <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
+                    </span>
+                    <span>{tool.monthly.toLocaleString()} ฿</span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
 
+        {hasMonthly && hasYearly && (
+          <div className="border-t border-[#1F3354] my-4" />
+        )}
+        
           {/* YEARLY */}
-          {selectedTools.some(t => t.billing === "yearly") && (
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
+          {hasYearly && (
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
 
-              {selectedTools
-                .filter(t => t.billing === "yearly")
-                .map((t) => {
-                  const tool = TOOLS.find(x => x.id === t.id);
-                  return (
-                    <div
-                      key={`${t.id}-y`}
-                      className="flex justify-between text-sm text-white mb-1"
-                    >
-                      <span>
-                        {tool.name}
-                        <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
-                      </span>
-                      <span>{tool.yearly.toLocaleString()} ฿</span>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+            {selectedTools
+              .filter(t => t.billing === "yearly")
+              .map((t) => {
+                const tool = TOOLS.find(x => x.id === t.id);
+                return (
+                  <div
+                    key={`${t.id}-y`}
+                    className="flex justify-between text-sm text-white mb-1"
+                  >
+                    <span>
+                      {tool.name}
+                      <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
+                    </span>
+                    <span>{tool.yearly.toLocaleString()} ฿</span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
 
           <div className="border-t border-[#1F3354] my-4" />
 
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>{totalPrice.toLocaleString()} ฿</span>
+          {/* TOTAL AMOUNT */}
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">
+              TOTAL AMOUNT
+            </p>
+
+            <div className="flex items-end justify-between">
+              <span className="text-4xl font-bold text-[#0EA5E9]">
+                {totalPrice.toLocaleString()}฿
+              </span>
+
+              <div className="text-xs text-[#9FB3C8] text-right leading-tight">
+                <p>Charged annually</p>
+                <p>Cancel anytime</p>
+              </div>
+            </div>
           </div>
 
+          {/* ACTION */}
           <button
             disabled={!selectedPayment || selectedTools.length === 0}
             onClick={() => setShowModal(true)}
-            className="mt-5 w-full h-12 rounded-lg bg-[#0E6BA8] disabled:bg-[#1F3354]"
+            className="w-full h-12 rounded-lg bg-[#0EA5E9] text-black font-semibold disabled:bg-[#1F3354]"
           >
-            Confirm Payment
+            Complete Purchase
+          </button>
+
+          {/* Cancel */}
+          <button
+            onClick={() => {
+              setSelectedTools([]);
+              setSelectedPayment(null);
+            }}
+            className="mt-3 w-full text-sm text-[#9FB3C8] hover:text-white transition"
+          >
+            Cancel
           </button>
         </div>
+
         </div>
       </div>
 
