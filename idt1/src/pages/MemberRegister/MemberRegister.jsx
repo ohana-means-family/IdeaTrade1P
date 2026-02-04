@@ -154,8 +154,9 @@ export default function MemberRegister() {
 
   /* ================= UI ================= */
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white p-8">
-      <div className="max-w-[1440px] mx-auto grid grid-cols-12 gap-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white flex items-center justify-center">
+      <div className="w-full max-w-[1440px] px-8">
+        <div className="grid grid-cols-12 gap-6">
 
         {/* LEFT */}
         <div className="col-span-8 space-y-6">
@@ -184,14 +185,14 @@ export default function MemberRegister() {
           {/* Tools */}
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
             <h2 className="text-xl font-semibold mb-4">Select Your Tools</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {TOOLS.map((tool) => {
                 const active = selectedTools.includes(tool.id);
                 return (
                   <div
                     key={tool.id}
                     onClick={() => toggleTool(tool.id)}
-                    className={`cursor-pointer px-5 py-4 rounded-xl border flex justify-between
+                    className={`cursor-pointer px-5 py-4 rounded-xl border flex items-center gap-2
                       ${
                         active
                           ? "border-[#0E6BA8] bg-[#102B46]"
@@ -199,7 +200,8 @@ export default function MemberRegister() {
                       }`}
                   >
                     <span>{tool.name}</span>
-                    <span className="text-sm text-[#9FB3C8]">
+
+                    <span className="ml-auto text-sm text-[#9FB3C8]">
                       {billingCycle === "monthly"
                         ? `${tool.monthly}฿/m`
                         : `${tool.yearly}฿/y`}
@@ -633,6 +635,7 @@ export default function MemberRegister() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
