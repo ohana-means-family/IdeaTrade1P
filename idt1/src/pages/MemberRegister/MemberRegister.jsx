@@ -76,10 +76,22 @@ export default function MemberRegister() {
   };
 
   const toggleTool = (id) => {
-    setSelectedTools((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+  setSelectedTools((prev) => {
+    const exists = prev.find(
+      (t) => t.id === id && t.billing === billingCycle
     );
-  };
+
+    if (exists) {
+      // ลบเฉพาะ tool + billing นั้น
+      return prev.filter(
+        (t) => !(t.id === id && t.billing === billingCycle)
+      );
+    }
+
+    // เพิ่มใหม่ตาม billing ปัจจุบัน
+    return [...prev, { id, billing: billingCycle }];
+  });
+};
 
   const handleCopyAccount = (text) => {
     navigator.clipboard.writeText(text);
@@ -93,11 +105,12 @@ export default function MemberRegister() {
     setSlipImage(URL.createObjectURL(file));
   };
 
-  const totalPrice = selectedTools.reduce((sum, id) => {
-    const tool = TOOLS.find((t) => t.id === id);
-    if (!tool) return sum;
-    return sum + (billingCycle === "monthly" ? tool.monthly : tool.yearly);
-  }, 0);
+const totalPrice = selectedTools.reduce((sum, t) => {
+  const tool = TOOLS.find(x => x.id === t.id);
+  if (!tool) return sum;
+
+  return sum + (t.billing === "monthly" ? tool.monthly : tool.yearly);
+}, 0);
 
   useEffect(() => {
     if (selectedPayment === "promptpay" && status === "success") {
@@ -187,7 +200,9 @@ export default function MemberRegister() {
             <h2 className="text-xl font-semibold mb-4">Select Your Tools</h2>
             <div className="grid grid-cols-3 gap-4">
               {TOOLS.map((tool) => {
-                const active = selectedTools.includes(tool.id);
+                const active = selectedTools.some(
+                (t) => t.id === tool.id && t.billing === billingCycle
+              );
                 return (
                   <div
                     key={tool.id}
@@ -256,38 +271,75 @@ export default function MemberRegister() {
           </div>
         </div>
 
-          {/* Summary */}
-          <div className="bg-[#0F1B2D] p-6 rounded-xl">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+        {/* Summary */}
+        <div className="bg-[#0F1B2D] p-6 rounded-xl">
+          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
-            {selectedTools.map((id) => {
-              const t = TOOLS.find((x) => x.id === id);
-              return (
-                <div key={id} className="flex justify-between text-sm mb-2">
-                  <span>{t.name}</span>
-                  <span>
-                    {billingCycle === "monthly" ?
-                      t.monthly : t.yearly}฿
-                  </span>
-                </div>
-              );
-            })}
+          {/* MONTHLY */}
+          {selectedTools.some(t => t.billing === "monthly") && (
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
 
-            <div className="border-t border-[#1F3354] my-4" />
-
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>{totalPrice.toLocaleString()} ฿</span>
+              {selectedTools
+                .filter(t => t.billing === "monthly")
+                .map((t) => {
+                  const tool = TOOLS.find(x => x.id === t.id);
+                  return (
+                    <div
+                      key={`${t.id}-m`}
+                      className="flex justify-between text-sm text-white mb-1"
+                    >
+                      <span>
+                        {tool.name}
+                        <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
+                      </span>
+                      <span>{tool.monthly.toLocaleString()} ฿</span>
+                    </div>
+                  );
+                })}
             </div>
+          )}
 
-            <button
-              disabled={!selectedPayment || selectedTools.length === 0}
-              onClick={() => setShowModal(true)}
-              className="mt-5 w-full h-12 rounded-lg bg-[#0E6BA8] disabled:bg-[#1F3354]"
-            >
-              Confirm Payment
-            </button>
+          {/* YEARLY */}
+          {selectedTools.some(t => t.billing === "yearly") && (
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
+
+              {selectedTools
+                .filter(t => t.billing === "yearly")
+                .map((t) => {
+                  const tool = TOOLS.find(x => x.id === t.id);
+                  return (
+                    <div
+                      key={`${t.id}-y`}
+                      className="flex justify-between text-sm text-white mb-1"
+                    >
+                      <span>
+                        {tool.name}
+                        <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
+                      </span>
+                      <span>{tool.yearly.toLocaleString()} ฿</span>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          <div className="border-t border-[#1F3354] my-4" />
+
+          <div className="flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span>{totalPrice.toLocaleString()} ฿</span>
           </div>
+
+          <button
+            disabled={!selectedPayment || selectedTools.length === 0}
+            onClick={() => setShowModal(true)}
+            className="mt-5 w-full h-12 rounded-lg bg-[#0E6BA8] disabled:bg-[#1F3354]"
+          >
+            Confirm Payment
+          </button>
+        </div>
         </div>
       </div>
 
