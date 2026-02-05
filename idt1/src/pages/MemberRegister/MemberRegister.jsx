@@ -159,11 +159,11 @@ const handleConfirmPayment = () => {
   /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1224] to-[#060B18] text-white flex items-center justify-center">
-      <div className="w-full max-w-[1440px] px-8">
-        <div className="grid grid-cols-12 gap-6">
+      <div className="w-full max-w-[1200px] px-6 mx-auto">
+        <div className="grid grid-cols-12 gap-x-10 gap-y-6">
 
         {/* LEFT */}
-        <div className="col-span-8 space-y-6">
+        <div className="col-span-7 space-y-6">
           <h1 className="text-4xl font-bold">Subscription & Checkout</h1>
 
           {/* Billing */}
@@ -220,7 +220,7 @@ const handleConfirmPayment = () => {
         </div>
 
         {/* RIGHT */}
-        <div className="col-span-4 space-y-4">
+        <div className="col-span-5 space-y-4">
 
           {/* Payment Method */}
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
