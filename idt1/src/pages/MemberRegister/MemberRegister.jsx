@@ -271,23 +271,26 @@ const handleConfirmPayment = () => {
           <div className="mb-4">
             <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
 
-            {selectedTools
-              .filter(t => t.billing === "monthly")
-              .map((t) => {
-                const tool = TOOLS.find(x => x.id === t.id);
-                return (
-                  <div
-                    key={`${t.id}-m`}
-                    className="flex justify-between text-sm text-white mb-1"
-                  >
-                    <span>
-                      {tool.name}
-                      <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
-                    </span>
-                    <span>{tool.monthly.toLocaleString()} ฿</span>
-                  </div>
-                );
-              })}
+            {/* ✅ Scroll container */}
+            <div className="h-[120px] overflow-y-auto pr-2 space-y-1">
+              {selectedTools
+                .filter(t => t.billing === "monthly")
+                .map((t) => {
+                  const tool = TOOLS.find(x => x.id === t.id);
+                  return (
+                    <div
+                      key={`${t.id}-m`}
+                      className="flex justify-between text-sm text-white"
+                    >
+                      <span>
+                        {tool.name}
+                        <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
+                      </span>
+                      <span>{tool.monthly.toLocaleString()} ฿</span>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
 
@@ -300,23 +303,26 @@ const handleConfirmPayment = () => {
           <div className="mb-4">
             <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
 
-            {selectedTools
-              .filter(t => t.billing === "yearly")
-              .map((t) => {
-                const tool = TOOLS.find(x => x.id === t.id);
-                return (
-                  <div
-                    key={`${t.id}-y`}
-                    className="flex justify-between text-sm text-white mb-1"
-                  >
-                    <span>
-                      {tool.name}
-                      <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
-                    </span>
-                    <span>{tool.yearly.toLocaleString()} ฿</span>
-                  </div>
-                );
-              })}
+            {/* ✅ Scroll container */}
+            <div className="h-[120px] overflow-y-auto pr-2 space-y-1">
+              {selectedTools
+                .filter(t => t.billing === "yearly")
+                .map((t) => {
+                  const tool = TOOLS.find(x => x.id === t.id);
+                  return (
+                    <div
+                      key={`${t.id}-y`}
+                      className="flex justify-between text-sm text-white"
+                    >
+                      <span>
+                        {tool.name}
+                        <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
+                      </span>
+                      <span>{tool.yearly.toLocaleString()} ฿</span>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
 
