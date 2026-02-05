@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.sub-page-container {
+  background-color: #ffffff; /* พื้นหลังขาวตามรูป */
+  min-height: 100vh;
+  padding: 40px 60px;
+  font-family: 'Inter', sans-serif;
+  color: #000000; /* ตัวหนังสือดำ */
+}
+
+/* --- Header --- */
+.sub-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.sub-summary {
+  color: #4b5563;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.bold {
+  font-weight: 700;
+  color: #000;
+}
+
+.ml-4 {
+  margin-left: 20px;
+}
+
+/* --- Toolbar --- */
+.sub-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.search-wrapper {
+  background-color: #cccccc; /* สีเทาเข้มขึ้นหน่อยตามรูป */
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 4px;
+  width: 70%;
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  margin-left: 10px;
+  width: 100%;
+  font-size: 14px;
+  color: #374151;
+}
+
+.search-input::placeholder {
+  color: #6b7280;
+}
+
+.btn-add-tool {
+  background-color: #111827; /* ปุ่มดำ */
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* --- Table Grid Layout --- */
+.sub-table-header, .sub-card-row {
+  display: grid;
+  /* กำหนดขนาดแต่ละคอลัมน์ให้เหมือนรูป */
+  grid-template-columns: 1.5fr 1fr 2fr 1fr 1fr 1.5fr; 
+  align-items: center;
+  padding: 0 20px;
+}
+
+.sub-table-header {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  text-transform: capitalize;
+}
+
+/* --- Sections & Cards --- */
+.section-title {
+  font-size: 12px;
+  color: #374151;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 20px 0 10px 0;
+  letter-spacing: 0.5px;
+}
+
+.sub-card-row {
+  background-color: #c4c4c4; /* สีเทาพื้นหลัง Card ตามรูป */
+  height: 60px; /* ความสูง Card */
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+/* --- Columns Specifics --- */
+.font-bold {
+  font-weight: 700;
+}
+
+/* Status Styling */
+.status-indicator {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.status-indicator svg {
+  margin-top: 2px;
+}
+
+.status-indicator div {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.status-date {
+  font-size: 11px;
+  color: #555;
+}
+
+/* Action Buttons */
+.btn-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  text-decoration: underline;
+  color: #000;
+}
+
+.btn-action.renew {
+  font-weight: 700;
+}
+
+.btn-action.pay {
+  font-weight: 400;
+}

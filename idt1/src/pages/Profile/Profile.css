@@ -1,0 +1,149 @@
+/* Import Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.profile-page-container {
+  padding: 40px 60px; /* ขยาย padding ให้ดูโล่งเหมือนรูป */
+  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+  max-width: 1200px;
+}
+
+/* --- Header --- */
+.account-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+/* --- Tabs (Minimalist) --- */
+.profile-tabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #334155;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  padding-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: #ffffff;
+  font-weight: 600;
+  border-bottom: 2px solid #3b82f6;
+}
+
+/* --- Status Section --- */
+.status-section {
+  margin-bottom: 40px;
+}
+
+.verified-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.last-login {
+  color: #9ca3af; /* สีเทาจางๆ */
+  font-size: 14px;
+}
+
+/* --- Form Layout (2 Columns) --- */
+.form-grid {
+  display: flex;
+  gap: 80px; /* ระยะห่างระหว่างคอลัมน์ซ้าย-ขวา ตามรูป */
+  margin-bottom: 40px;
+}
+
+.form-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 30px; /* ระยะห่างระหว่าง Firstname กับ Email */
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-group label {
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+/* --- Custom Input Style (ตามรูป) --- */
+.custom-input {
+  background-color: #e5e7eb; /* สีเทาอ่อน */
+  border: none;
+  border-radius: 6px;
+  height: 48px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: #000000; /* ตัวหนังสือสีดำ */
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* --- Buttons --- */
+.button-group {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-edit {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-edit:hover {
+  opacity: 0.9;
+}
+
+.btn-save {
+  background-color: #60a5fa; /* สีฟ้า */
+  color: #ffffff;
+  border: none;
+  padding: 10px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-save:hover {
+  background-color: #3b82f6;
+}
+
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
