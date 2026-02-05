@@ -1,5 +1,7 @@
 // src/pages/MemberRegister/MemberRegister.jsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ เพิ่ม useNavigate
+
 import KbankIcon from "@/assets/icons/Kbank.png";
 import CloseIcon from "@/assets/icons/Close_Circle.png";
 import CopyIcon from "@/assets/icons/copy.png";
@@ -35,11 +37,12 @@ const paymentMethods = [
 ];
 
 export default function MemberRegister() {
+  const navigate = useNavigate(); // ✅ ใช้ Hook
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedTools, setSelectedTools] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [status, setStatus] = useState("idle"); 
+  const [status, setStatus] = useState("idle");
 
   // 🔹 Credit / Debit Card
   const [cardType, setCardType] = useState("visa");
@@ -52,6 +55,7 @@ export default function MemberRegister() {
   // 🔹 Bank Account only
   const [slipImage, setSlipImage] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [isEditSummary, setIsEditSummary] = useState(false); // ✅ state สำหรับปุ่มแก้ไข
 
   /* ================= FUNCTIONS ================= */
   const closeModal = () => {
@@ -61,27 +65,28 @@ export default function MemberRegister() {
   };
 
   const toggleTool = (id) => {
-  setSelectedTools((prev) => {
-    const exists = prev.find(
-      (t) => t.id === id && t.billing === billingCycle
-    );
-
-    if (exists) {
-      // ลบเฉพาะ tool + billing นั้น
-      return prev.filter(
-        (t) => !(t.id === id && t.billing === billingCycle)
+    setSelectedTools((prev) => {
+      const exists = prev.find(
+        (t) => t.id === id && t.billing === billingCycle
       );
-    }
 
-    // เพิ่มใหม่ตาม billing ปัจจุบัน
-    return [...prev, { id, billing: billingCycle }];
-  });
+      if (exists) {
+        // ลบเฉพาะ tool + billing นั้น
+        return prev.filter(
+          (t) => !(t.id === id && t.billing === billingCycle)
+        );
+      }
+
+      // เพิ่มใหม่ตาม billing ปัจจุบัน
+      return [...prev, { id, billing: billingCycle }];
+    });
+  };
+
   const removeTool = (id, billing) => {
-  setSelectedTools(prev =>
-    prev.filter(t => !(t.id === id && t.billing === billing))
-  );
-};
-};
+    setSelectedTools(prev =>
+      prev.filter(t => !(t.id === id && t.billing === billing))
+    );
+  };
 
   const handleCopyAccount = (text) => {
     navigator.clipboard.writeText(text);
@@ -95,12 +100,12 @@ export default function MemberRegister() {
     setSlipImage(URL.createObjectURL(file));
   };
 
-const totalPrice = selectedTools.reduce((sum, t) => {
-  const tool = TOOLS.find(x => x.id === t.id);
-  if (!tool) return sum;
+  const totalPrice = selectedTools.reduce((sum, t) => {
+    const tool = TOOLS.find(x => x.id === t.id);
+    if (!tool) return sum;
 
-  return sum + (t.billing === "monthly" ? tool.monthly : tool.yearly);
-}, 0);
+    return sum + (t.billing === "monthly" ? tool.monthly : tool.yearly);
+  }, 0);
 
   useEffect(() => {
     if (selectedPayment === "promptpay" && status === "success") {
@@ -112,42 +117,72 @@ const totalPrice = selectedTools.reduce((sum, t) => {
     }
   }, [status, selectedPayment]);
 
-const handleConfirmPayment = () => {
-    // 1. ดึงข้อมูล User Profile เดิมจาก LocalStorage (ถ้ามี)
+  /* ================= 🔥 HANDLE PAYMENT (UPDATED) 🔥 ================= */
+  const handleConfirmPayment = () => {
+    // 1. ดึงข้อมูล User Profile เดิมจาก LocalStorage
     const storedProfile = localStorage.getItem("userProfile");
+    let parsedProfile = {};
     let oldUnlockedItems = [];
+    let oldSubscriptions = [];
 
     if (storedProfile) {
       try {
-        const parsedProfile = JSON.parse(storedProfile);
-        if (parsedProfile.unlockedItems && Array.isArray(parsedProfile.unlockedItems)) {
-          oldUnlockedItems = parsedProfile.unlockedItems;
-        }
+        parsedProfile = JSON.parse(storedProfile);
+        oldUnlockedItems = parsedProfile.unlockedItems || [];
+        oldSubscriptions = parsedProfile.mySubscriptions || [];
       } catch (error) {
         console.error("Error parsing old profile:", error);
       }
     }
 
-    // 🔥 จุดที่แก้: ดึงเฉพาะ ID ออกมาจากรายการที่เลือกซื้อ (selectedTools)
-    // เพราะ selectedTools เก็บเป็น Object {id, billing} แต่ระบบตรวจสอบต้องการแค่ "ชื่อ ID"
+    // 2. สร้างข้อมูล Subscription รายละเอียด (สำหรับหน้า Manage Subscription)
+    const newSubscriptions = selectedTools.map((t) => {
+      const toolInfo = TOOLS.find((x) => x.id === t.id);
+      const isYearly = t.billing === "yearly";
+      const price = isYearly ? toolInfo.yearly : toolInfo.monthly;
+      
+      // แปลงวิธีชำระเงินเป็นข้อความสวยๆ
+      let methodLabel = "Credit Card";
+      if (selectedPayment === "bank") methodLabel = "Bank Transfer";
+      if (selectedPayment === "promptpay") methodLabel = "PromptPay";
+
+      return {
+        id: t.id,
+        name: toolInfo.name,
+        cycle: isYearly ? "Yearly" : "Monthly",
+        price: `${price.toLocaleString()} THB`,
+        purchaseDate: new Date().toISOString(), // บันทึกเวลาปัจจุบัน
+        status: "active",
+        paymentMethod: methodLabel
+      };
+    });
+
+    // 3. รวม Subscription ใหม่เข้ากับของเดิม (ถ้ามี ID ซ้ำ ให้เอาอันใหม่ทับอันเก่า)
+    const updatedSubscriptions = [
+      ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
+      ...newSubscriptions
+    ];
+
+    // 4. อัปเดตรายการที่ปลดล็อค (Unlocked Items ID Only)
     const newToolIds = selectedTools.map((t) => t.id);
+    const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
 
-    // 2. รวมรายการเดิม + รายการใหม่ (ใช้ Set เพื่อกำจัดตัวซ้ำ)
-    const mergedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
+    // 5. บันทึกทั้งหมดลง LocalStorage
+    const updatedProfile = {
+      ...parsedProfile, 
+      role: "membership", 
+      unlockedItems: mergedUnlockedItems, 
+      mySubscriptions: updatedSubscriptions // 🔥 ข้อมูลสำคัญสำหรับหน้า Manage Sub
+    };
 
-    // 3. บันทึกกลับลงไป
-    localStorage.setItem(
-      "userProfile",
-      JSON.stringify({
-        role: "membership",
-        billingCycle,
-        unlockedItems: mergedItems, // ตอนนี้เป็นรายการ ID ล้วนๆ แล้ว (เช่น ['gold', 'flow'])
-      })
-    );
+    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
 
+    // 6. แจ้งเตือนและเปลี่ยนหน้า
     alert("Payment Successful 🎉");
     setShowModal(false);
-    window.location.href = "/dashboard";
+    
+    // เปลี่ยนหน้าไปที่ Dashboard หน้า Subscription
+    navigate("/dashboard", { state: { goTo: "subscription" } });
   };
 
   const months = Array.from({ length: 12 }, (_, i) =>
@@ -160,8 +195,6 @@ const handleConfirmPayment = () => {
 
   const hasMonthly = selectedTools.some(t => t.billing === "monthly");
   const hasYearly = selectedTools.some(t => t.billing === "yearly");
-
-  const [isEditSummary, setIsEditSummary] = useState(false);
 
   /* ================= UI ================= */
   return (
@@ -231,184 +264,182 @@ const handleConfirmPayment = () => {
 
           {/* Payment Method */}
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
-          <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
+            <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
 
-          <div className="grid grid-cols-3 gap-3">
-            {paymentMethods.map((m) => {
-              const active = selectedPayment === m.id;
+            <div className="grid grid-cols-3 gap-3">
+              {paymentMethods.map((m) => {
+                const active = selectedPayment === m.id;
 
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setSelectedPayment(m.id)}
-                  className={`
-                    h-20 rounded-xl border flex flex-col items-center justify-center gap-1
-                    transition-all duration-200
-                    ${
-                      active
-                        ? "bg-[#0B2A4E] border-[#0E6BA8]"
-                        : "bg-[#E5E7EB] border-transparent"
-                    }
-                  `}
-                >
-                  <img
-                    src={active ? m.activeIcon : m.icon}
-                    alt={m.label}
-                    className="w-12 h-12"
-                  />
-                  <span
-                    className={`text-xs font-medium ${
-                      active ? "text-white" : "text-black"
-                    }`}
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setSelectedPayment(m.id)}
+                    className={`
+                      h-20 rounded-xl border flex flex-col items-center justify-center gap-1
+                      transition-all duration-200
+                      ${
+                        active
+                          ? "bg-[#0B2A4E] border-[#0E6BA8]"
+                          : "bg-[#E5E7EB] border-transparent"
+                      }
+                    `}
                   >
-                    {m.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          </div>
-
-        {/* Summary */}
-        <div className="bg-[#0F1B2D] p-6 rounded-xl">
-            {/* Order Summary */}
-          <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Order Summary</h2>
-
-          <button
-            onClick={() => setIsEditSummary(prev => !prev)}
-            className="text-[#9FB3C8] hover:text-white transition"
-          >
-            {isEditSummary ? "✕" : "✎"}
-          </button>
-        </div>
-
-          {/* MONTHLY */}
-          {hasMonthly && (
-          <div className="mb-3">
-            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
-
-            {/* ✅ Scroll container */}
-            <div className="h-[120px] overflow-y-auto pr-2 space-y-1">
-              {selectedTools
-                .filter(t => t.billing === "monthly")
-                .map((t) => {
-                  const tool = TOOLS.find(x => x.id === t.id);
-                  return (
-                    <div
-                    key={`${t.id}-m`}
-                    className="flex items-center justify-between text-sm text-white"
-                  >
-                    <span className="flex items-center gap-2">
-                      {tool.name}
+                    <img
+                      src={active ? m.activeIcon : m.icon}
+                      alt={m.label}
+                      className="w-12 h-12"
+                    />
+                    <span
+                      className={`text-xs font-medium ${
+                        active ? "text-white" : "text-black"
+                      }`}
+                    >
+                      {m.label}
                     </span>
-
-                    <div className="flex items-center gap-3">
-                      <span>{tool.monthly.toLocaleString()} ฿</span>
-
-                      {isEditSummary && (
-                        <button
-                          onClick={() => removeTool(t.id, "monthly")}
-                          className="w-5 h-5 flex items-center justify-center
-                                    border border-red-500 text-red-500
-                                    rounded-full hover:bg-red-500 hover:text-white transition"
-                        >
-                          −
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  );
-                })}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
 
-        {hasMonthly && hasYearly && (
-          <div className="border-t border-[#1F3354] my-4" />
-        )}
-        
-          {/* YEARLY */}
-          {hasYearly && (
-          <div className="mb-3">
-            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
+          {/* Summary */}
+          <div className="bg-[#0F1B2D] p-6 rounded-xl">
+            {/* Order Summary Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Order Summary</h2>
+              <button
+                onClick={() => setIsEditSummary(prev => !prev)}
+                className="text-[#9FB3C8] hover:text-white transition"
+              >
+                {isEditSummary ? "Done" : "Edit"}
+              </button>
+            </div>
 
-            {/* ✅ Scroll container */}
-            <div className="h-[120px] overflow-y-auto pr-2 space-y-1">
-              {selectedTools
-                .filter(t => t.billing === "yearly")
-                .map((t) => {
-                  const tool = TOOLS.find(x => x.id === t.id);
-                  return (
-                    <div
-                    key={`${t.id}-m`}
-                    className="flex items-center justify-between text-sm text-white"
-                  >
-                    <span className="flex items-center gap-2">
-                      {tool.name}
-                    </span>
+            {/* MONTHLY */}
+            {hasMonthly && (
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
 
-                    <div className="flex items-center gap-3">
-                      <span>{tool.yearly.toLocaleString()} ฿</span>
-
-                      {isEditSummary && (
-                      <button
-                        onClick={() => removeTool(t.id, "yearly")}
-                        className="w-5 h-5 flex items-center justify-center
-                                  border border-red-500 text-red-500
-                                  rounded-full hover:bg-red-500 hover:text-white transition"
+              <div className="max-h-[120px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {selectedTools
+                  .filter(t => t.billing === "monthly")
+                  .map((t) => {
+                    const tool = TOOLS.find(x => x.id === t.id);
+                    return (
+                      <div
+                        key={`${t.id}-m`}
+                        className="flex items-center justify-between text-sm text-white"
                       >
-                        −
-                      </button>
-                    )}
-                    </div>
-                  </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
+                        <span className="flex items-center gap-2">
+                          {tool.name}
+                        </span>
 
-          <div className="border-t border-[#1F3354] my-4" />
+                        <div className="flex items-center gap-3">
+                          <span>{tool.monthly.toLocaleString()} ฿</span>
 
-          {/* TOTAL AMOUNT */}
-          <div className="mb-6">
-            <p className="text-sm font-semibold text-[#9FB3C8] mb-2">
-              TOTAL AMOUNT
-            </p>
-
-            <div className="flex items-end justify-between">
-              <span className="text-4xl font-bold text-[#0EA5E9]">
-                {totalPrice.toLocaleString()}฿
-              </span>
-
-              <div className="text-xs text-[#9FB3C8] text-right leading-tight">
-                <p>Charged annually</p>
-                <p>Cancel anytime</p>
+                          {isEditSummary && (
+                            <button
+                              onClick={() => removeTool(t.id, "monthly")}
+                              className="w-5 h-5 flex items-center justify-center
+                                         border border-red-500 text-red-500
+                                         rounded-full hover:bg-red-500 hover:text-white transition"
+                            >
+                              −
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
+          )}
+
+          {hasMonthly && hasYearly && (
+            <div className="border-t border-[#1F3354] my-4" />
+          )}
+          
+            {/* YEARLY */}
+            {hasYearly && (
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
+
+              <div className="max-h-[120px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {selectedTools
+                  .filter(t => t.billing === "yearly")
+                  .map((t) => {
+                    const tool = TOOLS.find(x => x.id === t.id);
+                    return (
+                      <div
+                        key={`${t.id}-y`}
+                        className="flex items-center justify-between text-sm text-white"
+                      >
+                        <span className="flex items-center gap-2">
+                          {tool.name}
+                        </span>
+
+                        <div className="flex items-center gap-3">
+                          <span>{tool.yearly.toLocaleString()} ฿</span>
+
+                          {isEditSummary && (
+                            <button
+                              onClick={() => removeTool(t.id, "yearly")}
+                              className="w-5 h-5 flex items-center justify-center
+                                         border border-red-500 text-red-500
+                                         rounded-full hover:bg-red-500 hover:text-white transition"
+                            >
+                              −
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+            <div className="border-t border-[#1F3354] my-4" />
+
+            {/* TOTAL AMOUNT */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-[#9FB3C8] mb-2">
+                TOTAL AMOUNT
+              </p>
+
+              <div className="flex items-end justify-between">
+                <span className="text-4xl font-bold text-[#0EA5E9]">
+                  {totalPrice.toLocaleString()}฿
+                </span>
+
+                <div className="text-xs text-[#9FB3C8] text-right leading-tight">
+                  <p>Charged annually</p>
+                  <p>Cancel anytime</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ACTION */}
+            <button
+              disabled={!selectedPayment || selectedTools.length === 0}
+              onClick={() => setShowModal(true)}
+              className="w-full h-12 rounded-lg bg-[#0EA5E9] text-black font-semibold disabled:bg-[#1F3354] disabled:text-[#9FB3C8]"
+            >
+              Complete Purchase
+            </button>
+
+            {/* Cancel */}
+            <button
+              onClick={() => {
+                setSelectedTools([]);
+                setSelectedPayment(null);
+                navigate("/dashboard"); // กลับหน้าหลักถ้ากดยกเลิก
+              }}
+              className="mt-3 w-full text-sm text-[#9FB3C8] hover:text-white transition"
+            >
+              Cancel
+            </button>
           </div>
-
-          {/* ACTION */}
-          <button
-            disabled={!selectedPayment || selectedTools.length === 0}
-            onClick={() => setShowModal(true)}
-            className="w-full h-12 rounded-lg bg-[#0EA5E9] text-black font-semibold disabled:bg-[#1F3354]"
-          >
-            Complete Purchase
-          </button>
-
-          {/* Cancel */}
-          <button
-            onClick={() => {
-              setSelectedTools([]);
-              setSelectedPayment(null);
-            }}
-            className="mt-3 w-full text-sm text-[#9FB3C8] hover:text-white transition"
-          >
-            Cancel
-          </button>
-        </div>
 
         </div>
       </div>
@@ -636,13 +667,13 @@ const handleConfirmPayment = () => {
                       onClick={() => setCardType("mastercard")}
                       className={`h-10 w-14 flex items-center justify-center rounded transition-all ${cardType === 'mastercard' ? 'bg-white ring-2 ring-[#0E6BA8]' : 'bg-white/50 opacity-50'}`}
                     >
-                       <img src={MastercardIcon} alt="mastercard" className="h-6 object-contain" />
+                        <img src={MastercardIcon} alt="mastercard" className="h-6 object-contain" />
                     </button>
                     <button 
                       onClick={() => setCardType("visa")}
                       className={`h-10 w-14 flex items-center justify-center rounded transition-all ${cardType === 'visa' ? 'bg-white ring-2 ring-[#0E6BA8]' : 'bg-white/50 opacity-50'}`}
                     >
-                       <img src={VisaIcon} alt="visa" className="h-4 object-contain" />
+                        <img src={VisaIcon} alt="visa" className="h-4 object-contain" />
                     </button>
                   </div>
                 </div>
@@ -706,8 +737,8 @@ const handleConfirmPayment = () => {
                         onChange={(e) => setExpYear(e.target.value)}
                         className="w-full h-10 rounded-lg bg-[#D1D5DB] text-black px-2 focus:outline-none focus:ring-2 focus:ring-[#0E6BA8]"
                       >
-                         <option value="" disabled>YYYY</option>
-                         {years.map(y => <option key={y} value={y}>{y}</option>)}
+                          <option value="" disabled>YYYY</option>
+                          {years.map(y => <option key={y} value={y}>{y}</option>)}
                       </select>
                     </div>
 

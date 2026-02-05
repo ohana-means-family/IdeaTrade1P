@@ -39,7 +39,7 @@ const Profile = () => {
     <div className="profile-page-container">
       
       {/* Header: Account Title */}
-      <h1 className="account-title">Account</h1>
+      <h1 className="account-title">Your account</h1>
 
       {/* Navigation Tabs */}
       <div className="profile-tabs">
