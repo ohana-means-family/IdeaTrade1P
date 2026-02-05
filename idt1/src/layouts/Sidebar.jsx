@@ -91,15 +91,13 @@ const LogoutIconSVG = () => (
 );
 
 /* ================= 🔥 NEW FLOATING TOOLTIP 🔥 ================= */
-// Tooltip แบบ Fixed Position จะไม่โดน Sidebar บัง หรือตัดขอบ
 const FloatingTooltip = ({ visible, top, text }) => {
   if (!visible) return null;
   return (
     <div
-      style={{ top: top, left: 85 }} // ลอยห่างจากซ้าย 85px (พ้น Sidebar พอดี)
+      style={{ top: top, left: 85 }} 
       className="fixed z-[10000] -translate-y-1/2 px-3 py-1.5 bg-[#333333] text-white text-[13px] rounded-md border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] pointer-events-none whitespace-nowrap animate-fade-in"
     >
-      {/* ลูกศรชี้ซ้าย */}
       <div className="absolute top-1/2 -left-1.5 -mt-1.5 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-[#333333]"></div>
       {text}
     </div>
@@ -120,7 +118,10 @@ export default function Sidebar({
   const [unlockedList, setUnlockedList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ State สำหรับเก็บตำแหน่ง Tooltip
+  // ✅ State สำหรับ Modal ยืนยัน Logout
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // State สำหรับ Tooltip
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
   useEffect(() => {
@@ -139,9 +140,16 @@ export default function Sidebar({
   const handleSignUp = () => navigate("/register");
   const handleSignIn = () => navigate("/welcome");
   
-  const handleSignOut = () => {
+  // 🟢 แก้ไข: เปลี่ยนจาก Logout ทันที เป็นแค่เปิด Modal
+  const handleSignOutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  // 🟢 ฟังก์ชันใหม่: Logout จริงๆ เมื่อกดปุ่มแดงใน Modal
+  const confirmSignOut = () => {
     localStorage.removeItem("userProfile");
     setIsMember(false);
+    setShowLogoutModal(false);
     navigate("/welcome");
     window.location.reload();
   };
@@ -154,13 +162,12 @@ export default function Sidebar({
     }
   };
 
-  // ✅ ฟังก์ชันคำนวณตำแหน่ง Tooltip เมื่อเมาส์ชี้
   const handleMouseEnter = (e, text) => {
-    if (!collapsed) return; // ถ้าไม่ได้ย่อ ไม่ต้องโชว์
-    const rect = e.currentTarget.getBoundingClientRect(); // หาตำแหน่งปุ่มบนหน้าจอ
+    if (!collapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
     setTooltipState({
       visible: true,
-      top: rect.top + (rect.height / 2), // กึ่งกลางปุ่ม
+      top: rect.top + (rect.height / 2),
       text: text
     });
   };
@@ -182,12 +189,37 @@ export default function Sidebar({
         .animate-fade-in { animation: fade-in 0.1s ease-out; }
       `}</style>
 
-      {/* ✅ แสดง Tooltip ลอยอิสระ (อยู่นอก <aside> ก็ได้ แต่อยู่ในนี้เพื่อให้จัดการง่าย) */}
+      {/* ✅ Floating Tooltip */}
       <FloatingTooltip 
         visible={tooltipState.visible} 
         top={tooltipState.top} 
         text={tooltipState.text} 
       />
+
+      {/* ✅ LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[10002] bg-black/60 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-[#1F2937] p-8 rounded-lg shadow-2xl flex flex-col items-center gap-6 w-[400px] border border-white/10">
+            <h2 className="text-lg text-gray-200 font-medium text-center">
+              Are you sure you want to log out?
+            </h2>
+            <div className="flex gap-4 w-full justify-center">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-6 py-2 rounded bg-[#9CA3AF] text-white font-semibold hover:bg-gray-500 transition"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={confirmSignOut}
+                className="px-6 py-2 rounded bg-[#EF4444] text-white font-semibold hover:bg-red-700 transition"
+              >
+                LOGOUT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <aside
         className={`fixed top-0 left-0 z-[9999] h-screen bg-gradient-to-b from-[#0c0f14] to-[#0a0d11] border-r border-white/10 flex flex-col transition-all duration-300 ${
@@ -236,7 +268,7 @@ export default function Sidebar({
           <div className={`transition-all duration-300 mb-2 ${collapsed ? "w-10" : "w-full"}`}>
             <div 
               onClick={() => collapsed && setCollapsed(false)}
-              onMouseEnter={(e) => handleMouseEnter(e, "Search")} // ✅ เพิ่ม Event
+              onMouseEnter={(e) => handleMouseEnter(e, "Search")}
               onMouseLeave={handleMouseLeave}
               className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all 
               ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-4"}`}
@@ -245,7 +277,6 @@ export default function Sidebar({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
 
-              {/* เอา Tooltip เก่าออก เพราะใช้ FloatingTooltip แทนแล้ว */}
               {!collapsed && (
                 <input
                   type="text"
@@ -261,7 +292,7 @@ export default function Sidebar({
           {/* Preview Button */}
           <button
             onClick={() => handleNavigation("preview-projects")} 
-            onMouseEnter={(e) => handleMouseEnter(e, "Preview Projects")} // ✅ เพิ่ม Event
+            onMouseEnter={(e) => handleMouseEnter(e, "Preview Projects")}
             onMouseLeave={handleMouseLeave}
             className={`rounded-lg flex items-center shrink-0 transition-all cursor-pointer relative group
             ${activePage === "preview-projects" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
@@ -287,7 +318,7 @@ export default function Sidebar({
           {/* MIT Button */}
           <button
             onClick={() => handleNavigation("mit")} 
-            onMouseEnter={(e) => handleMouseEnter(e, "MIT")} // ✅ เพิ่ม Event
+            onMouseEnter={(e) => handleMouseEnter(e, "MIT")}
             onMouseLeave={handleMouseLeave}
             className={`rounded-lg flex items-center shrink-0 transition-all relative group cursor-pointer
             ${activePage === "mit" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
@@ -318,7 +349,7 @@ export default function Sidebar({
                 <button
                   key={p.id}
                   onClick={() => handleNavigation(p.id, p)}
-                  onMouseEnter={(e) => handleMouseEnter(e, p.name)} // ✅ เพิ่ม Event
+                  onMouseEnter={(e) => handleMouseEnter(e, p.name)}
                   onMouseLeave={handleMouseLeave}
                   className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
                   ${active ? "bg-slate-800" : "hover:bg-white/5"}
@@ -366,7 +397,7 @@ export default function Sidebar({
               {/* Profile */}
               <button
                 onClick={() => handleNavigation("profile")}
-                onMouseEnter={(e) => handleMouseEnter(e, "Profile")} // ✅ เพิ่ม Event
+                onMouseEnter={(e) => handleMouseEnter(e, "Profile")}
                 onMouseLeave={handleMouseLeave}
                 className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
                 ${activePage === "profile" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
@@ -379,7 +410,7 @@ export default function Sidebar({
               {/* Manage Subscription */}
               <button
                 onClick={() => handleNavigation("subscription")}
-                onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")} // ✅ เพิ่ม Event
+                onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
                 onMouseLeave={handleMouseLeave}
                 className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
                 ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
@@ -391,8 +422,9 @@ export default function Sidebar({
 
               {/* Sign Out */}
               <button
-                onClick={handleSignOut}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")} // ✅ เพิ่ม Event
+                // 🟢 เรียกใช้ handleSignOutClick เพื่อเปิด Modal
+                onClick={handleSignOutClick}
+                onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
                 onMouseLeave={handleMouseLeave}
                 className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
                 ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
@@ -405,7 +437,7 @@ export default function Sidebar({
             <>
               <button
                 onClick={handleSignUp}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")} // ✅ เพิ่ม Event
+                onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")}
                 onMouseLeave={handleMouseLeave}
                 className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
                 ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
@@ -416,7 +448,7 @@ export default function Sidebar({
 
               <button
                 onClick={handleSignIn}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign In")} // ✅ เพิ่ม Event
+                onMouseEnter={(e) => handleMouseEnter(e, "Sign In")}
                 onMouseLeave={handleMouseLeave}
                 className={`rounded-lg flex items-center shrink-0 transition-all hover:bg-white/5 text-gray-300 cursor-pointer relative group
                 ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
@@ -434,7 +466,7 @@ export default function Sidebar({
         <div className={`px-2 pb-2 w-full flex justify-center shrink-0`}>
           <button
             onClick={() => setActivePage("premiumtools")}
-            onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")} // ✅ เพิ่ม Event
+            onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")}
             onMouseLeave={handleMouseLeave}
             className={`flex items-center justify-center transition-all shadow-lg overflow-hidden shrink-0 cursor-pointer relative group
             ${collapsed 
