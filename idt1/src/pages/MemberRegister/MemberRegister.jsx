@@ -76,6 +76,11 @@ export default function MemberRegister() {
     // เพิ่มใหม่ตาม billing ปัจจุบัน
     return [...prev, { id, billing: billingCycle }];
   });
+  const removeTool = (id, billing) => {
+  setSelectedTools(prev =>
+    prev.filter(t => !(t.id === id && t.billing === billing))
+  );
+};
 };
 
   const handleCopyAccount = (text) => {
@@ -155,6 +160,8 @@ const handleConfirmPayment = () => {
 
   const hasMonthly = selectedTools.some(t => t.billing === "monthly");
   const hasYearly = selectedTools.some(t => t.billing === "yearly");
+
+  const [isEditSummary, setIsEditSummary] = useState(false);
 
   /* ================= UI ================= */
   return (
@@ -260,15 +267,25 @@ const handleConfirmPayment = () => {
               );
             })}
           </div>
-        </div>
+          </div>
 
         {/* Summary */}
         <div className="bg-[#0F1B2D] p-6 rounded-xl">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+            {/* Order Summary */}
+          <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Order Summary</h2>
+
+          <button
+            onClick={() => setIsEditSummary(prev => !prev)}
+            className="text-[#9FB3C8] hover:text-white transition"
+          >
+            {isEditSummary ? "✕" : "✎"}
+          </button>
+        </div>
 
           {/* MONTHLY */}
           {hasMonthly && (
-          <div className="mb-4">
+          <div className="mb-3">
             <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Monthly</p>
 
             {/* ✅ Scroll container */}
@@ -279,15 +296,28 @@ const handleConfirmPayment = () => {
                   const tool = TOOLS.find(x => x.id === t.id);
                   return (
                     <div
-                      key={`${t.id}-m`}
-                      className="flex justify-between text-sm text-white"
-                    >
-                      <span>
-                        {tool.name}
-                        <span className="text-xs text-[#9FB3C8] ml-2">(Monthly)</span>
-                      </span>
+                    key={`${t.id}-m`}
+                    className="flex items-center justify-between text-sm text-white"
+                  >
+                    <span className="flex items-center gap-2">
+                      {tool.name}
+                    </span>
+
+                    <div className="flex items-center gap-3">
                       <span>{tool.monthly.toLocaleString()} ฿</span>
+
+                      {isEditSummary && (
+                        <button
+                          onClick={() => removeTool(t.id, "monthly")}
+                          className="w-5 h-5 flex items-center justify-center
+                                    border border-red-500 text-red-500
+                                    rounded-full hover:bg-red-500 hover:text-white transition"
+                        >
+                          −
+                        </button>
+                      )}
                     </div>
+                  </div>
                   );
                 })}
             </div>
@@ -300,7 +330,7 @@ const handleConfirmPayment = () => {
         
           {/* YEARLY */}
           {hasYearly && (
-          <div className="mb-4">
+          <div className="mb-3">
             <p className="text-sm font-semibold text-[#9FB3C8] mb-2">Yearly</p>
 
             {/* ✅ Scroll container */}
@@ -311,15 +341,28 @@ const handleConfirmPayment = () => {
                   const tool = TOOLS.find(x => x.id === t.id);
                   return (
                     <div
-                      key={`${t.id}-y`}
-                      className="flex justify-between text-sm text-white"
-                    >
-                      <span>
-                        {tool.name}
-                        <span className="text-xs text-[#9FB3C8] ml-2">(Yearly)</span>
-                      </span>
+                    key={`${t.id}-m`}
+                    className="flex items-center justify-between text-sm text-white"
+                  >
+                    <span className="flex items-center gap-2">
+                      {tool.name}
+                    </span>
+
+                    <div className="flex items-center gap-3">
                       <span>{tool.yearly.toLocaleString()} ฿</span>
+
+                      {isEditSummary && (
+                      <button
+                        onClick={() => removeTool(t.id, "yearly")}
+                        className="w-5 h-5 flex items-center justify-center
+                                  border border-red-500 text-red-500
+                                  rounded-full hover:bg-red-500 hover:text-white transition"
+                      >
+                        −
+                      </button>
+                    )}
                     </div>
+                  </div>
                   );
                 })}
             </div>
