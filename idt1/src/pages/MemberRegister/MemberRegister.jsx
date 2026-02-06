@@ -321,7 +321,7 @@ export default function MemberRegister() {
           </div>
 
           {/* Summary */}
-          <div className="bg-[#0F1B2D] p-6 rounded-xl">
+          <div className="bg-[#0F1B2D] p-6 rounded-xl max-h-[520px] flex flex-col">
             {/* Order Summary Header */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Order Summary</h2>
@@ -381,7 +381,7 @@ export default function MemberRegister() {
                 </p>
               </div>
 
-              <div className="max-h-[84px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+              <div className="max-h-[60px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
                 {selectedTools
                   .filter(t => t.billing === "monthly")
                   .map((t) => {
@@ -430,7 +430,7 @@ export default function MemberRegister() {
                 </p>
               </div>
 
-              <div className="max-h-[84px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+              <div className="max-h-[60px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
                 {selectedTools
                   .filter(t => t.billing === "yearly")
                   .map((t) => {
@@ -474,7 +474,7 @@ export default function MemberRegister() {
               </p>
 
               <div className="flex items-end justify-between">
-                <span className="text-4xl font-bold text-[#0EA5E9]">
+                <span className="text-3xl font-bold text-[#0EA5E9]">
                   {totalPrice.toLocaleString()}฿
                 </span>
 
