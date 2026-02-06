@@ -35,7 +35,7 @@ const TOOLS = [
 
 const paymentMethods = [
   { id: "bank", label: "Bank Transfer", icon: BankBlue, activeIcon: BankGray },
-  { id: "card", label: "Credit Card", icon: CardBlue, activeIcon: CardGray },
+  // { id: "card", label: "Credit Card", icon: CardBlue, activeIcon: CardGray },
   { id: "promptpay", label: "PromptPay", icon: QrBlue, activeIcon: QrGray },
 ];
 
@@ -272,7 +272,7 @@ export default function MemberRegister() {
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
             <h2 className="text-xl font-semibold mb-3">Payment Method</h2>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 justify-center">
               {paymentMethods.map((m) => {
                 const active = selectedPayment === m.id;
 
