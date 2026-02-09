@@ -17,8 +17,7 @@ import CardBlue from "@/assets/icons/bcredit-card.png";
 import QrGray from "@/assets/icons/blqr.png";
 import QrBlue from "@/assets/icons/bqr.png";
 import EditIcon from "@/assets/icons/edit.svg";
-import ConfirmIcon from "@/assets/icons/confirm.svg";
-import BlConfirm from "@/assets/icons/blconfirm.png";
+import CancleEdit from "@/assets/icons/cancleedit.svg";
 
 // รายละเอียดเครื่องมือและราคา
 const TOOLS = [
@@ -344,14 +343,14 @@ export default function MemberRegister() {
                   <>
                   {/* default confirm */}
                     <img
-                      src={ConfirmIcon}
+                      src={CancleEdit}
                       alt="confirm"
                       className="w-5 h-5 opacity-100 group-hover:opacity-0 transition"
                     />
 
                     {/* hover → blconfirm */}
                       <img
-                        src={BlConfirm}
+                        src={CancleEdit}
                         alt="confirm hover"
                         className="absolute w-5 h-5 opacity-0 group-hover:opacity-100 transition"
                       />
