@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 .sub-page-container {
-  background-color: #ffffff; /* พื้นหลังขาวตามรูป */
+  background-color: #111827; /* ✅ พื้นหลัง Dark Mode ตาม Profile */
   min-height: 100vh;
   padding: 40px 60px;
   font-family: 'Inter', sans-serif;
-  color: #000000; /* ตัวหนังสือดำ */
+  color: #ffffff; /* ✅ ตัวหนังสือขาว */
 }
 
 /* --- Header --- */
@@ -13,17 +13,18 @@
   font-size: 36px;
   font-weight: 700;
   margin: 0 0 10px 0;
+  color: #ffffff;
 }
 
 .sub-summary {
-  color: #4b5563;
+  color: #9ca3af; /* ✅ สีเทาจางลงให้อ่านง่ายบนพื้นมืด */
   font-size: 14px;
   margin-bottom: 30px;
 }
 
 .bold {
   font-weight: 700;
-  color: #000;
+  color: #ffffff; /* ✅ เปลี่ยนเป็นขาว */
 }
 
 .ml-4 {
@@ -38,12 +39,13 @@
 }
 
 .search-wrapper {
-  background-color: #cccccc; /* สีเทาเข้มขึ้นหน่อยตามรูป */
+  background-color: #374151; /* ✅ เปลี่ยนพื้นหลัง Search เป็นสีเดียวกับ Input Profile */
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  border-radius: 4px;
+  border-radius: 6px; /* ปรับโค้งมนขึ้นนิดหน่อย */
   width: 70%;
+  border: 1px solid #4b5563; /* เพิ่มขอบให้ดูมีมิติ */
 }
 
 .search-input {
@@ -53,72 +55,84 @@
   margin-left: 10px;
   width: 100%;
   font-size: 14px;
-  color: #374151;
+  color: #ffffff; /* ✅ ตัวหนังสือในช่องค้นหาเป็นสีขาว */
 }
 
 .search-input::placeholder {
-  color: #6b7280;
+  color: #9ca3af; /* สี Placeholder จางๆ */
 }
 
 .btn-add-tool {
-  background-color: #111827; /* ปุ่มดำ */
+  background-color: #3b82f6; /* ✅ เปลี่ยนเป็นสีฟ้า (Theme หลัก) ให้เด่นขึ้น */
   color: #fff;
   border: none;
   padding: 10px 24px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add-tool:hover {
+  background-color: #2563eb;
 }
 
 /* --- Table Grid Layout --- */
 .sub-table-header, .sub-card-row {
   display: grid;
-  /* กำหนดขนาดแต่ละคอลัมน์ให้เหมือนรูป */
   grid-template-columns: 1.5fr 1fr 2fr 1fr 1fr 1.5fr; 
   align-items: center;
-  padding: 0 20px;
+  padding: 0 24px; /* เพิ่ม padding ด้านข้าง */
 }
 
 .sub-table-header {
-  color: #6b7280;
+  color: #9ca3af; /* ✅ หัวตารางสีเทาอ่อน */
   font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 20px;
-  text-transform: capitalize;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* --- Sections & Cards --- */
 .section-title {
-  font-size: 12px;
-  color: #374151;
+  font-size: 14px; /* ขยายขึ้นนิดหน่อย */
+  color: #e5e7eb; /* สีขาวอมเทา */
   text-transform: uppercase;
-  font-weight: 600;
-  margin: 20px 0 10px 0;
+  font-weight: 700;
+  margin: 30px 0 16px 0;
   letter-spacing: 0.5px;
 }
 
 .sub-card-row {
-  background-color: #c4c4c4; /* สีเทาพื้นหลัง Card ตามรูป */
-  height: 60px; /* ความสูง Card */
-  border-radius: 6px;
-  margin-bottom: 10px;
+  background-color: #1f2937; /* ✅ พื้นหลัง Card สีเข้ม (เหมือน Profile Card) */
+  height: 70px; /* เพิ่มความสูงอีกนิดให้ดูโปร่ง */
+  border-radius: 8px;
+  margin-bottom: 12px;
   font-size: 14px;
-  color: #1f2937;
+  color: #ffffff; /* ตัวหนังสือขาว */
+  border: 1px solid #374151; /* ✅ เพิ่มเส้นขอบสีเทาเข้ม */
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.sub-card-row:hover {
+  border-color: #4b5563; /* Hover แล้วขอบชัดขึ้น */
 }
 
 /* --- Columns Specifics --- */
 .font-bold {
   font-weight: 700;
+  color: #ffffff;
 }
 
 /* Status Styling */
 .status-indicator {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .status-indicator svg {
@@ -133,12 +147,13 @@
 .status-text {
   font-weight: 600;
   font-size: 14px;
-  line-height: 1.2;
+  line-height: 1.4;
+  color: #ffffff;
 }
 
 .status-date {
-  font-size: 11px;
-  color: #555;
+  font-size: 12px;
+  color: #9ca3af; /* ✅ วันที่เป็นสีเทาอ่อน */
 }
 
 /* Action Buttons */
@@ -148,14 +163,22 @@
   cursor: pointer;
   padding: 0;
   font-size: 14px;
+  text-decoration: none; /* เอาขีดเส้นใต้ออกเพื่อให้ดูสะอาดตา */
+  transition: opacity 0.2s;
+}
+
+.btn-action:hover {
+  opacity: 0.8;
   text-decoration: underline;
-  color: #000;
 }
 
 .btn-action.renew {
-  font-weight: 700;
+  color: #3b82f6; /* ✅ สีฟ้า */
+  font-weight: 600;
+  margin-right: 16px;
 }
 
 .btn-action.pay {
-  font-weight: 400;
+  color: #facc15; /* ✅ สีเหลืองทอง สำหรับ Pay */
+  font-weight: 600;
 }
