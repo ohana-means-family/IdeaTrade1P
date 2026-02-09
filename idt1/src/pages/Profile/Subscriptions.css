@@ -1,69 +1,72 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* --- Main Container --- */
 .sub-page-container {
-  background-color: #111827; /* ✅ พื้นหลัง Dark Mode ตาม Profile */
+  background-color: #111827;
   min-height: 100vh;
   padding: 40px 60px;
   font-family: 'Inter', sans-serif;
-  color: #ffffff; /* ✅ ตัวหนังสือขาว */
+  color: #ffffff;
 }
 
-/* --- Header --- */
-.sub-header h1 {
+/* --- Header (เจาะจงเฉพาะใน sub-page-container) --- */
+.sub-page-container .sub-header h1 {
   font-size: 36px;
   font-weight: 700;
   margin: 0 0 10px 0;
   color: #ffffff;
 }
 
-.sub-summary {
-  color: #9ca3af; /* ✅ สีเทาจางลงให้อ่านง่ายบนพื้นมืด */
+.sub-page-container .sub-summary {
+  color: #9ca3af;
   font-size: 14px;
   margin-bottom: 30px;
 }
 
-.bold {
+/* --- Utility Classes (บังคับให้มีผลแค่ในหน้านี้) --- */
+.sub-page-container .bold, 
+.sub-page-container .font-bold {
   font-weight: 700;
-  color: #ffffff; /* ✅ เปลี่ยนเป็นขาว */
+  color: #ffffff; 
 }
 
-.ml-4 {
+.sub-page-container .ml-4 {
   margin-left: 20px;
 }
 
 /* --- Toolbar --- */
-.sub-toolbar {
+.sub-page-container .sub-toolbar {
   display: flex;
   justify-content: space-between;
   margin-bottom: 30px;
 }
 
-.search-wrapper {
-  background-color: #374151; /* ✅ เปลี่ยนพื้นหลัง Search เป็นสีเดียวกับ Input Profile */
+.sub-page-container .search-wrapper {
+  background-color: #374151;
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  border-radius: 6px; /* ปรับโค้งมนขึ้นนิดหน่อย */
+  border-radius: 6px;
   width: 70%;
-  border: 1px solid #4b5563; /* เพิ่มขอบให้ดูมีมิติ */
+  border: 1px solid #4b5563;
 }
 
-.search-input {
+.sub-page-container .search-input {
   background: transparent;
   border: none;
   outline: none;
   margin-left: 10px;
   width: 100%;
   font-size: 14px;
-  color: #ffffff; /* ✅ ตัวหนังสือในช่องค้นหาเป็นสีขาว */
+  color: #ffffff;
 }
 
-.search-input::placeholder {
-  color: #9ca3af; /* สี Placeholder จางๆ */
+.sub-page-container .search-input::placeholder {
+  color: #9ca3af;
 }
 
-.btn-add-tool {
-  background-color: #3b82f6; /* ✅ เปลี่ยนเป็นสีฟ้า (Theme หลัก) ให้เด่นขึ้น */
+.sub-page-container .btn-add-tool {
+  background-color: #3b82f6;
   color: #fff;
   border: none;
   padding: 10px 24px;
@@ -76,20 +79,21 @@
   transition: background-color 0.2s;
 }
 
-.btn-add-tool:hover {
+.sub-page-container .btn-add-tool:hover {
   background-color: #2563eb;
 }
 
-/* --- Table Grid Layout --- */
-.sub-table-header, .sub-card-row {
+/* --- Table Grid --- */
+.sub-page-container .sub-table-header, 
+.sub-page-container .sub-card-row {
   display: grid;
   grid-template-columns: 1.5fr 1fr 2fr 1fr 1fr 1.5fr; 
   align-items: center;
-  padding: 0 24px; /* เพิ่ม padding ด้านข้าง */
+  padding: 0 24px;
 }
 
-.sub-table-header {
-  color: #9ca3af; /* ✅ หัวตารางสีเทาอ่อน */
+.sub-page-container .sub-table-header {
+  color: #9ca3af;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 16px;
@@ -97,88 +101,71 @@
   letter-spacing: 0.5px;
 }
 
-/* --- Sections & Cards --- */
-.section-title {
-  font-size: 14px; /* ขยายขึ้นนิดหน่อย */
-  color: #e5e7eb; /* สีขาวอมเทา */
+.sub-page-container .section-title {
+  font-size: 14px;
+  color: #e5e7eb;
   text-transform: uppercase;
   font-weight: 700;
   margin: 30px 0 16px 0;
   letter-spacing: 0.5px;
 }
 
-.sub-card-row {
-  background-color: #1f2937; /* ✅ พื้นหลัง Card สีเข้ม (เหมือน Profile Card) */
-  height: 70px; /* เพิ่มความสูงอีกนิดให้ดูโปร่ง */
+.sub-page-container .sub-card-row {
+  background-color: #1f2937;
+  height: 70px;
   border-radius: 8px;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #ffffff; /* ตัวหนังสือขาว */
-  border: 1px solid #374151; /* ✅ เพิ่มเส้นขอบสีเทาเข้ม */
+  color: #ffffff;
+  border: 1px solid #374151;
   transition: transform 0.2s, border-color 0.2s;
 }
 
-.sub-card-row:hover {
-  border-color: #4b5563; /* Hover แล้วขอบชัดขึ้น */
+.sub-page-container .sub-card-row:hover {
+  border-color: #4b5563;
 }
 
-/* --- Columns Specifics --- */
-.font-bold {
-  font-weight: 700;
-  color: #ffffff;
-}
-
-/* Status Styling */
-.status-indicator {
+/* --- Status & Actions --- */
+.sub-page-container .status-indicator {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
-.status-indicator svg {
-  margin-top: 2px;
-}
-
-.status-indicator div {
-  display: flex;
-  flex-direction: column;
-}
-
-.status-text {
+.sub-page-container .status-text {
   font-weight: 600;
   font-size: 14px;
   line-height: 1.4;
   color: #ffffff;
 }
 
-.status-date {
+.sub-page-container .status-date {
   font-size: 12px;
-  color: #9ca3af; /* ✅ วันที่เป็นสีเทาอ่อน */
+  color: #9ca3af;
 }
 
-/* Action Buttons */
-.btn-action {
+.sub-page-container .btn-action {
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   font-size: 14px;
-  text-decoration: none; /* เอาขีดเส้นใต้ออกเพื่อให้ดูสะอาดตา */
+  text-decoration: none;
   transition: opacity 0.2s;
 }
 
-.btn-action:hover {
+.sub-page-container .btn-action:hover {
   opacity: 0.8;
   text-decoration: underline;
 }
 
-.btn-action.renew {
-  color: #3b82f6; /* ✅ สีฟ้า */
+.sub-page-container .btn-action.renew {
+  color: #3b82f6;
   font-weight: 600;
   margin-right: 16px;
 }
 
-.btn-action.pay {
-  color: #facc15; /* ✅ สีเหลืองทอง สำหรับ Pay */
+.sub-page-container .btn-action.pay {
+  color: #facc15;
   font-weight: 600;
 }
