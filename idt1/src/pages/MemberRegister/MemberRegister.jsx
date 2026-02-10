@@ -228,7 +228,7 @@ export default function MemberRegister() {
                 Only 2,083฿/m (Billed Yearly)
               </span>
           </div>
-            <div className="flex bg-[#0F1B2D] rounded-xl p-1 w-[360px]">
+            <div className="flex bg-[#0F1B2D] rounded-xl p-1 w-full">
               {["monthly", "yearly"].map((t) => (
                 <button
                   key={t}
