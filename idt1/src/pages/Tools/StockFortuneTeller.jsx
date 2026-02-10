@@ -65,7 +65,6 @@ const StockFortuneTeller = () => {
                 <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
               </div>
-              <div className="text-xs text-slate-500 font-mono">dashboard_preview.exe</div>
               <div className="w-10"></div> {/* Spacer for balance */}
             </div>
             
