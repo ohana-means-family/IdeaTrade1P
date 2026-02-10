@@ -90,7 +90,7 @@ const LogoutIconSVG = () => (
   </svg>
 );
 
-/* ================= 🔥 NEW FLOATING TOOLTIP 🔥 ================= */
+/* ================= FLOATING TOOLTIP ================= */
 const FloatingTooltip = ({ visible, top, text }) => {
   if (!visible) return null;
   return (
@@ -152,31 +152,43 @@ export default function Sidebar({
     window.location.reload();
   };
 
-  // ✅ แก้ไข Logic การนำทาง
+  // ✅ แก้ไข Logic การนำทาง ตรงนี้
   const handleNavigation = (id, projectItem = null) => {
     
-    // --- 1. เงื่อนไขพิเศษสำหรับ "หมอดูหุ้น" (fortune) ---
+    // --- Logic พิเศษสำหรับ "หมอดูหุ้น" (fortune) ---
     if (id === "fortune") {
         const isUnlocked = unlockedList.includes("fortune");
         
-        // ถ้า "ยังไม่ปลดล็อก" (Free) -> ไปหน้า Preview แทน Popup
+        // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
         if (!isUnlocked) {
-            setActivePage("stock-fortune"); // ตั้ง Active ให้เป็นหน้า Preview
-            navigate("/stock-fortune");     // เปลี่ยน URL
-            return; // จบการทำงาน (ไม่ไปทำ Logic ปกติด้านล่าง)
+            setActivePage("stock-fortune");
+            // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
+            if (location.pathname !== "/dashboard") {
+                navigate("/dashboard", { state: { goTo: "stock-fortune" } });
+            }
+            return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
         }
         
-        // ถ้า "ปลดล็อกแล้ว" (Member) -> จะหลุดลงไปทำงาน Logic ปกติ (เปิด Tool)
+        // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
+        // ซึ่งจะไป setActivePage("fortune") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
     }
 
-    // --- 2. Logic ปกติสำหรับหน้าอื่นๆ ---
+    // --- Logic ปกติสำหรับหน้าอื่นๆ ---
     setActivePage(id);
     if (projectItem && openProject) openProject(projectItem);
     
     // ถ้ายังไม่ได้อยู่ที่ Dashboard ให้ Nav ไป
-    // (เพิ่มเช็คว่าถ้าอยู่ที่ /stock-fortune ก็ต้อง Nav กลับมา Dashboard ถ้ากดเมนูอื่น)
-    if (location.pathname !== "/dashboard" && location.pathname !== "/mit" && location.pathname !== "/stock-fortune") {
-        navigate("/dashboard", { state: { goTo: id } });
+    if (location.pathname !== "/dashboard") {
+        // ใช้ logic เช็คแบบเดิมเพื่อให้ข้อมูลไม่เด้งถ้าอยู่ที่หน้าอื่น
+        if (id !== "mit" && id !== "profile" && id !== "subscription") {
+             navigate("/dashboard", { state: { goTo: id } });
+        } else {
+             // สำหรับหน้าแยก (MIT/Profile/Sub) อาจจะต้อง navigate ไปตาม path ของมัน
+             // แต่ถ้าคุณอยากให้ทุกอย่างอยู่ใน dashboard ก็ใช้ navigate("/dashboard") ได้เลย
+             // ตามโค้ดเดิมของคุณ หน้าพวกนี้ดูเหมือนจะเป็นหน้าแยก (เช่น /mit) 
+             // แต่ถ้าต้องการให้อยู่ใน dashboard ให้แก้บรรทัดนี้ตาม logic dashboard ของคุณ
+             navigate(`/${id}`); 
+        }
     }
   };
 
@@ -360,7 +372,6 @@ export default function Sidebar({
           {/* Project List */}
           {filteredProjects.length > 0 ? (
             filteredProjects.map((p) => {
-              // ✅ ปรับ Highlight: ถ้า activePage คือ stock-fortune ให้ปุ่ม fortune ขึ้น active
               const active = activePage === p.id || (p.id === "fortune" && activePage === "stock-fortune");
               const unlocked = unlockedList.includes(p.id);
 

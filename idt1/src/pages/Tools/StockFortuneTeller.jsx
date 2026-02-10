@@ -106,8 +106,8 @@ const StockFortuneTeller = () => {
         {/* --- CTA Button --- */}
         <div className="text-center">
           <button 
-            // ✅ แก้ไข Path ให้ตรงกับ AppRoutes ("/subscription")
-            onClick={() => navigate("/subscription")} 
+            // ✅ แก้ไข Path ให้ตรงกับ AppRoutes ("/member-register")
+            onClick={() => navigate("/member-register")} 
             className="group relative inline-flex items-center justify-center px-8 py-3 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] cursor-pointer"
           >
             <span className="mr-2">Upgrade Subscription</span>
