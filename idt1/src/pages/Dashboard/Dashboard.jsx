@@ -10,6 +10,7 @@ import Profile from "@/pages/Profile/Profile.jsx";
 import ManageSubscription from "@/pages/Profile/Subscriptions";
 import StockFortuneTeller from "@/pages/Tools/StockFortuneTeller";
 import PetroleumPreview from "@/pages/Tools/PetroleumInsights";
+import RubberThai from "@/pages/Tools/RubberThai";
 
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
@@ -159,6 +160,10 @@ export default function Dashboard({ initialPage }) {
           {/* ถ้า activePage เป็น 'petroleum' ให้โชว์ PetroleumPreview ทันที */}
           {(activePage === "petroleum-preview" || activePage === "petroleum-preview" || location.pathname === "/petroleum-preview") && (
              <PetroleumPreview />
+          )}
+          {/* ถ้า activePage เป็น 'petroleum' ให้โชว์ PetroleumPreview ทันที */}
+          {(activePage === "RubberThai " || activePage === "RubberThai" || location.pathname === "/RubberThai") && (
+             <RubberThai />
           )}
 
           {/* MIT Page (✅ กู้คืนเนื้อหากลับมาแล้วครับ) */}

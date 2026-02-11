@@ -190,6 +190,22 @@ export default function Sidebar({
       // ซึ่งจะไป setActivePage("fortune") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
   }
 
+  // --- Logic พิเศษสำหรับ "Rubber" ---
+      if (id === "rubber") {
+      const isUnlocked = unlockedList.includes("rubber");
+
+      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
+      if (!isUnlocked) {
+          setActivePage("RubberThai");
+        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
+          if (location.pathname !== "/dashboard") {
+              navigate("/dashboard", { state: { goTo: "RubberThai" } });
+          }
+          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
+      }
+      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
+      // ซึ่งจะไป setActivePage("Rubber") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
+  }
 
     // --- Logic ปกติสำหรับหน้าอื่นๆ ---
     setActivePage(id);
