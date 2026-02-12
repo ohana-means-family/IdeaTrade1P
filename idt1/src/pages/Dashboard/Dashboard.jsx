@@ -13,7 +13,7 @@ import PetroleumPreview from "@/pages/Tools/PetroleumInsights";
 import RubberThai from "@/pages/Tools/RubberThai";
 import FlowIntraday from "@/pages/Tools/FlowIntraday";
 import S50 from "@/pages/Tools/S50";
-// import Gold from "@/pages/Tools/Gold";
+import Gold from "@/pages/Tools/Gold";
 // import BidAsk from "@/pages/Tools/BidAsk";
 // import TickMatch from "@/pages/Tools/TickMatch";
 // import DRInsight from "@/pages/Tools/DRInsight";

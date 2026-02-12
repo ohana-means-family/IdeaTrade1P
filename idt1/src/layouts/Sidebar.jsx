@@ -242,8 +242,8 @@ export default function Sidebar({
   }
 
   // --- Logic พิเศษสำหรับ "Gold" ---
-      if (id === "Gold") {
-      const isUnlocked = unlockedList.includes("Gold");
+      if (id === "gold") {
+      const isUnlocked = unlockedList.includes("gold");
 
       // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
       if (!isUnlocked) {
