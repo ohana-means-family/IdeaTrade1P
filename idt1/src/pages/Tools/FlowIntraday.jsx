@@ -86,7 +86,7 @@ export default function FlowIntraday() {
         {/* --- Features Section --- */}
         <div className="w-full max-w-5xl mb-12">
           <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
-            Main Features
+            3 Main Features
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
