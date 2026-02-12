@@ -14,7 +14,7 @@ import RubberThai from "@/pages/Tools/RubberThai";
 import FlowIntraday from "@/pages/Tools/FlowIntraday";
 import S50 from "@/pages/Tools/S50";
 import Gold from "@/pages/Tools/Gold";
-// import BidAsk from "@/pages/Tools/BidAsk";
+import BidAsk from "@/pages/Tools/BidAsk";
 // import TickMatch from "@/pages/Tools/TickMatch";
 // import DRInsight from "@/pages/Tools/DRInsight";
 
@@ -175,23 +175,23 @@ export default function Dashboard({ initialPage }) {
           {(activePage === "FlowIntraday " || activePage === "FlowIntraday" || location.pathname === "/FlowIntraday") && (
              <FlowIntraday />
           )}
-          {/* ถ้า activePage เป็น 'S50' ให้โชว์ S50 ทันที */}
+          {/* ถ้า activePage เป็น 's50' ให้โชว์ S50 ทันที */}
           {(activePage === "S50 " || activePage === "S50" || location.pathname === "/S50") && (
              <S50 />
           )}
-          {/* ถ้า activePage เป็น 'Gold' ให้โชว์ Gold ทันที */}
+          {/* ถ้า activePage เป็น 'gold' ให้โชว์ Gold ทันที */}
           {(activePage === "Gold " || activePage === "Gold" || location.pathname === "/Gold") && (
              <Gold />
           )}
-          {/* ถ้า activePage เป็น 'BidAsk' ให้โชว์ BidAsk ทันที */}
+          {/* ถ้า activePage เป็น 'bidAsk' ให้โชว์ BidAsk ทันที */}
           {(activePage === "BidAsk " || activePage === "BidAsk" || location.pathname === "/BidAsk") && (
              <BidAsk />
           )}
-          {/* ถ้า activePage เป็น 'TickMatch' ให้โชว์ TickMatch ทันที */}
+          {/* ถ้า activePage เป็น 'tickMatch' ให้โชว์ TickMatch ทันที */}
           {(activePage === "TickMatch " || activePage === "TickMatch" || location.pathname === "/TickMatch") && (
              <TickMatch />
           )}
-          {/* ถ้า activePage เป็น 'DRInsight' ให้โชว์ DRInsight ทันที */}
+          {/* ถ้า activePage เป็น 'drInsight' ให้โชว์ DRInsight ทันที */}
           {(activePage === "DRInsight " || activePage === "DRInsight" || location.pathname === "/DRInsight") && (
              <DRInsight />
           )}

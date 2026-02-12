@@ -259,12 +259,12 @@ export default function Sidebar({
   }
 
   // --- Logic พิเศษสำหรับ "BidAsk" ---
-      if (id === "BidAsk") {
-      const isUnlocked = unlockedList.includes("BidAsk");
+      if (id === "bidask") {
+      const isUnlocked = unlockedList.includes("bidask");
 
       // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
       if (!isUnlocked) {
-          setActivePage("FlowIntraday");
+          setActivePage("BidAsk");
         // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
           if (location.pathname !== "/dashboard") {
               navigate("/dashboard", { state: { goTo: "BidAsk" } });
