@@ -16,7 +16,7 @@ import S50 from "@/pages/Tools/S50";
 import Gold from "@/pages/Tools/Gold";
 import BidAsk from "@/pages/Tools/BidAsk";
 import TickMatch from "@/pages/Tools/TickMatch";
-// import DRInsight from "@/pages/Tools/DRInsight";
+import DRInsight from "@/pages/Tools/DRInsight";
 
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";

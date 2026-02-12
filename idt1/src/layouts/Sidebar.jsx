@@ -292,9 +292,9 @@ export default function Sidebar({
       // ซึ่งจะไป setActivePage("tickmatch") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
   }
 
-  // --- Logic พิเศษสำหรับ "dr insight" ---
-      if (id === "drinsight") {
-      const isUnlocked = unlockedList.includes("drinsight");
+  // --- Logic พิเศษสำหรับ "dr" ---
+      if (id === "dr") {
+      const isUnlocked = unlockedList.includes("dr");
 
       // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
       if (!isUnlocked) {
@@ -306,7 +306,7 @@ export default function Sidebar({
           return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
       }
       // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("dr insight") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
+      // ซึ่งจะไป setActivePage("dr") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
   }
 
     // --- Logic ปกติสำหรับหน้าอื่นๆ ---
