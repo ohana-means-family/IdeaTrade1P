@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// ✅ เพิ่ม useLocation เข้ามา
 import { useNavigate, useLocation } from "react-router-dom";
 
 import logo from "@/assets/images/logo.png";
@@ -49,7 +48,7 @@ const sidebarIcons = {
 const getIcon = (key, active) =>
   active ? sidebarIcons[key].active : sidebarIcons[key].default;
 
-/* ================= PROJECTS ================= */
+/* ================= PROJECTS CONFIGURATION ================= */
 const projects = [
   { id: "fortune", name: "หมอดูหุ้น", iconKey: "fortune" },
   { id: "petroleum", name: "Petroleum", iconKey: "petroleum" },
@@ -61,6 +60,20 @@ const projects = [
   { id: "tickmatch", name: "TickMatch", iconKey: "tickmatch" },
   { id: "dr", name: "DR", iconKey: "dr" },
 ];
+
+// ✅ MAPPING: จับคู่ ID โปรเจกต์ -> ไปยังหน้า Preview (กรณี user ยังไม่ซื้อ หรือต้องการเปิดหน้า Preview)
+// อิงตามชื่อ Page ที่คุณกำหนดไว้ใน Dashboard
+const PROJECT_PREVIEWS = {
+  fortune: "stock-fortune",
+  petroleum: "petroleum-preview",
+  rubber: "RubberThai",
+  flow: "FlowIntraday",
+  s50: "S50",
+  gold: "Gold",
+  bidask: "BidAsk",
+  tickmatch: "TickMatch",
+  dr: "DRInsight"
+};
 
 /* ================= INLINE ICONS ================= */
 const CrownIcon = ({ color }) => (
@@ -117,11 +130,7 @@ export default function Sidebar({
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // ✅ State สำหรับ Modal ยืนยัน Logout
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // State สำหรับ Tooltip
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
   useEffect(() => {
@@ -152,177 +161,36 @@ export default function Sidebar({
     window.location.reload();
   };
 
-  // ✅ แก้ไข Logic การนำทาง ตรงนี้
+  // ✅ OPTIMIZED: ฟังก์ชันเดียวจัดการได้ทุก Project (ไม่ต้องเขียน if ซ้ำๆ)
   const handleNavigation = (id, projectItem = null) => {
     
-    // --- Logic พิเศษสำหรับ "หมอดูหุ้น" (fortune) ---
-    if (id === "fortune") {
-        const isUnlocked = unlockedList.includes("fortune");
-        
-        // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
+    // 1. ตรวจสอบว่าเป็น Project ที่อยู่ในรายการ Preview Map หรือไม่
+    if (PROJECT_PREVIEWS[id]) {
+        const isUnlocked = unlockedList.includes(id);
+
+        // กรณี Free (ยังไม่ปลดล็อก) -> เปิดหน้า Preview ตาม Map ที่ตั้งไว้
         if (!isUnlocked) {
-            setActivePage("stock-fortune");
-            // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
+            const previewPage = PROJECT_PREVIEWS[id];
+            setActivePage(previewPage);
+            
             if (location.pathname !== "/dashboard") {
-                navigate("/dashboard", { state: { goTo: "stock-fortune" } });
+                navigate("/dashboard", { state: { goTo: previewPage } });
             }
-            return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
+            return; // จบการทำงานตรงนี้ (User จะเห็นหน้า Preview)
         }
         
-        // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-        // ซึ่งจะไป setActivePage("fortune") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
+        // กรณี Member (ปลดล็อกแล้ว) -> ข้ามไปทำ Logic ด้านล่าง (เปิดหน้า Tool จริง)
     }
 
-    // --- Logic พิเศษสำหรับ "petroleum" ---
-      if (id === "petroleum") {
-      const isUnlocked = unlockedList.includes("petroleum");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("petroleum-preview");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "petroleum-preview" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("petroleum") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "rubber" ---
-      if (id === "rubber") {
-      const isUnlocked = unlockedList.includes("rubber");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("RubberThai");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "RubberThai" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("rubber") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "flow" ---
-      if (id === "flow") {
-      const isUnlocked = unlockedList.includes("flow");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("FlowIntraday");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "FlowIntraday" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("flow") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "S50" ---
-      if (id === "s50") {
-      const isUnlocked = unlockedList.includes("s50");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("S50");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "S50" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("s50") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "gold" ---
-      if (id === "gold") {
-      const isUnlocked = unlockedList.includes("gold");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("Gold");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "Gold" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("gold") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "bidask" ---
-      if (id === "bidask") {
-      const isUnlocked = unlockedList.includes("bidask");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("BidAsk");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "BidAsk" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("bidask") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "tickmatch" ---
-      if (id === "tickmatch") {
-      const isUnlocked = unlockedList.includes("tickmatch");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("TickMatch");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "TickMatch" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("tickmatch") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-  // --- Logic พิเศษสำหรับ "dr" ---
-      if (id === "dr") {
-      const isUnlocked = unlockedList.includes("dr");
-
-      // กรณี Free (ยังไม่ปลดล็อก) -> ให้เปิดหน้า Preview
-      if (!isUnlocked) {
-          setActivePage("DRInsight");
-        // ถ้าไม่อยู่หน้า dashboard ให้ย้ายไป dashboard
-          if (location.pathname !== "/dashboard") {
-              navigate("/dashboard", { state: { goTo: "DRInsight" } });
-          }
-          return; // จบการทำงาน (ไม่ต้องไปทำ Logic ด้านล่าง)
-      }
-      // กรณี Member (ปลดล็อกแล้ว) -> ปล่อยผ่านให้ code ไหลลงไปทำ Logic ปกติ
-      // ซึ่งจะไป setActivePage("dr") ทำให้ Dashboard แสดงข้อมูลอันเดิม (Tool ของจริง)
-  }
-
-    // --- Logic ปกติสำหรับหน้าอื่นๆ ---
+    // 2. Logic ปกติ (สำหรับ Member หรือหน้าทั่วไป)
     setActivePage(id);
     if (projectItem && openProject) openProject(projectItem);
     
     // ถ้ายังไม่ได้อยู่ที่ Dashboard ให้ Nav ไป
     if (location.pathname !== "/dashboard") {
-        // ใช้ logic เช็คแบบเดิมเพื่อให้ข้อมูลไม่เด้งถ้าอยู่ที่หน้าอื่น
         if (id !== "mit" && id !== "profile" && id !== "subscription") {
              navigate("/dashboard", { state: { goTo: id } });
         } else {
-             // สำหรับหน้าแยก (MIT/Profile/Sub) อาจจะต้อง navigate ไปตาม path ของมัน
-             // แต่ถ้าคุณอยากให้ทุกอย่างอยู่ใน dashboard ก็ใช้ navigate("/dashboard") ได้เลย
-             // ตามโค้ดเดิมของคุณ หน้าพวกนี้ดูเหมือนจะเป็นหน้าแยก (เช่น /mit) 
-             // แต่ถ้าต้องการให้อยู่ใน dashboard ให้แก้บรรทัดนี้ตาม logic dashboard ของคุณ
              navigate(`/${id}`); 
         }
     }
@@ -422,7 +290,6 @@ export default function Sidebar({
 
         {/* ================= MENU ITEMS ================= */}
         <nav 
-          // ✅ คืนค่า overflow-y-auto เพื่อให้ Scroll ได้
           className={`flex-1 no-scrollbar w-full ${
             collapsed 
               ? "px-2 flex flex-col items-center gap-2 overflow-y-auto" 
@@ -588,7 +455,6 @@ export default function Sidebar({
 
               {/* Sign Out */}
               <button
-                // 🟢 เรียกใช้ handleSignOutClick เพื่อเปิด Modal
                 onClick={handleSignOutClick}
                 onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
                 onMouseLeave={handleMouseLeave}

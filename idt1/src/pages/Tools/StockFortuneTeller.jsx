@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const StockFortuneTeller = () => {
+export default function StockFortuneTeller() {
   const navigate = useNavigate();
   const [isMember, setIsMember] = useState(false);
 
@@ -11,8 +11,7 @@ const StockFortuneTeller = () => {
       const userProfile = localStorage.getItem("userProfile");
       if (userProfile) {
         const user = JSON.parse(userProfile);
-        // เช็คว่ามีสิทธิ์ 'fortune' หรือไม่ (ถ้ามีถือว่าเป็น Member)
-        if (user.unlockedItems && user.unlockedItems.includes('fortune')) {
+        if (user.unlockedItems && user.unlockedItems.includes("fortune")) {
           setIsMember(true);
         }
       }
@@ -21,32 +20,31 @@ const StockFortuneTeller = () => {
     }
   }, []);
 
-  // ข้อมูลฟีเจอร์ต่างๆ
   const features = [
     {
       title: "Last",
-      description: "Stay updated with intuitive, real-time daily price action charts."
+      desc: "Stay updated with intuitive, real-time daily price action charts. This allows you to track market movement long before the official reports are released.",
     },
     {
       title: "PredictTrend",
-      description: "Visualizes the pulse of the market by tracking real-time capital inflows and outflows."
+      desc: "Visualizes the pulse of the market by tracking real-time capital inflows and outflows to analyze the overall profitability of the group.",
     },
     {
       title: "Volume Analysis",
-      description: "Deep dive into volume patterns to confirm trend strength and reversals."
+      desc: "Deep dive into volume patterns to confirm trend strength. Understand how subsidies or levies affect price movements and assess the regulatory risks.",
     },
     {
       title: "Smart Signals",
-      description: "AI-driven entry and exit points to maximize your profit potential."
+      desc: "AI-driven entry and exit points. This feature breaks down different products and maps them directly to the specific stocks that stand to benefit.",
     },
     {
       title: "Sector Rotation",
-      description: "Identify which sectors are leading the market in real-time."
+      desc: "Identify which sectors are leading the market in real-time to adjust your portfolio according to the current market pulse.",
     },
     {
       title: "Risk Management",
-      description: "Calculated risk metrics to help you protect your capital."
-    }
+      desc: "Calculated risk metrics to help you protect your capital. Stay informed about market volatility and protect your investment holdings.",
+    },
   ];
 
   return (
@@ -56,7 +54,7 @@ const StockFortuneTeller = () => {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-        
+
         {/* --- Header Section --- */}
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
@@ -69,7 +67,7 @@ const StockFortuneTeller = () => {
           </p>
         </div>
 
-        {/* --- Main Dashboard Image (Mac Window Style) --- */}
+        {/* --- Dashboard Image (Mac Window Style) --- */}
         <div className="relative group w-full max-w-5xl mb-16">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
           
@@ -81,35 +79,34 @@ const StockFortuneTeller = () => {
                 <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
               </div>
             </div>
-            
+
             <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-              <img 
-                src="/src/assets/images/StockFortune.png" 
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out" 
-                alt="Dashboard Preview"
+              <img
+                src="/src/assets/images/StockFortune.png"
+                alt="Stock Fortune Dashboard"
+                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
               />
             </div>
           </div>
         </div>
 
-        {/* --- Features Section (GRID Layout - ไม่เลื่อน) --- */}
+        {/* --- Features Section --- */}
         <div className="w-full max-w-5xl mb-12">
           <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
             6 Main Features
           </h2>
-          
-          {/* ✅ กลับมาใช้ Grid แบบเดิม */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((item, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="group bg-[#0f172a]/60 border border-slate-700/50 p-6 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300"
               >
                 <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">
                   {item.title}
                 </h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  {item.description}
+                  {item.desc}
                 </p>
               </div>
             ))}
@@ -118,45 +115,36 @@ const StockFortuneTeller = () => {
 
         {/* --- CTA Buttons (Conditional Logic) --- */}
         <div className="text-center w-full max-w-md mx-auto mt-4">
-          
           {isMember ? (
-            /* ================= CASE 1: เป็น Member แล้ว ================= */
-            <button 
-              onClick={() => navigate("/member-register")} 
+            <button
+              onClick={() => navigate("/member-register")}
               className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
             >
-              <span className="mr-2">Upgrade Subscription</span>
+              <span className="mr-2">Start Using Tool</span>
               <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </button>
-
           ) : (
-            /* ================= CASE 2: ยังไม่เป็น Member (Free) ================= */
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              {/* ปุ่ม Sign In */}
-              <button 
-                onClick={() => navigate("/login")} 
+              <button
+                onClick={() => navigate("/login")}
                 className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
               >
                 Sign In
               </button>
 
-              {/* ปุ่ม Join Membership */}
-              <button 
-                onClick={() => navigate("/member-register")} 
+              <button
+                onClick={() => navigate("/member-register")}
                 className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
               >
                 Join Membership
               </button>
             </div>
           )}
-
         </div>
 
       </div>
     </div>
   );
-};
-
-export default StockFortuneTeller;
+}
