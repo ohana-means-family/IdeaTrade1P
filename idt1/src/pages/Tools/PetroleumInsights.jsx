@@ -13,6 +13,9 @@ export default function PetroleumInsights() {
   const [isMember, setIsMember] = useState(false);
   const [enteredTool, setEnteredTool] = useState(false);
 
+  const [period, setPeriod] = useState("MAX");
+  const [symbol, setSymbol] = useState("TOP");
+
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
 
@@ -394,7 +397,7 @@ export default function PetroleumInsights() {
             <button
               onClick={() => {
                 setEnteredTool(true);
-                localStorage.setItem("fortuneToolEntered", "true"); // 🔥 จำสถานะ
+                localStorage.setItem("petroleumToolEntered", "true"); // 🔥 จำสถานะ
               }}
               className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
             >
@@ -413,8 +416,94 @@ export default function PetroleumInsights() {
      CASE 3 : เข้า Full Dashboard แล้ว
   =========================================================== */
   return (
-    <div className="w-full min-h-screen bg-[#0B1221] text-white flex items-center justify-center">
-      Petroleum Full Dashboard
+    <div className="w-full min-h-screen bg-[#0b111a] p-6 text-white">
+
+    {/* CENTER WRAPPER */}
+    <div className="max-w-[1400px] mx-auto">
+
+      {/* ================= TOP FILTER BAR ================= */}
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+
+        {/* LEFT SIDE */}
+        <div className="flex items-center gap-3">
+
+          {/* Toggle */}
+          <div className="w-10 h-5 bg-slate-700 rounded-full relative cursor-pointer">
+            <div className="w-4 h-4 bg-cyan-400 rounded-full absolute top-0.5 left-0.5 transition-all"></div>
+          </div>
+
+          {/* Symbol Select */}
+          <select
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-md text-sm focus:border-cyan-500 outline-none"
+          >
+            <option value="TOP">Symbol: TOP</option>
+            <option value="PTT">Symbol: PTT</option>
+            <option value="BCP">Symbol: BCP</option>
+          </select>
+
+          {/* Oil Type */}
+          <select className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-md text-sm focus:border-cyan-500 outline-none">
+            <option>GASOHOL95</option>
+            <option>WTI</option>
+            <option>BRENT</option>
+          </select>
+        </div>
+
+        {/* RIGHT PERIOD BUTTONS */}
+        <div className="flex gap-2">
+          {["3M","6M","1Y","YTD","MAX"].map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-3 py-1 text-xs rounded-md border transition
+                ${period === p
+                  ? "bg-cyan-500 text-black border-cyan-500"
+                  : "border-slate-700 hover:border-cyan-400 hover:text-cyan-400"
+                }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ================= METRIC STRIP ================= */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        <Metric title="WTI CRUDE" value="78.45" change="+1.2%" />
+        <Metric title="BRENT CRUDE" value="82.10" change="+0.8%" />
+        <Metric title="NATURAL GAS" value="2.45" change="-0.5%" />
+        <Metric title="USD/THB" value="35.80" change="+0.1%" />
+
+      </div>
+
+      {/* ================= MAIN GRID ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* BIG VALUE CARD */}
+        <div className="bg-[#111827] border border-slate-700 rounded-xl p-8 flex flex-col justify-center items-center relative overflow-hidden">
+
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent"></div>
+
+          <div className="text-center z-10">
+            <p className="text-6xl font-bold tracking-tight">0.45</p>
+            <p className="text-green-400 mt-3">
+              ▲ 0.02 (+4.65%)
+            </p>
+            <p className="text-xs text-slate-500 mt-6">
+              Last Update 16:30:00
+            </p>
+          </div>
+        </div>
+
+        <Chart title="EX-REFIN" />
+        <Chart title="Marketing Margin" />
+        <Chart title="Oil Fund" step />
+
+      </div>
     </div>
+  </div>
   );
 }
