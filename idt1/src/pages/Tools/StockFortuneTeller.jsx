@@ -40,7 +40,7 @@ useEffect(() => {
         setIsMember(true);
 
         // 🔥 เช็คว่าเคยเข้า tool แล้วหรือยัง
-        const hasEntered = localStorage.getItem("fortuneToolEntered");
+        const hasEntered = sessionStorage.getItem("fortuneToolEntered");
         if (hasEntered === "true") {
           setEnteredTool(true);
         }
