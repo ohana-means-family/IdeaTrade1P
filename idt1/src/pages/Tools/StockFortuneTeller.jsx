@@ -109,7 +109,7 @@ useEffect(() => {
   ];
 
   /* ==========================================================
-     CASE 1 : ยังไม่ซื้อ → PREVIEW VERSION (โค้ดเดิม 100%)
+     CASE 1 : ยังไม่ซื้อ → PREVIEW VERSION
   =========================================================== */
   if (!isMember) {
     return (
@@ -290,21 +290,71 @@ useEffect(() => {
               6 Main Features
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="relative group">
+            
+            {/* 1. ปุ่มซ้าย (ปรับระยะห่างเหมือนกัน) */}
+            <button 
+              onClick={() => scroll("left")}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 
+                         w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                         hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                         hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                         flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                         active:scale-95
+                         ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
+              aria-label="Scroll Left"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* 2. Scroll Container */}
+            <div 
+              ref={scrollContainerRef}
+              onScroll={checkScroll} 
+              className="flex overflow-x-auto gap-6 py-4 px-1 snap-x snap-mandatory hide-scrollbar scroll-smooth"
+              style={scrollbarHideStyle}
+            >
               {features.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-[#0f172a]/60 border border-slate-700/50 p-6 rounded-xl"
+                  // ล็อคความกว้าง w-[350px] md:w-[400px] เหมือนต้นแบบ
+                  className="
+                      w-[350px] md:w-[400px] flex-shrink-0 snap-center
+                      group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl 
+                      hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300
+                  "
                 >
-                  <h3 className="text-xl font-bold text-white mb-3">
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">
                     {item.title}
                   </h3>
+                  {/* ไม่จำกัดบรรทัด (เอา line-clamp ออก) */}
                   <p className="text-slate-400 text-sm leading-relaxed">
                     {item.desc}
                   </p>
                 </div>
               ))}
             </div>
+
+            {/* 3. ปุ่มขวา (ปรับระยะห่างเหมือนกัน) */}
+            <button 
+              onClick={() => scroll("right")}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 
+                         w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                         hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                         hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                         flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                         active:scale-95
+                         ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+              aria-label="Scroll Right"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+          </div>
           </div>
 
           <div className="flex gap-4">
