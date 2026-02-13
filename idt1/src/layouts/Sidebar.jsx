@@ -61,8 +61,7 @@ const projects = [
   { id: "dr", name: "DR", iconKey: "dr" },
 ];
 
-// ✅ MAPPING: จับคู่ ID โปรเจกต์ -> ไปยังหน้า Preview (กรณี user ยังไม่ซื้อ หรือต้องการเปิดหน้า Preview)
-// อิงตามชื่อ Page ที่คุณกำหนดไว้ใน Dashboard
+// ✅ MAPPING: จับคู่ ID โปรเจกต์ -> ไปยังหน้า Preview
 const PROJECT_PREVIEWS = {
   fortune: "stock-fortune",
   petroleum: "petroleum-preview",
@@ -161,7 +160,7 @@ export default function Sidebar({
     window.location.reload();
   };
 
-  // ✅ OPTIMIZED: ฟังก์ชันเดียวจัดการได้ทุก Project (ไม่ต้องเขียน if ซ้ำๆ)
+  // ✅ OPTIMIZED: ฟังก์ชันเดียวจัดการได้ทุก Project
   const handleNavigation = (id, projectItem = null) => {
     
     // 1. ตรวจสอบว่าเป็น Project ที่อยู่ในรายการ Preview Map หรือไม่
@@ -176,17 +175,14 @@ export default function Sidebar({
             if (location.pathname !== "/dashboard") {
                 navigate("/dashboard", { state: { goTo: previewPage } });
             }
-            return; // จบการทำงานตรงนี้ (User จะเห็นหน้า Preview)
+            return; 
         }
-        
-        // กรณี Member (ปลดล็อกแล้ว) -> ข้ามไปทำ Logic ด้านล่าง (เปิดหน้า Tool จริง)
     }
 
-    // 2. Logic ปกติ (สำหรับ Member หรือหน้าทั่วไป)
+    // 2. Logic ปกติ
     setActivePage(id);
     if (projectItem && openProject) openProject(projectItem);
     
-    // ถ้ายังไม่ได้อยู่ที่ Dashboard ให้ Nav ไป
     if (location.pathname !== "/dashboard") {
         if (id !== "mit" && id !== "profile" && id !== "subscription") {
              navigate("/dashboard", { state: { goTo: id } });
@@ -375,8 +371,9 @@ export default function Sidebar({
           {/* Project List */}
           {filteredProjects.length > 0 ? (
             filteredProjects.map((p) => {
-              const active = activePage === p.id || (p.id === "fortune" && activePage === "stock-fortune");
+              // ✅ FIXED: เช็คทั้ง ID ปกติ และ ID ของหน้า Preview
               const unlocked = unlockedList.includes(p.id);
+              const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
 
               return (
                 <button
