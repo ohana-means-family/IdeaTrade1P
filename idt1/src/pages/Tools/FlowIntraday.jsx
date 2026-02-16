@@ -2,79 +2,94 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const scrollbarHideStyle = {
-  msOverflowStyle: 'none',
-  scrollbarWidth: 'none'
+  msOverflowStyle: "none",
+  scrollbarWidth: "none",
 };
 
 export default function FlowIntraday() {
-  const navigate = useNavigate();
-  const [isMember, setIsMember] = useState(false);
 
-  // --- เพิ่ม Refs และ State สำหรับ Scroll ---
+  const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
+
+  const [isMember, setIsMember] = useState(false);
+  const [enteredTool, setEnteredTool] = useState(false);
+  const [layout, setLayout] = useState("4");
+
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
 
-  // --- Logic คำนวณการโชว์ปุ่ม ---
-  const checkScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setShowLeft(scrollLeft > 1);
-      const isEnd = Math.ceil(scrollLeft + clientWidth) >= (scrollWidth - 2);
-      setShowRight(!isEnd);
-    }
-  };
-
-  // --- Logic สั่ง Scroll ---
-  const scroll = (direction) => {
-    if (scrollContainerRef.current) {
-      const { current } = scrollContainerRef;
-      const scrollAmount = 350;
-      if (direction === "left") {
-        current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-      } else {
-        current.scrollBy({ left: scrollAmount, behavior: "smooth" });
-      }
-      setTimeout(checkScroll, 300); 
-    }
-  };
-
-  // --- Logic เช็คสถานะ Member ---
+  /* ================= MEMBER CHECK ================= */
   useEffect(() => {
     try {
       const userProfile = localStorage.getItem("userProfile");
+
       if (userProfile) {
         const user = JSON.parse(userProfile);
-        if (user.unlockedItems && user.unlockedItems.includes("flow")) {
+
+        if (user.unlockedItems?.includes("flow")) {
           setIsMember(true);
+
+          const hasEntered = sessionStorage.getItem("flowToolEntered");
+          if (hasEntered === "true") {
+            setEnteredTool(true);
+          }
         }
       }
-    } catch (error) {
-      console.error("Error checking member status:", error);
+    } catch (err) {
+      console.error(err);
     }
+  }, []);
 
-    // เพิ่ม Event Listener สำหรับ Scroll
+  /* ================= SCROLL ================= */
+  const checkScroll = () => {
+    if (!scrollContainerRef.current) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } =
+      scrollContainerRef.current;
+
+    setShowLeft(scrollLeft > 1);
+    setShowRight(
+      Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2
+    );
+  };
+
+  const scroll = (direction) => {
+    if (!scrollContainerRef.current) return;
+
+    scrollContainerRef.current.scrollBy({
+      left: direction === "left" ? -350 : 350,
+      behavior: "smooth",
+    });
+
+    setTimeout(checkScroll, 300);
+  };
+
+  useEffect(() => {
     checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
   }, []);
 
   const features = [
     {
       title: "Multi-Asset Flow Monitor",
-      desc: `Monitor up to 12 stocks at once with a high-efficiency Grid Layout. This is the perfect setup for comparing capital flows across an entire industry sector in a single glance.`,
+      desc: "Monitor up to 12 stocks at once in a powerful grid layout.",
     },
     {
       title: "Smart Flow Alerts",
-      desc: `Build your own intelligent notification system. Set custom triggers based on price levels or flow signals, and get instant alerts the moment your criteria are met—no more staring at screens all day.`,
+      desc: "Set custom triggers and receive instant notifications.",
     },
     {
       title: "Customizable Layout",
-      desc: `Tailor your workspace to fit your unique trading style. Access critical data for your watchlist with maximum speed and flexibility, ensuring your workflow is as fast as the market.`,
+      desc: "Switch layouts and adapt to your trading style.",
     },
   ];
 
-  return (
+  /* ==========================================================
+     CASE 1 : PREVIEW (NOT MEMBER)
+  ========================================================== */
+  if (!isMember) {
+     return (
     <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
       
       {/* Background Ambience */}
@@ -226,6 +241,325 @@ export default function FlowIntraday() {
           )}
         </div>
 
+      </div>
+    </div>
+  );
+  }
+
+  /* ==========================================================
+     CASE 2 : START SCREEN (MEMBER BUT NOT ENTERED)
+  ========================================================== */
+  if (isMember && !enteredTool) {
+     return (
+    <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
+      
+      {/* Background Ambience */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
+
+      {/* Style ซ่อน Scrollbar */}
+      <style>
+        {`
+          .hide-scrollbar::-webkit-scrollbar { display: none; }
+        `}
+      </style>
+
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
+
+        {/* --- Header Section --- */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
+              Flow Intraday
+            </span>
+          </h1>
+          <p className="text-slate-400 text-lg md:text-xl font-light">
+            Turn your trading screen into an elite surveillance system
+          </p>
+        </div>
+
+        {/* --- Dashboard Image --- */}
+        <div className="relative group w-full max-w-5xl mb-16">
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
+          
+          <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="bg-[#0f172a] px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+              </div>
+            </div>
+
+            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
+              <img
+                src="/src/assets/images/Flow.png"
+                alt="Flow Intraday Dashboard"
+                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* --- Features Section (Scroll Layout) --- */}
+        <div className="w-full max-w-5xl mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
+            3 Main Features
+          </h2>
+
+          <div className="relative group">
+            
+            {/* 1. ปุ่มซ้าย */}
+            <button 
+              onClick={() => scroll("left")}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 
+                         w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                         hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                         hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                         flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                         active:scale-95
+                         ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
+              aria-label="Scroll Left"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* 2. Scroll Container */}
+            <div 
+              ref={scrollContainerRef}
+              onScroll={checkScroll} 
+              className="flex overflow-x-auto gap-6 py-4 px-1 snap-x snap-mandatory hide-scrollbar scroll-smooth"
+              style={scrollbarHideStyle}
+            >
+              {features.map((item, index) => (
+                <div
+                  key={index}
+                  className="
+                      w-[350px] md:w-[400px] flex-shrink-0 snap-center
+                      group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl 
+                      hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300
+                  "
+                >
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* 3. ปุ่มขวา */}
+            <button 
+              onClick={() => scroll("right")}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 
+                         w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                         hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                         hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                         flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                         active:scale-95
+                         ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+              aria-label="Scroll Right"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+          </div>
+        </div>
+
+        {/* --- CTA Buttons --- */}
+       <div className="flex gap-4">
+            <button
+              onClick={() => {
+                setEnteredTool(true);
+                localStorage.setItem("flowToolEntered", "true"); // 🔥 จำสถานะ
+              }}
+              className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
+            >
+              <span className="mr-2">Start Using Tool</span>
+              <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          </div>
+
+      </div>
+    </div>
+  );
+  }
+
+ const boxes = Array.from({ length: 12 });
+
+  return (
+    <div className="w-full min-h-screen bg-[#0b111a] text-white px-6 py-6">
+
+      <div className="max-w-[1600px] mx-auto">
+
+        {/* ================= TOP CONTROL BAR ================= */}
+        <div className="flex items-center justify-between mb-6">
+
+          <div className="flex items-center gap-6">
+
+            {/* Select Layout */}
+            <div className="flex items-center gap-3 bg-[#111827] border border-slate-700 px-4 py-2 rounded-lg">
+              <span className="text-sm text-slate-400">
+                Select Layout :
+              </span>
+
+              <div className="flex gap-2">
+                {["4", "3", "2"].map((col) => (
+                  <button
+                    key={col}
+                    onClick={() => setLayout(col)}
+                    className={`w-7 h-7 rounded text-xs flex items-center justify-center transition
+                      ${
+                        layout === col
+                          ? "bg-purple-600 text-white"
+                          : "bg-[#1f2937] text-slate-400 hover:text-white"
+                      }`}
+                  >
+                    {col === "4" ? "▦" : col === "3" ? "▤" : "☰"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price / Value */}
+            <div className="flex items-center gap-3 text-sm text-slate-400">
+              <span>Price</span>
+              <div className="w-8 h-[2px] bg-white"></div>
+              <span>Value</span>
+              <div className="flex gap-1">
+                <div className="w-3 h-[2px] bg-green-400"></div>
+                <div className="w-3 h-[2px] bg-red-400"></div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Side */}
+          <div className="flex items-center gap-3">
+            <select className="bg-[#111827] border border-slate-700 px-4 py-2 rounded-lg text-sm">
+              <option>Favorites</option>
+              <option>SET50</option>
+              <option>Energy</option>
+            </select>
+
+            <button className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-semibold">
+              ♥ ADD
+            </button>
+          </div>
+        </div>
+
+        {/* ================= GRID ================= */}
+        <div
+          className={`
+            grid gap-5 transition-all duration-300
+            ${
+              layout === "4"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : layout === "3"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1 md:grid-cols-2"
+            }
+          `}
+        >
+          {boxes.map((_, index) => (
+            <div
+              key={index}
+              className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition"
+            >
+
+              <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700">
+
+                <select className="bg-transparent text-xs text-slate-400 outline-none">
+                  <option>Symbol...</option>
+                  <option>PTT</option>
+                  <option>TOP</option>
+                  <option>DELTA</option>
+                </select>
+
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span>Notify</span>
+
+                  <select className="bg-[#1f2937] px-2 py-0.5 rounded text-xs">
+                    <option>Flow</option>
+                    <option>Price</option>
+                  </select>
+
+                  <span className="cursor-pointer hover:text-white">🔔</span>
+                  <span className="cursor-pointer hover:text-white">🔄</span>
+                </div>
+
+              </div>
+
+              <div className="h-[180px] bg-[#0b1220] flex items-center justify-center text-slate-600 text-sm">
+                Chart Area
+              </div>
+
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ==========================================================
+   REUSABLE PREVIEW SECTION
+========================================================== */
+
+function PreviewSection({
+  title,
+  subtitle,
+  features,
+  navigate,
+  isMember,
+  onStart,
+}) {
+  return (
+    <div className="relative w-full min-h-screen text-white overflow-hidden pb-20">
+
+      <div className="max-w-6xl mx-auto px-4 py-10 text-center">
+
+        <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          {title}
+        </h1>
+
+        <p className="text-slate-400 mb-10">{subtitle}</p>
+
+        <div className="flex justify-center gap-6 flex-wrap mb-10">
+          {features.map((item, index) => (
+            <div
+              key={index}
+              className="w-[300px] bg-[#111827] border border-slate-700 p-6 rounded-xl"
+            >
+              <h3 className="text-lg font-bold mb-3">{item.title}</h3>
+              <p className="text-slate-400 text-sm">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {isMember ? (
+          <button
+            onClick={onStart}
+            className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full font-bold"
+          >
+            Start Using Tool
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate("/member-register")}
+            className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full font-bold"
+          >
+            Join Membership
+          </button>
+        )}
       </div>
     </div>
   );

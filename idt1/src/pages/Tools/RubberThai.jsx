@@ -384,7 +384,7 @@ export default function RubberThai() {
             <button
               onClick={() => {
                 setEnteredTool(true);
-                localStorage.setItem("petroleumToolEntered", "true"); // 🔥 จำสถานะ
+                localStorage.setItem("rubberToolEntered", "true"); // 🔥 จำสถานะ
               }}
               className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
             >
