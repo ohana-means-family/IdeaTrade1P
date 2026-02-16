@@ -61,11 +61,11 @@ export default function DRInsight() {
   ================================ */
   const checkScroll = () => {
     if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } =
-        scrollContainerRef.current;
+      const { scrollLeft, scrollWidth, clientWidth } = 
+      scrollContainerRef.current;
       setShowLeft(scrollLeft > 1);
-      const isEnd =
-        Math.ceil(scrollLeft + clientWidth) >= scrollWidth - 2;
+      const isEnd = 
+      Math.ceil(scrollLeft + clientWidth) >= scrollWidth - 2;
       setShowRight(!isEnd);
     }
   };
