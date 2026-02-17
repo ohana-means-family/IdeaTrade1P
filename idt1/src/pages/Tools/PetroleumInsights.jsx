@@ -555,16 +555,6 @@ if (isMember && enteredTool) {
 
                 <div className="flex items-center gap-2">
 
-                  {symbol && (
-                    <span className="text-white">
-                      {symbol}
-                    </span>
-                  )}
-
-                </div>
-
-                <div className="flex items-center gap-2">
-
                   {/* CLEAR BUTTON */}
                   {(symbol || symbolQuery) && (
                     <button
