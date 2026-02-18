@@ -1,10 +1,53 @@
 // src/pages/tools/S50.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 const scrollbarHideStyle = {
   msOverflowStyle: 'none',
   scrollbarWidth: 'none'
+};
+
+// ===== MOCK DATA GENERATOR =====
+const generateMockData = (seed = 1, points = 60, volatility = 2) => {
+  const data = [];
+  let value = 100 + seed * 5;
+
+  for (let i = 0; i < points; i++) {
+    const change = (Math.sin(i + seed) + Math.random() - 0.5) * volatility;
+    value += change;
+    data.push(value);
+  }
+
+  return data;
+};
+
+// ===== DETERMINISTIC MASTER DATA =====
+const generateMasterData = (seed = 1, totalPoints = 300) => {
+  const data = [];
+  let value = 100 + seed * 5;
+
+  for (let i = 0; i < totalPoints; i++) {
+    const random = Math.sin(i * 0.7 + seed) * 10000;
+    const change = (random - Math.floor(random)) * 2 - 1;
+    value += change;
+    data.push(value);
+  }
+
+  return data;
+};
+
+const normalizeData = (data, height = 280) => {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+
+  return data
+    .map((val, i) => {
+      const x = (i / (data.length - 1)) * 100;
+      const y = height - ((val - min) / range) * height;
+      return `${x},${y}`;
+    })
+    .join(" ");
 };
 
 export default function S50() {
@@ -449,6 +492,34 @@ export default function S50() {
     CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
   ========================================================== */
 
+  // ===== MOCK DATA GENERATOR =====
+const generateMockData = (seed = 1, points = 60, volatility = 2) => {
+  const data = [];
+  let value = 100 + seed * 5;
+
+  for (let i = 0; i < points; i++) {
+    const change = (Math.sin(i + seed) + Math.random() - 0.5) * volatility;
+    value += change;
+    data.push(value);
+  }
+
+  return data;
+};
+
+const normalizeData = (data, height = 280) => {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+
+  return data
+    .map((val, i) => {
+      const x = (i / (data.length - 1)) * 100;
+      const y = height - ((val - min) / range) * height;
+      return `${x},${y}`;
+    })
+    .join(" ");
+};
+
   return (
     <div className="w-full min-h-screen bg-[#0b111a] text-white px-6 py-6">
 
@@ -536,10 +607,10 @@ export default function S50() {
         {/* ================= CHART GRID ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <ChartCard title="1. Last (SET50 Daily)" />
-          <ChartCard title="2. Confirm Up/Down S50" />
-          <ChartCard title="3. Trend (Volume Flow)" />
-          <ChartCard title="4. Mid-Trend (SET Context)" />
+        <ChartCard title="1. Last (SET50 Daily)" timeframe={timeframe} />
+        <ChartCard title="2. Confirm Up/Down S50" timeframe={timeframe} />
+        <ChartCard title="3. Trend (Volume Flow)" timeframe={timeframe} />
+        <ChartCard title="4. Mid-Trend (SET Context)" timeframe={timeframe} />
 
         </div>
 
@@ -549,14 +620,65 @@ export default function S50() {
 }
 
 /* ================= REUSABLE CHART CARD ================= */
-function ChartCard({ title }) {
+function ChartCard({ title, timeframe }) {
+
+  const seed = title.length;
+
+  // 🔥 สร้าง master data แค่ครั้งเดียว
+  const masterDataRef = useRef(generateMasterData(seed));
+
+  const data = useMemo(() => {
+    const master = masterDataRef.current;
+
+    let sliceSize = 60;
+
+    if (timeframe === "15m") sliceSize = 40;
+    if (timeframe === "1H") sliceSize = 80;
+    if (timeframe === "Day") sliceSize = 150;
+    if (timeframe === "Week") sliceSize = 300;
+
+    // 🔥 เอาข้อมูลจากท้ายกราฟมา
+    return master.slice(master.length - sliceSize);
+  }, [timeframe]);
+
+  const points = normalizeData(data);
+  const isUp = data[data.length - 1] >= data[0];
+
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden">
-      <div className="px-4 py-3 bg-[#0f172a] border-b border-slate-700 text-sm text-slate-300">
-        {title}
+
+      <div className="px-4 py-3 bg-[#0f172a] border-b border-slate-700 flex justify-between items-center">
+        <span className="text-sm text-slate-300">{title}</span>
+        <span className="text-xs text-slate-500">{timeframe}</span>
       </div>
-      <div className="h-[300px] flex items-center justify-center text-slate-500">
-        Chart Area
+
+      <div className="h-[300px] relative">
+
+        <svg
+          viewBox="0 0 100 280"
+          preserveAspectRatio="none"
+          className="w-full h-full"
+        >
+          <defs>
+            <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={isUp ? "#22c55e" : "#ef4444"} stopOpacity="0.4"/>
+              <stop offset="100%" stopColor="transparent"/>
+            </linearGradient>
+          </defs>
+
+          <polygon
+            fill={`url(#grad-${seed})`}
+            points={`0,280 ${points} 100,280`}
+          />
+
+          <polyline
+            fill="none"
+            stroke={isUp ? "#22c55e" : "#ef4444"}
+            strokeWidth="2"
+            points={points}
+          />
+        </svg>
+
       </div>
     </div>
   );
