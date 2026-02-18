@@ -499,16 +499,44 @@ return (
       </div>
 
       {/* ================= MAIN CHART ================= */}
-      <div className="bg-[#111827] border border-slate-700 rounded-xl mb-6">
+      <div className="bg-[#111827] border border-slate-700 rounded-xl mb-6 overflow-hidden">
 
+        {/* HEADER */}
         <div className="px-4 py-3 border-b border-slate-700 text-sm text-slate-300">
           Gold (COMEX)
         </div>
 
-        <div className="h-[420px] flex items-center justify-center text-slate-500">
-          Main Chart Area
+        {/* CHART AREA */}
+        <div className="relative h-[420px]">
+
+        {/* GRID */}
+        <div className="absolute inset-0 grid grid-rows-6 grid-cols-8 opacity-10 z-0">
+          {Array.from({ length: 48 }).map((_, i) => (
+            <div key={i} className="border border-slate-500"></div>
+          ))}
         </div>
 
+        {/* MOCK LINE GRAPH */}
+        <svg
+          viewBox="0 0 100 50"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+        >
+          <polyline
+            fill="none"
+            stroke="#06b6d4"
+            strokeWidth="0.5"
+            points="0,40 10,38 20,34 30,36 40,28 50,30 60,24 70,26 80,20 90,18 100,12"
+          />
+        </svg>
+
+        {/* REAL CHART MOUNT POINT */}
+        <div
+          id="real-gold-chart"
+          className="absolute inset-0 z-20"
+        />
+
+      </div>
       </div>
 
       {/* ================= LOWER GRID ================= */}
@@ -559,11 +587,35 @@ function Badge({ label, value, color = "text-white" }) {
 function ChartCard({ title }) {
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden">
+
       <div className="px-4 py-3 bg-[#0f172a] border-b border-slate-700 text-sm text-slate-300">
         {title}
       </div>
-      <div className="h-[280px] flex items-center justify-center text-slate-500">
-        Chart Area
+
+      <div className="relative h-[280px]">
+
+        <div className="absolute inset-0 grid grid-rows-5 grid-cols-6 opacity-10 z-0">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div key={i} className="border border-slate-500"></div>
+          ))}
+        </div>
+
+        <svg
+          viewBox="0 0 100 50"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+        >
+          <polyline
+            fill="none"
+            stroke="#22d3ee"
+            strokeWidth="0.6"
+            points="0,35 15,32 30,28 45,30 60,24 75,26 90,20 100,18"
+          />
+        </svg>
+
+        {/* future real chart */}
+        <div className="absolute inset-0 z-20" />
+
       </div>
     </div>
   );
