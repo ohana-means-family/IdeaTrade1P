@@ -206,7 +206,7 @@ export default function PetroleumInsights() {
         </div>
 
         {/* --- Dashboard Image --- */}
-        <div className="relative group w-full max-w-5xl mb-16">
+        <div className="relative group w-full max-w-6xl mb-16">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
           
           <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
@@ -219,7 +219,7 @@ export default function PetroleumInsights() {
             </div>
 
             {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
-            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
+            <div className="aspect-[17/9] w-full bg-[#0B1221] relative overflow-hidden group">
               <div className="w-[150%] h-[150%] origin-top-left transform scale-[0.67]">
                 <PetroleumDashboard />
             </div>

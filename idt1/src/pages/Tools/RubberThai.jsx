@@ -465,7 +465,7 @@ export default function RubberThai() {
   }
 
   /* ==========================================================
-      CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
+      CASE 3 : FULL PRODUCTION RubberThaiDashboard
   ========================================================== */
 
   const metrics = [
