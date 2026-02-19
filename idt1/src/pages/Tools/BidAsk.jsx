@@ -510,13 +510,13 @@ function ChartCard({ title }) {
 }
 
 function ReplayPanel() {
-const [symbol, setSymbol] = useState("");
-const [date, setDate] = useState("");
-const [hasSearched, setHasSearched] = useState(false);
+  const [symbol, setSymbol] = useState("");
+  const [date, setDate] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
 
-const [speed, setSpeed] = useState(1); // ค่าเริ่มต้น x1
-const [startTime, setStartTime] = useState("09:00");
-const [endTime, setEndTime] = useState("16:00");
+  const [speed, setSpeed] = useState(1); // ค่าเริ่มต้น x1
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("16:00");
 
   const [sliderValue, setSliderValue] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -581,6 +581,17 @@ const [endTime, setEndTime] = useState("16:00");
     return () => clearInterval(interval);
 
   }, [isPlaying, speed]);
+
+  // ===== UPDATE ORDERBOOK WHEN TIME CHANGES =====
+  useEffect(() => {
+
+    if (!hasSearched) return;
+
+    const percent = Number(sliderValue) || 0;
+
+    setOrderBook(generateOrderBook(percent));
+
+  }, [sliderValue, hasSearched]);
 
   const generateOrderBook = (timePercent) => {
 
