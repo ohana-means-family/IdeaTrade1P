@@ -514,6 +514,7 @@ const [symbol, setSymbol] = useState("");
 const [date, setDate] = useState("");
 const [hasSearched, setHasSearched] = useState(false);
 
+const [speed, setSpeed] = useState(1); // ค่าเริ่มต้น x1
 const [startTime, setStartTime] = useState("09:00");
 const [endTime, setEndTime] = useState("16:00");
 
@@ -573,13 +574,13 @@ const [endTime, setEndTime] = useState("16:00");
           setIsPlaying(false);
           return 100;
         }
-        return Number(prev) + 1;
+        return Number(prev) + speed; // ใช้ speed แทน 1
       });
     }, 100);
 
     return () => clearInterval(interval);
 
-  }, [isPlaying]);
+  }, [isPlaying, speed]);
 
   const generateOrderBook = (timePercent) => {
 
@@ -661,7 +662,20 @@ useEffect(() => {
           </div>
           <div>
             <div>Speed</div>
-            <input className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded" defaultValue="1"/>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+              value={speed}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (!isNaN(value) && value > 0) {
+                  setSpeed(value);
+                }
+              }}
+              className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded"
+            />
           </div>
         </div>
 

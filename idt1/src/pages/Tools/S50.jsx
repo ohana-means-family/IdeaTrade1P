@@ -543,13 +543,46 @@ const normalizeData = (data, height = 280) => {
             </button>
 
             {/* Symbol Selector */}
-            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-sm">🔍</span>
-              <select className="bg-transparent text-sm outline-none text-white">
-                <option>S50H26</option>
-                <option>S50M26</option>
-                <option>S50U26</option>
-              </select>
+            <div className="relative">
+              <div className="
+                  flex items-center gap-2 
+                  bg-[#111827] 
+                  border border-slate-700 
+                  px-4 py-2 
+                  rounded-full 
+                  hover:border-cyan-500/50 
+                  hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]
+                  transition-all duration-300
+                "
+              >
+                <span className="text-slate-400 text-sm">🔍</span>
+
+                <select
+                  className="
+                    bg-transparent 
+                    text-white 
+                    text-sm 
+                    outline-none 
+                    appearance-none 
+                    cursor-pointer
+                    pr-6
+                  "
+                >
+                  <option className="bg-[#111827] text-white">S50H26</option>
+                  <option className="bg-[#111827] text-white">S50M26</option>
+                  <option className="bg-[#111827] text-white">S50U26</option>
+                </select>
+
+                {/* Custom Arrow */}
+                <svg
+                  className="absolute right-3 w-4 h-4 text-slate-400 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
 
           </div>
