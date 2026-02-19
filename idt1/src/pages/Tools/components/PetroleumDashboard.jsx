@@ -32,21 +32,38 @@ export default function PetroleumDashboard() {
   return (
     <div className="w-full min-h-screen bg-[#0e1118] text-white p-6 font-sans">
       
-      {/* 1. TOP BAR */}
-      <div className="flex flex-col md:flex-row justify-between items-end mb-4 gap-4">
-         <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-            <TickerItem name="WTI CRUDE" value="78.45" change="+1.2%" isUp={true} />
-            <TickerItem name="BRENT CRUDE" value="82.10" change="+0.8%" isUp={true} />
-            <TickerItem name="NATURAL GAS" value="2.45" change="-0.5%" isUp={false} />
-            <TickerItem name="USD/THB" value="35.80" change="+0.7%" isUp={true} />
+      {/* 🔴 1. แถวบนสุด: CONTROLS BAR (ซ้าย) & TIME BUTTONS (ขวา) */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
+         
+         {/* ด้านซ้าย: Toggle, Symbol, Oil Type */}
+         <div className="flex flex-wrap items-center gap-3">
+            <div className="w-8 h-6 bg-blue-600 rounded-full relative cursor-pointer flex items-center shadow-lg shadow-blue-900/20 mr-1">
+               <div className="absolute left-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+            </div>
+
+            <div className="flex items-center bg-[#0f1218] border border-slate-700/50 rounded-md h-8 px-2 cursor-pointer hover:border-slate-500 transition">
+               <span className="text-[10px] text-slate-400 mr-2 font-medium">Symbol</span>
+               <span className="text-xs text-white font-bold mr-1">7UP</span>
+               <ChevronDown size={12} className="text-slate-500"/>
+            </div>
+
+            <div className="flex items-center bg-[#0f1218] border border-slate-700/50 rounded-md h-8 px-2 min-w-[250px] overflow-hidden">
+               <span className="text-[10px] text-slate-500 mr-2 whitespace-nowrap">Select oil type</span>
+               <div className="flex items-center bg-[#1e2330] border border-slate-600 rounded px-1.5 py-0.5 mr-2">
+                  <span className="text-[10px] text-white font-bold tracking-wide">GASOHOL95 E10</span>
+                  <X size={10} className="text-slate-400 ml-1 cursor-pointer hover:text-white"/>
+               </div>
+               <div className="h-3 w-[1px] bg-slate-700 mx-1"></div>
+               <span className="text-[10px] text-slate-600 ml-2 italic">| select oil type</span>
+            </div>
          </div>
 
+         {/* ด้านขวา: Time Buttons (ย้ายมาไว้ตรงนี้) */}
          <div className="flex bg-[#151a25] rounded-lg p-1 border border-slate-800 h-fit">
             {['3M','6M','1Y','YTD','MAX'].map((t) => (
                <button 
                  key={t} 
                  onClick={() => setActivePeriod(t)}
-                 // เพิ่ม focus:outline-none เพื่อลบขอบขาวเวลาคลิก
                  className={`px-4 py-1.5 text-xs font-medium rounded transition-all focus:outline-none ${
                     activePeriod === t ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'
                  }`}
@@ -57,56 +74,26 @@ export default function PetroleumDashboard() {
          </div>
       </div>
 
-      {/* 2. MAIN GRID */}
+      {/* 🟡 2. แถวที่สอง: TICKER (ขยายเต็มกว้าง) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-8">
+         <TickerItem name="WTI CRUDE" value="78.45" change="+1.2%" isUp={true} />
+         <TickerItem name="BRENT CRUDE" value="82.10" change="+0.8%" isUp={true} />
+         <TickerItem name="NATURAL GAS" value="2.45" change="-0.5%" isUp={false} />
+         <TickerItem name="USD/THB" value="35.80" change="+0.7%" isUp={true} />
+      </div>
+
+      {/* 🟢 3. แถวที่สาม: MAIN GRID (กราฟและตัวเลข 0.45) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-4 h-auto lg:h-[650px]">
 
-        {/* [ช่อง 1: ซ้ายบน] Controls & Big Number */}
-        <div className="bg-[#151a25] border border-slate-800 rounded-xl relative h-full flex flex-col">
-           
-           {/* Controls Bar */}
-           <div className="absolute top-2 left-2 right-2 flex flex-wrap items-center gap-2 z-20">
-              
-              {/* Toggle Switch */}
-              <div className="w-8 h-6 bg-blue-600 rounded-full relative cursor-pointer flex items-center shadow-lg shadow-blue-900/20 mr-1">
-                 <div className="absolute left-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
-              </div>
-
-              {/* Symbol Box */}
-              <div className="flex items-center bg-[#0f1218] border border-slate-700/50 rounded-md h-8 px-2 cursor-pointer hover:border-slate-500 transition">
-                 <span className="text-[10px] text-slate-400 mr-2 font-medium">Symbol</span>
-                 <span className="text-xs text-white font-bold mr-1">7UP</span>
-                 <ChevronDown size={12} className="text-slate-500"/>
-              </div>
-
-              {/* Oil Type Input */}
-              <div className="flex-1 flex items-center bg-[#0f1218] border border-slate-700/50 rounded-md h-8 px-2 min-w-[200px] overflow-hidden">
-                 <span className="text-[10px] text-slate-500 mr-2 whitespace-nowrap">Select oil type</span>
-                 
-                 {/* Tag */}
-                 <div className="flex items-center bg-[#1e2330] border border-slate-600 rounded px-1.5 py-0.5 mr-2">
-                    <span className="text-[10px] text-white font-bold tracking-wide">GASOHOL95 E10</span>
-                    <X size={10} className="text-slate-400 ml-1 cursor-pointer hover:text-white"/>
-                 </div>
-
-                 {/* Separator */}
-                 <div className="h-3 w-[1px] bg-slate-700 mx-1"></div>
-                 
-                 {/* Placeholder */}
-                 <span className="text-[10px] text-slate-600 ml-2 italic">| select oil type</span>
-              </div>
-
-           </div>
-
-           {/* Content (Big Number) */}
-           <div className="flex-1 flex flex-col items-center justify-center pt-30">
-              <span className="text-8xl font-bold text-white tracking-tight drop-shadow-2xl">0.45</span>
-              <div className="flex items-center gap-2 mt-4">
-                 <TrendingUp size={20} className="text-[#84cc16]" />
-                 <span className="text-[#84cc16] font-bold text-lg">0.02 (+4.65%)</span>
-              </div>
+        {/* [ช่อง 1: ซ้ายบน] Content (Big Number) */}
+        <div className="bg-[#151a25] border border-slate-800 rounded-xl relative h-full flex flex-col items-center justify-center">
+           <span className="text-8xl font-bold text-white tracking-tight drop-shadow-2xl">0.45</span>
+           <div className="flex items-center gap-2 mt-4">
+              <TrendingUp size={20} className="text-[#84cc16]" />
+              <span className="text-[#84cc16] font-bold text-lg">0.02 (+4.65%)</span>
            </div>
            
-           <div className="absolute bottom-2 right-3 text-[9px] text-slate-600">Last Update: 16:30:00</div>
+           <div className="absolute bottom-4 right-4 text-[10px] text-slate-600">Last Update: 16:30:00</div>
         </div>
 
         {/* [ช่อง 2: ขวาบน] EX-REFIN */}
@@ -140,7 +127,6 @@ function TickerItem({ name, value, change, isUp }) {
 }
 
 function ChartPanel({ title, data, color, isStep }) {
-  // 🔥 แก้ไขตรงนี้: ลบช่องว่างออกจากชื่อเพื่อใช้เป็น ID (Marketing Margin -> MarketingMargin)
   const gradId = `grad${title.replace(/\s+/g, '')}`;
 
   return (
@@ -181,7 +167,6 @@ function ChartPanel({ title, data, color, isStep }) {
            ) : (
              <AreaChart data={data}>
                <defs>
-                  {/* ใช้ ID ที่ไม่มีช่องว่าง */}
                   <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
                     <stop offset="95%" stopColor={color} stopOpacity={0}/>
@@ -204,7 +189,7 @@ function ChartPanel({ title, data, color, isStep }) {
                   dataKey="value" 
                   stroke={color} 
                   strokeWidth={3} 
-                  fill={`url(#${gradId})`} /* อ้างอิง ID ที่ถูกต้อง */
+                  fill={`url(#${gradId})`} 
                   activeDot={{ r: 5, fill: '#151a25', stroke: color, strokeWidth: 2 }} 
                />
              </AreaChart>
