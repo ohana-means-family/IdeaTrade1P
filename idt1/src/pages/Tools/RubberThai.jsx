@@ -480,7 +480,7 @@ export default function RubberThai() {
       <div className="max-w-[1500px] mx-auto">
 
         {/* ================= TOP SEARCH BAR ================= */}
-        <div className="relative flex items-center justify-between mb-6">
+        <div className="relative z-30 flex items-center justify-between mb-6">
 
           {/* Left */}
           <div className="flex items-center gap-4">
@@ -558,7 +558,7 @@ export default function RubberThai() {
 
                 {/* DROPDOWN */}
                 {showSymbolDropdown && (
-                  <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
+                  <div className="absolute top-full left-0 mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
                     {filteredSymbols.length > 0 ? (
                       filteredSymbols.map((item, index) => (
                         <div
@@ -625,7 +625,7 @@ export default function RubberThai() {
         {/* ================= CHART SECTION ================= */}
 
         {/* TOP LARGE CHART */}
-        <div className="bg-[#111827] border border-slate-700 rounded-xl p-6 mb-6">
+        <div className="relative z-0 bg-[#111827] border border-slate-700 rounded-xl p-6 mb-6">
 
           <p className="text-xs text-slate-400 mb-4">
             CLOSE (24CS)
@@ -663,7 +663,7 @@ export default function RubberThai() {
         </div>
 
         {/* BOTTOM CHART */}
-        <div className="bg-[#111827] border border-slate-700 rounded-xl p-6">
+        <div className="relative z-0 bg-[#111827] border border-slate-700 rounded-xl p-6">
 
           <p className="text-xs text-slate-400 mb-4">
             Rubber Thai Price
