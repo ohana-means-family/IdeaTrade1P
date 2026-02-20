@@ -2,8 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import PetroleumDashboard from "./components/StockFortuneTellerDashboard.jsx";
-
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
   scrollbarWidth: "none",
@@ -204,7 +202,7 @@ export default function StockFortuneTeller() {
             </p>
           </div>
 
-          <div className="relative group w-full max-w-7xl mb-20 px-4">
+          <div className="relative group w-full max-w-5xl mb-16">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
             <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
               <div className="bg-[#0f172a] px-4 py-3 border-b border-slate-700/50">
@@ -214,14 +212,15 @@ export default function StockFortuneTeller() {
                   <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                 </div>
               </div>
-              {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
-            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-  <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
-    <PetroleumDashboard />
-  </div>
-</div>
-             </div>
+              <div className="aspect-[16/9] w-full bg-[#0B1221]">
+                <img
+                  src="/src/assets/images/StockFortune.png"
+                  alt="Dashboard Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
+          </div>
 
           {/* --- Features Section --- */}
           <div className="w-full max-w-5xl mb-12">
@@ -342,7 +341,7 @@ export default function StockFortuneTeller() {
           </div>
 
           <div className="relative group w-full max-w-5xl mb-16">
-            <div className="absolute -top-4 -left-4 -right-4 -bottom-30 bg-gradient-to-r from-blue-600/40 via-cyan-500/30 to-blue-600/40 rounded-[40px] blur-[100px] opacity-50 group-hover:opacity-80 transition duration-700 pointer-events-none"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
             <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
               <div className="bg-[#0f172a] px-4 py-3 border-b border-slate-700/50">
                 <div className="flex gap-2">
@@ -351,15 +350,16 @@ export default function StockFortuneTeller() {
                   <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                 </div>
               </div>
-              {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
-            <div className="aspect-[15/11] w-full bg-[#0B1221] relative overflow-hidden group">
-  <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
-    <PetroleumDashboard />
-  </div>
-</div>
-             </div>
+              <div className="aspect-[16/9] w-full bg-[#0B1221]">
+                <img
+                  src="/src/assets/images/StockFortune.png"
+                  alt="Dashboard Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-            
+          </div>
+
           <div className="w-full max-w-5xl mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-8 border-l-4 border-cyan-500 pl-4">
               6 Main Features
@@ -537,7 +537,7 @@ export default function StockFortuneTeller() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(filters).map(([key, value]) => (
             <ChartCard
               key={key}
@@ -560,7 +560,7 @@ export default function StockFortuneTeller() {
 
 function ChartCard({ title, type, onChange }) {
   return (
-    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[300px] flex flex-col">
+    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[320px]">
       
       {/* Header */}
       <div className="mb-3 flex justify-between items-center">
@@ -581,7 +581,7 @@ function ChartCard({ title, type, onChange }) {
       </div>
 
       {/* Chart Area */}
-      <div className="flex-1 w-full bg-[#0f172a]/50 rounded-lg p-2 relative overflow-hidden">
+      <div className="w-full h-[250px] bg-[#0f172a] rounded-lg p-4 relative overflow-hidden">
         <ChartRenderer type={type} />
       </div>
     </div>
@@ -590,8 +590,8 @@ function ChartCard({ title, type, onChange }) {
 
 function ChartRenderer({ type }) {
 
-  const width = 500;
-  const height = 180;
+  const width = 420;
+  const height = 240;
 
   const paddingLeft = 20;
   const paddingRight = 40;
@@ -649,11 +649,7 @@ function ChartRenderer({ type }) {
 
   return (
     <div className="relative w-full h-full">
-      <svg 
-        viewBox={`0 0 ${width} ${height}`} 
-        preserveAspectRatio="none" 
-        className="w-full h-full"
-      ></svg>
+
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
 
         {/* Grid */}
