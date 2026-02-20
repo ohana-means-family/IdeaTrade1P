@@ -352,7 +352,7 @@ export default function StockFortuneTeller() {
                 </div>
               </div>
               {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
-            <div className="aspect-[15/11] w-full bg-[#0B1221] relative overflow-hidden group">
+            <div className="aspect-[16/10] w-full bg-[#0B1221] relative overflow-hidden group">
   <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
     <PetroleumDashboard />
   </div>
@@ -537,7 +537,7 @@ export default function StockFortuneTeller() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(filters).map(([key, value]) => (
             <ChartCard
               key={key}
@@ -560,7 +560,7 @@ export default function StockFortuneTeller() {
 
 function ChartCard({ title, type, onChange }) {
   return (
-    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[300px] flex flex-col">
+    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[320px]">
       
       {/* Header */}
       <div className="mb-3 flex justify-between items-center">
@@ -581,7 +581,7 @@ function ChartCard({ title, type, onChange }) {
       </div>
 
       {/* Chart Area */}
-      <div className="flex-1 w-full bg-[#0f172a]/50 rounded-lg p-2 relative overflow-hidden">
+      <div className="w-full h-[250px] bg-[#0f172a] rounded-lg p-4 relative overflow-hidden">
         <ChartRenderer type={type} />
       </div>
     </div>
@@ -590,8 +590,8 @@ function ChartCard({ title, type, onChange }) {
 
 function ChartRenderer({ type }) {
 
-  const width = 500;
-  const height = 180;
+  const width = 420;
+  const height = 240;
 
   const paddingLeft = 20;
   const paddingRight = 40;
@@ -649,11 +649,7 @@ function ChartRenderer({ type }) {
 
   return (
     <div className="relative w-full h-full">
-      <svg 
-        viewBox={`0 0 ${width} ${height}`} 
-        preserveAspectRatio="none" 
-        className="w-full h-full"
-      ></svg>
+
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
 
         {/* Grid */}
