@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+import RubberThaiDashboard from "./components/RubberThaiDashboard.jsx";
+
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
   scrollbarWidth: "none",
@@ -203,12 +205,11 @@ export default function RubberThai() {
               </div>
             </div>
 
-            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-              <img
-                src="/src/assets/images/Rubber.png"
-                alt="Rubber Thai Dashboard"
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-              />
+            {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
+            <div className="aspect-[17/9] w-full bg-[#0B1221] relative overflow-hidden group">
+              <div className="w-[150%] h-[150%] origin-top-left transform scale-[0.67]">
+                <RubberThaiDashboard />
+            </div>
             </div>
           </div>
         </div>
@@ -357,12 +358,11 @@ export default function RubberThai() {
               </div>
             </div>
 
-            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-              <img
-                src="/src/assets/images/Rubber.png"
-                alt="Rubber Thai Dashboard"
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-              />
+            {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
+            <div className="aspect-[17/9] w-full bg-[#0B1221] relative overflow-hidden group">
+              <div className="w-[150%] h-[150%] origin-top-left transform scale-[0.67]">
+                <RubberThaiDashboard />
+            </div>
             </div>
           </div>
         </div>
@@ -465,7 +465,7 @@ export default function RubberThai() {
   }
 
   /* ==========================================================
-      CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
+      CASE 3 : FULL PRODUCTION RubberThaiDashboard
   ========================================================== */
 
   const metrics = [
@@ -480,7 +480,7 @@ export default function RubberThai() {
       <div className="max-w-[1500px] mx-auto">
 
         {/* ================= TOP SEARCH BAR ================= */}
-        <div className="relative z-30 flex items-center justify-between mb-6">
+        <div className="relative flex items-center justify-between mb-6">
 
           {/* Left */}
           <div className="flex items-center gap-4">
@@ -493,8 +493,8 @@ export default function RubberThai() {
               ←
             </button>
 
-           {/* LEFT SYMBOL */}
-          <div className="relative">
+           {/* CENTER SYMBOL */}
+            <div className="absolute left-1/2 -translate-x-1/2">
 
               <div className="relative w-64">
 
@@ -558,7 +558,7 @@ export default function RubberThai() {
 
                 {/* DROPDOWN */}
                 {showSymbolDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
+                  <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
                     {filteredSymbols.length > 0 ? (
                       filteredSymbols.map((item, index) => (
                         <div
@@ -625,7 +625,7 @@ export default function RubberThai() {
         {/* ================= CHART SECTION ================= */}
 
         {/* TOP LARGE CHART */}
-        <div className="relative z-0 bg-[#111827] border border-slate-700 rounded-xl p-6 mb-6">
+        <div className="bg-[#111827] border border-slate-700 rounded-xl p-6 mb-6">
 
           <p className="text-xs text-slate-400 mb-4">
             CLOSE (24CS)
@@ -663,7 +663,7 @@ export default function RubberThai() {
         </div>
 
         {/* BOTTOM CHART */}
-        <div className="relative z-0 bg-[#111827] border border-slate-700 rounded-xl p-6">
+        <div className="bg-[#111827] border border-slate-700 rounded-xl p-6">
 
           <p className="text-xs text-slate-400 mb-4">
             Rubber Thai Price

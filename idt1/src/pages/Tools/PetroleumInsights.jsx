@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+import PetroleumDashboard from "./components/PetroleumDashboard";
+
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
   scrollbarWidth: "none",
@@ -204,7 +206,7 @@ export default function PetroleumInsights() {
         </div>
 
         {/* --- Dashboard Image --- */}
-        <div className="relative group w-full max-w-5xl mb-16">
+        <div className="relative group w-full max-w-6xl mb-16">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
           
           <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
@@ -216,12 +218,11 @@ export default function PetroleumInsights() {
               </div>
             </div>
 
-            <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-              <img
-                src="/src/assets/images/Petroleum.png"
-                alt="Petroleum Dashboard"
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-              />
+            {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
+            <div className="aspect-[17/9] w-full bg-[#0B1221] relative overflow-hidden group">
+              <div className="w-[150%] h-[150%] origin-top-left transform scale-[0.67]">
+                <PetroleumDashboard />
+            </div>
             </div>
           </div>
         </div>
@@ -370,12 +371,11 @@ export default function PetroleumInsights() {
               </div>
             </div>
 
+           {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
             <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-              <img
-                src="/src/assets/images/Petroleum.png"
-                alt="Petroleum Dashboard"
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-              />
+              <div className="w-[150%] h-[150%] origin-top-left transform scale-[0.67]">
+                <PetroleumDashboard />
+            </div>
             </div>
           </div>
         </div>
@@ -475,7 +475,6 @@ export default function PetroleumInsights() {
     </div>
     );
   }
-
 /* ==========================================================
     CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
 ========================================================== */
