@@ -493,8 +493,8 @@ export default function RubberThai() {
               ←
             </button>
 
-           {/* CENTER SYMBOL */}
-            <div className="absolute left-1/2 -translate-x-1/2">
+           {/* LEFT SYMBOL */}
+           <div className="flex items-center gap-4">
 
               <div className="relative w-64">
 
@@ -556,31 +556,31 @@ export default function RubberThai() {
                 >
                 </label>
 
-                {/* DROPDOWN */}
-                {showSymbolDropdown && (
-                  <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
-                    {filteredSymbols.length > 0 ? (
-                      filteredSymbols.map((item, index) => (
-                        <div
-                          key={index}
-                          onClick={() => {
-                            setSymbol(item);
-                            setSymbolQuery(item);
-                            setShowSymbolDropdown(false);
-                          }}
-                          className="px-4 py-2 text-sm text-slate-300 hover:bg-cyan-500 hover:text-white cursor-pointer transition"
-                        >
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-slate-500">
-                        No results
+                    {/* DROPDOWN */}
+                    {showSymbolDropdown && (
+                      <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
+                        {filteredSymbols.length > 0 ? (
+                          filteredSymbols.map((item, index) => (
+                            <div
+                              key={index}
+                              onClick={() => {
+                                setSymbol(item);
+                                setSymbolQuery(item);
+                                setShowSymbolDropdown(false);
+                              }}
+                              className="px-4 py-2 text-sm text-slate-300 hover:bg-cyan-500 hover:text-white cursor-pointer transition"
+                            >
+                              {item}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-slate-500">
+                            No results
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
             </div>
           </div>
