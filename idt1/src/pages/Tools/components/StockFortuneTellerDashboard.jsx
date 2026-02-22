@@ -12,20 +12,20 @@ const xAxisTicks = ['ก.ค.', 'ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค. 25
 
 const dataLast = [
   { name: 'ก.ค.', value: 4.8 }, { name: 'ส.ค.', value: 4.7 }, { name: 'ก.ย.', value: 4.9 },
-  { name: 'ต.ค.', value: 5.2 }, { name: 'พ.ย.', value: 4.5 }, { name: 'ธ.ค.', value: 4.2 },
+  { name: 'ต.ค.', value: 6.2 }, { name: 'พ.ย.', value: 4.5 }, { name: 'ธ.ค.', value: 6 },
   { name: 'ม.ค. 2569', value: 4.4 }
 ];
 
 const dataShort = [
   { name: 'ก.ค.', short1: 12, short2: 13 }, { name: 'ส.ค.', short1: 14, short2: 13.5 },
-  { name: 'ก.ย.', short1: 14.5, short2: 12.5 }, { name: 'ต.ค.', short1: 14, short2: 13 },
+  { name: 'ก.ย.', short1: 14.5, short2: 12.5 }, { name: 'ต.ค.', short1: 14, short2: 18 },
   { name: 'พ.ย.', short1: 17, short2: 15.5 }, { name: 'ธ.ค.', short1: 20, short2: 17 },
   { name: 'ม.ค. 2569', short1: 18, short2: 16 }
 ];
 
 const dataPredict = [
   { name: 'ก.ค.', value: 18 }, { name: 'ส.ค.', value: 20 }, { name: 'ก.ย.', value: 21 },
-  { name: 'ต.ค.', value: 18 }, { name: 'พ.ย.', value: 16 }, { name: 'ธ.ค.', value: 24 },
+  { name: 'ต.ค.', value: 22 }, { name: 'พ.ย.', value: 16 }, { name: 'ธ.ค.', value: 24 },
   { name: 'ม.ค. 2569', value: 23 }
 ];
 

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+import GoldDashboard from "./components/GoldDashboard.jsx";
+
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
   scrollbarWidth: "none",
@@ -184,12 +186,10 @@ export default function Gold() {
                 </div>
               </div>
 
-              <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-                <img
-                  src="/src/assets/images/Gold.png"
-                  alt="Gold Dashboard Preview"
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-                />
+              <div className="aspect-[12.5/9] w-full bg-[#0B1221] relative overflow-hidden group">
+                  <div className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out" >
+                <GoldDashboard/>
+                </div>
               </div>
             </div>
           </div>
@@ -338,12 +338,10 @@ export default function Gold() {
                 </div>
               </div>
 
-              <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-                <img
-                  src="/src/assets/images/Gold.png"
-                  alt="Gold Dashboard Preview"
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out"
-                />
+              <div className="aspect-[12.5/9] w-full bg-[#0B1221] relative overflow-hidden group">
+                  <div className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out" >
+                <GoldDashboard/>
+                </div>
               </div>
             </div>
           </div>
@@ -470,52 +468,13 @@ return (
             ←
           </button>
 
-          <div className="relative">
-            <div className="
-                flex items-center gap-2 
-                bg-[#111827] 
-                border border-slate-700 
-                px-4 py-2 
-                rounded-full 
-                hover:border-cyan-500/50 
-                hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]
-                transition-all duration-300
-              "
-            >
-              <span className="text-slate-400 text-sm">🔍</span>
-
-              <select
-                className="
-                  bg-transparent 
-                  text-white 
-                  text-sm 
-                  outline-none 
-                  appearance-none 
-                  cursor-pointer
-                  pr-6
-                "
-              >
-                <option value="XAUUSD" className="bg-[#111827] text-white">
-                  XAUUSD
-                </option>
-                <option value="GOLD THAI" className="bg-[#111827] text-white">
-                  GOLD THAI
-                </option>
-                <option value="SILVER" className="bg-[#111827] text-white">
-                  SILVER
-                </option>
-              </select>
-
-              {/* Custom Arrow */}
-              <svg
-                className="absolute right-3 w-4 h-4 text-slate-400 pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+          <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
+            🔍
+            <select className="bg-transparent text-sm outline-none text-white">
+              <option>XAUUSD</option>
+              <option>GOLD THAI</option>
+              <option>SILVER</option>
+            </select>
           </div>
 
         </div>
