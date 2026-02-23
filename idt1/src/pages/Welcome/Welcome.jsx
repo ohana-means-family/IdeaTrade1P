@@ -68,22 +68,25 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-700">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-700 px-4">
       {/* Card */}
-      <div className="w-full max-w-6xl rounded-[3rem] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
+      <div className="w-full max-w-6xl rounded-2xl md:rounded-[3rem] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
 
         {/* Top content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 px-16 py-14 gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-2
+          px-6 md:px-16
+          py-8 md:py-14
+          gap-8 md:gap-16">
 
           {/* LEFT */}
           <div className="flex flex-col items-center justify-center text-center h-full">
-            <h2 className="text-4xl font-semibold text-blue-400 mb-6">
+            <h2 className="text-2xl md:text-4xl font-semibold text-blue-400 mb-4 md:mb-6">
               Welcome to
             </h2>
 
-            <img src={logo} alt="Idea Trade" className="w-72 mb-6" />
+            <img src={logo} alt="Idea Trade" className="w-48 md:w-72 mb-4 md:mb-6" />
 
-            <p className="text-2xl text-blue-400 font-semibold">
+            <p className="text-lg md:text-2xl text-blue-400 font-semibold">
               Special Features for our customers
             </p>
           </div>
@@ -176,24 +179,55 @@ export default function Welcome() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="bg-slate-700/50 px-16 py-10 flex flex-col md:flex-row gap-8 justify-between">
+        <div className="
+          bg-slate-700/50
+          px-6 md:px-16
+          py-6 md:py-10
+          flex flex-col md:flex-row
+          gap-4 md:gap-8
+          justify-between
+        ">
+
+          {/* TRY FREE */}
           <button
             onClick={setFreeAccess}
-            className="flex-1 py-5 rounded-xl bg-emerald-400 text-white text-xl font-semibold
-                       flex items-center justify-center gap-3"
+            className="
+              flex-1
+              py-4 md:py-5
+              rounded-xl md:rounded-2xl
+              bg-emerald-400 hover:bg-emerald-500
+              active:scale-95
+              transition-all duration-200
+              text-lg md:text-xl
+              font-semibold
+              flex items-center justify-center gap-3
+              shadow-lg hover:shadow-emerald-400/40
+            "
           >
-            <img src={Rocket} alt="rocket" className="w-6 h-6" />
+            <img src={Rocket} alt="rocket" className="w-5 h-5 md:w-6 md:h-6" />
             TRY FREE VERSION
           </button>
 
+          {/* MEMBERSHIP */}
           <button
-            onClick={setFreeAccess}
-            className="flex-1 py-5 rounded-xl bg-sky-600 text-white text-xl font-semibold
-                       flex items-center justify-center gap-3"
+            onClick={setMembership}
+            className="
+              flex-1
+              py-4 md:py-5
+              rounded-xl md:rounded-2xl
+              bg-sky-600 hover:bg-sky-700
+              active:scale-95
+              transition-all duration-200
+              text-lg md:text-xl
+              font-semibold
+              flex items-center justify-center gap-3
+              shadow-lg hover:shadow-sky-500/40
+            "
           >
-            <img src={Crown} alt="crown" className="w-6 h-6" />
+            <img src={Crown} alt="crown" className="w-5 h-5 md:w-6 md:h-6" />
             JOIN MEMBERSHIP
           </button>
+
         </div>
       </div>
 
