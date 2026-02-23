@@ -7,7 +7,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   // ======================
-  // Form State
+  // Form State (ไม่มี password แล้ว)
   // ======================
   const [formData, setFormData] = useState({
     firstName: "",
@@ -48,55 +48,58 @@ export default function Register() {
   };
 
   // ======================
-  // Submit
+  // Submit (เรียก API ไปที่ Backend)
   // ======================
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.firstName.trim()) {
-      setErrorField("firstName");
-      return;
-    }
-
-    if (!formData.lastName.trim()) {
-      setErrorField("lastName");
-      return;
-    }
-
-    if (!formData.email.trim()) {
-      setErrorField("email");
-      return;
-    }
-
-    if (!formData.phone.trim()) {
-      setErrorField("phone");
-      return;
-    }
+    // --- ตรวจสอบข้อมูลเบื้องต้น ---
+    if (!formData.firstName.trim()) return setErrorField("firstName");
+    if (!formData.lastName.trim()) return setErrorField("lastName");
+    if (!formData.email.trim()) return setErrorField("email");
+    if (!formData.phone.trim()) return setErrorField("phone");
 
     if (!formData.agree) {
       setShowPrivacyPopup(true);
       return;
     }
 
-    console.log("Register Data:", formData);
-    navigate("/dashboard");
+    try {
+      // --- ยิง API ส่งข้อมูลไปให้ Backend (เส้น /api/register) ---
+      const response = await fetch('http://localhost:8000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          phone: formData.phone,
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("สมัครสมาชิกสำเร็จ ข้อมูลเข้าฐานข้อมูลแล้ว!"); // แจ้งเตือนเมื่อสำเร็จ
+        console.log("Register Data:", data);
+        navigate("/dashboard"); 
+      } else {
+        alert(data.error || "เกิดข้อผิดพลาดในการลงทะเบียน");
+      }
+
+    } catch (error) {
+      console.error("Error Registration:", error);
+      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ลองเช็คว่ารัน Backend หรือยัง");
+    }
   };
 
   // ======================
   // Error Popup (Input)
   // ======================
   const ErrorPopup = () => (
-    <div className="
-      absolute left-0 -bottom-9
-      z-20
-      w-full
-      flex items-center gap-2
-      bg-white
-      text-gray-800 text-sm
-      px-3 py-2
-      border border-orange-400
-      shadow-sm
-    ">
+    <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
       <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">
         !
       </span>
