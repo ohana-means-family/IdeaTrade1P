@@ -142,28 +142,30 @@ export default function StockDashboard() {
           </ChartPanel>
 
           <ChartPanel title="%Short" watermark="BANPU">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dataShort} margin={{ top: 5, right: -27, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#232936" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
-                <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="short1" stroke="#22c55e" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="short2" stroke="#ef4444" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+  <ResponsiveContainer width="100%" height="100%">
+    <AreaChart data={dataShort} margin={{ top: 5, right: -27, left: -25, bottom: 0 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#232936" />
+      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
+      <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} />
+      <Tooltip content={<CustomTooltip />} />
+      
+      <Area type="monotone" dataKey="short1" stroke="#22c55e" fill="transparent" strokeWidth={2} />
+      <Area type="monotone" dataKey="short2" stroke="#ef4444" fill="transparent" strokeWidth={2} />
+    </AreaChart>
+  </ResponsiveContainer>
+</ChartPanel>
 
           {/* Row 2 */}
           <ChartPanel title="PredictTrend" watermark="BANPU">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dataPredict} margin={{ top: 11, right: -27, left: -25, bottom: 0 }}>
+              <AreaChart data={dataPredict} margin={{ top: 11, right: -27, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#232936" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
                 <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 5, fill: '#151a25', stroke: '#f97316', strokeWidth: 2 }} />
-              </LineChart>
+                <Area type="monotone" dataKey="value" stackId="1" stroke="#f97316" fill="transparent" strokeWidth={2} />
+                
+              </AreaChart>
             </ResponsiveContainer>
           </ChartPanel>
 

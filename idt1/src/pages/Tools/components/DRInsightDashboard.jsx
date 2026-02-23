@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from "recharts";
+// อัปเดต Import: เปลี่ยนจาก LineChart, Line เป็น AreaChart, Area
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from "recharts";
 
 /* ── Wave Generator ── */
 function seededRand(seed, i) {
@@ -70,6 +71,9 @@ function MiniChart({ stock, h = 140 }) {
     return () => clearTimeout(t);
   }, []);
 
+  // สร้าง ID สำหรับสี Gradient ไม่ให้ซ้ำกัน
+  const gradId = `color-${stock.id}`;
+
   return (
     <div style={{ background:"#0f1623", border:"1px solid rgba(255,255,255,0.07)", borderRadius:6, padding:"10px 0 0 10px", position:"relative", overflow:"hidden", flex:1, minHeight:0 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", paddingRight:10, marginBottom:4 }}>
@@ -82,8 +86,19 @@ function MiniChart({ stock, h = 140 }) {
           <button style={{ background:"none", border:"none", color:"#334455", cursor:"pointer", fontSize:13 }}>⚙</button>
         </div>
       </div>
+      
+      {/* ส่วนที่ปรับปรุง: ใช้ AreaChart และเพิ่ม <defs> */}
       <ResponsiveContainer width="100%" height={h}>
-        <LineChart data={data} margin={{ top:2, right:44, left:0, bottom:0 }}>
+        <AreaChart data={data} margin={{ top:2, right:44, left:0, bottom:0 }}>
+          
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              {/* ดึงสีมาจาก stock.color ของแต่ละกราฟ */}
+              <stop offset="5%" stopColor={stock.color} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={stock.color} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+
           <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="0"/>
           <YAxis domain={["auto","auto"]} orientation="right"
             tick={{ fontSize:8, fill:"#344560", fontFamily:"monospace" }}
@@ -91,8 +106,18 @@ function MiniChart({ stock, h = 140 }) {
             tickFormatter={v => v.toFixed(1)}/>
           <XAxis hide/>
           <Tooltip content={<Tip/>}/>
-          <Line type="monotone" dataKey="v" stroke={stock.color} strokeWidth={2} dot={false} isAnimationActive={!animated}/>
-        </LineChart>
+          
+          {/* ใช้ Area แทน Line และเติมสี fill ด้วย url() อ้างอิง ID ของ Gradient */}
+          <Area 
+            type="monotone" 
+            dataKey="v" 
+            stroke={stock.color} 
+            fill={`url(#${gradId})`} 
+            strokeWidth={2} 
+            dot={false} 
+            isAnimationActive={!animated}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -188,7 +213,7 @@ export default function StockDashboard() {
           <SidePanel title="Europe" stocks={STOCKS.Europe} selected={chart2} onSelect={setChart2}/>
         </div>
 
-        {/* COL 2: กราฟกลาง 4 ช่อง */}
+        {/* COL 2: กราฟกลาง 3 ช่อง */}
         <div style={{ display:"flex", flexDirection:"column", gap:5, minHeight:0 }}>
           <MiniChart stock={chart1} h={130}/>
           <MiniChart stock={chart2} h={130}/>

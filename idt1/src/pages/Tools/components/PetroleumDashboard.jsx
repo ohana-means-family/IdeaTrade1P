@@ -103,7 +103,7 @@ export default function PetroleumDashboard() {
         <ChartPanel title="Marketing Margin" data={dataMargin} color="#84cc16" isStep={false} />
 
         {/* [ช่อง 4: ขวาล่าง] Oil Fund */}
-        <ChartPanel title="Oil Fund" data={dataFund} color="#84cc16" isStep={true} />
+        <ChartPanel title="Oil Fund" data={dataFund} color="#84cc16" isStep={false} />
 
       </div>
     </div>
@@ -162,6 +162,10 @@ function ChartPanel({ title, data, color, isStep }) {
                   strokeWidth={2} 
                   dot={false}
                   activeDot={{ r: 5, fill: '#151a25', stroke: color, strokeWidth: 2 }} 
+                  isAnimationActive={true}
+                  animationBegin={0}
+                  animationDuration={1500}
+                  animationEasing="ease-out"
                />
              </LineChart>
            ) : (
@@ -191,6 +195,7 @@ function ChartPanel({ title, data, color, isStep }) {
                   strokeWidth={2} 
                   fill={`url(#${gradId})`} 
                   activeDot={{ r: 5, fill: '#151a25', stroke: color, strokeWidth: 2 }} 
+                  
                />
              </AreaChart>
            )}

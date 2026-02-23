@@ -78,14 +78,20 @@ export default function RubberDashboard() {
            </div>
 
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dataClose} margin={{ top: 40, right: 10, left: -20, bottom: 5 }}>
+            <AreaChart data={dataClose} margin={{ top: 40, right: 10, left: -20, bottom: 5 }}>
+            <defs>
+                <linearGradient id="colorCLOSE" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#232936" vertical={false} />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dy={10} />
               <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} domain={['dataMin - 1', 'dataMax + 1']} />
               <YAxis yAxisId="left" orientation="left" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} domain={['dataMin - 1', 'dataMax + 1']} hide={true}/>
               <Tooltip content={<CustomTooltip />} />
-              <Line yAxisId="right" type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#151a25', stroke: '#22c55e', strokeWidth: 2 }} />
-            </LineChart>
+              <Area yAxisId="right" type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} fill="url(#colorCLOSE)" dot={false} activeDot={{ r: 6, fill: '#151a25', stroke: '#22c55e', strokeWidth: 2 }} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
