@@ -1,5 +1,4 @@
-// src/pages/Welcome/Welcome.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/images/logo.png";
 import { signInWithPopup } from "firebase/auth";
@@ -15,29 +14,41 @@ export default function Welcome() {
 
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // สถานะการโหลดตอนขอ OTP
 
   const [popupType, setPopupType] = useState("");
   const [openForgot, setOpenForgot] = useState(false);
   const [openOtp, setOpenOtp] = useState(false);
 
+  // ดึงอีเมลที่เคยจำไว้มาแสดง
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRemember(true);
+    }
+  }, []);
+
   /* ======================
-     EMAIL VALIDATION
+      EMAIL VALIDATION
   ====================== */
   const isValidEmail = (email) => {
-  const emailRegex =
-    /^[^\s@]+@(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|company\.co\.th|university\.ac\.th)$/;
-  return emailRegex.test(email);
+    const emailRegex =
+      /^[^\s@]+@(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|company\.co\.th|university\.ac\.th)$/;
+    return emailRegex.test(email);
   };
 
   /* ======================
-     LOGIN ACTIONS
+      LOGIN ACTIONS
   ====================== */
-  const setFreeAccess = () => {
+  const setFreeAccess = (userEmail) => {
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
+        email: userEmail || email,
         role: "free",
         unlockedItems: [],
+        lastLogin: new Date().toISOString()
       })
     );
     navigate("/dashboard");
@@ -67,6 +78,51 @@ export default function Welcome() {
     }
   };
 
+  const handleSignIn = async () => {
+    // ❌ ยังไม่กรอกอีเมล
+    if (!email) {
+      setPopupType("emailRequired");
+      setOpenForgot(true);
+      return;
+    }
+
+    // ❌ อีเมลผิดรูปแบบ
+    if (!isValidEmail(email)) {
+      setPopupType("emailInvalid");
+      setOpenForgot(true);
+      return;
+    }
+
+    // ✅ เริ่มกระบวนการส่ง OTP
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://127.0.0.1:5001/ideatrade-9548f/us-central1/requestOTP", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // จัดการเรื่อง Remember Me
+        if (remember) {
+          localStorage.setItem("rememberedEmail", email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+        setOpenOtp(true); 
+      } else {
+        alert("ไม่สามารถส่งอีเมลได้: " + (data.error || "ไม่ทราบสาเหตุ"));
+      }
+    } catch (error) {
+      console.error("Error requesting OTP:", error);
+      alert("⚠️ ติดต่อ Server ไม่ได้: กรุณาตรวจสอบว่ารัน Firebase Emulator อยู่หรือไม่");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-700 px-4">
       {/* Card */}
@@ -93,7 +149,7 @@ export default function Welcome() {
           gap-8 md:gap-10 lg:gap-16
         ">
 
-         {/* LEFT */}
+          {/* LEFT */}
           <div className="flex flex-col items-center justify-center text-center h-full">
 
             {/* Welcome to → แสดงเฉพาะ desktop */}
@@ -123,43 +179,43 @@ export default function Welcome() {
           <div className="flex flex-col justify-center gap-5 text-white">
             {/* Email */}
             <div className="relative w-full">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="
-                peer w-full bg-transparent
-                border border-blue-300/40
-                rounded-md px-4 py-3 text-white
-                focus:border-blue-500 outline-none
-              "
-            />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="
+                  peer w-full bg-transparent
+                  border border-blue-300/40
+                  rounded-md px-4 py-3 text-white
+                  focus:border-blue-500 outline-none
+                "
+              />
 
-            <label
-              className={`
-                absolute left-4
-                px-2 py-0.5 rounded-full
-                text-sm transition-all duration-200
+              <label
+                className={`
+                  absolute left-4
+                  px-2 py-0.5 rounded-full
+                  text-sm transition-all duration-200
 
-                ${
-                  email
-                    ? "-top-3 text-xs text-sky-400 bg-slate-800"
-                    : "top-3 text-sm text-blue-300 bg-transparent"
-                }
+                  ${
+                    email
+                      ? "-top-3 text-xs text-sky-400 bg-slate-800"
+                      : "top-3 text-sm text-blue-300 bg-transparent"
+                  }
 
-                peer-focus:-top-3
-                peer-focus:text-xs
-                peer-focus:text-sky-400
-                peer-focus:bg-slate-800
-              `}
-            >
-              EMAIL
-            </label>
-          </div>
+                  peer-focus:-top-3
+                  peer-focus:text-xs
+                  peer-focus:text-sky-400
+                  peer-focus:bg-slate-800
+                `}
+              >
+                EMAIL
+              </label>
+            </div>
 
             {/* Options */}
             <div className="flex justify-between items-center text-sm">
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={remember}
@@ -171,7 +227,14 @@ export default function Welcome() {
 
             {/* Sign in */}
             <button
-              onClick={() => {
+
+              onClick={handleSignIn}
+              disabled={isLoading}
+              className={`mt-2 py-3 rounded-lg text-lg font-semibold transition-all ${
+                isLoading ? "bg-slate-600 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-500"
+              }`}
+
+              onClick={async () => {
                 // ❌ ยังไม่กรอกอีเมล
                 if (!email) {
                   setPopupType("emailRequired");
@@ -186,19 +249,38 @@ export default function Welcome() {
                   return;
                 }
 
-                // ✅ อีเมลถูกต้อง
-                setOpenOtp(true);
+                // ✅ อีเมลถูกต้อง (ยิง API ขอ OTP ก่อนเปิด Modal)
+                try {
+                  const response = await fetch("http://127.0.0.1:5001/ideatrade-9548f/us-central1/requestOTP", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email })
+                  });
+
+                  const data = await response.json();
+
+                  if (response.ok && data.success) {
+                    // ถ้าเซิร์ฟเวอร์ส่งอีเมลสำเร็จ ค่อยเปิดหน้าต่างกรอก OTP
+                    setOpenOtp(true); 
+                  } else {
+                    alert("ไม่สามารถส่งอีเมลได้: " + (data.error || "ไม่ทราบสาเหตุ"));
+                  }
+                } catch (error) {
+                  console.error("Error requesting OTP:", error);
+                  alert("เซิร์ฟเวอร์ขัดข้อง ไม่สามารถขอ OTP ได้");
+                }
               }}
               className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
+
             >
-              Sign in
+              {isLoading ? "Sending OTP..." : "Sign in"}
             </button>
 
             <p className="text-sm text-center text-gray-400">
               Don&apos;t have an account?{" "}
               <span
                 onClick={() => navigate("/register")}
-                className="text-white cursor-pointer"
+                className="text-white cursor-pointer hover:underline"
               >
                 Sign up here
               </span>
@@ -218,9 +300,8 @@ export default function Welcome() {
           justify-between
         ">
 
-          {/* TRY FREE */}
           <button
-            onClick={setFreeAccess}
+            onClick={() => setFreeAccess()}
             className="
               flex-1
               py-4 md:py-5
@@ -238,7 +319,6 @@ export default function Welcome() {
             TRY FREE VERSION
           </button>
 
-          {/* MEMBERSHIP */}
           <button
             onClick={setMembership}
             className="
@@ -264,49 +344,34 @@ export default function Welcome() {
       {/* OTP Modal */}
       <OtpModal
         open={openOtp}
+        email={email}
         onClose={() => setOpenOtp(false)}
         onSuccess={() => {
           setOpenOtp(false);
-          setFreeAccess();
+          setFreeAccess(email); 
         }}
       />
 
-      {/* ================= POPUP ================= */}
+      {/* ================= POPUP ERRORS ================= */}
       {openForgot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/60"
             onClick={() => setOpenForgot(false)}
           />
-
-          {/* Forgot enter email */}
-          <div className="relative z-10 w-full max-w-md rounded-2xl
-                          bg-slate-800 text-white p-6 shadow-xl">
-
+          <div className="relative z-10 w-full max-w-md rounded-2xl bg-slate-800 text-white p-6 shadow-xl">
             {popupType === "emailRequired" && (
               <>
-                <h3 className="text-xl font-semibold mb-2 text-red-400">
-                  Please enter your email
-                </h3>
-                <p className="text-sm text-gray-300 mb-5">
-                  Please enter your email before signing in.
-                </p>
+                <h3 className="text-xl font-semibold mb-2 text-red-400">Please enter your email</h3>
+                <p className="text-sm text-gray-300 mb-5">You need to provide an email before signing in.</p>
               </>
             )}
-
-            {/* Invalid email */}
             {popupType === "emailInvalid" && (
               <>
-                <h3 className="text-xl font-semibold mb-2 text-red-400">
-                  Invalid email address
-                </h3>
-                <p className="text-sm text-gray-300 mb-5">
-                  Please enter a valid email address again !!
-                </p>
+                <h3 className="text-xl font-semibold mb-2 text-red-400">Invalid email address</h3>
+                <p className="text-sm text-gray-300 mb-5">Please check your email format and try again.</p>
               </>
             )}
-
             <div className="flex justify-end">
               <button
                 onClick={() => setOpenForgot(false)}
