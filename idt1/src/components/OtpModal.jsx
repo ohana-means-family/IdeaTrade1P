@@ -84,12 +84,27 @@ export default function OtpModal({ open, onClose, onSuccess }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-slate-900 text-white p-6 shadow-xl">
+      <div
+        className="
+          relative z-10
+          w-[95%] sm:w-full
+          max-w-sm sm:max-w-md md:max-w-lg
+          rounded-2xl
+          bg-gradient-to-br from-slate-800 to-slate-900
+          text-white
+          p-5 sm:p-6 md:p-8
+          shadow-2xl
+
+          transform
+          scale-95 sm:scale-100
+          transition-all duration-300
+        "
+      >
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-4 relative">
@@ -124,7 +139,12 @@ export default function OtpModal({ open, onClose, onSuccess }) {
         </div>
 
         {/* OTP boxes */}
-        <div className="flex justify-center gap-3 mb-4">
+        <div className="
+          flex
+          justify-center
+          gap-2 sm:gap-3 md:gap-4
+          mt-4
+        ">
           {otp.map((digit, i) => (
             <input
               key={i}
@@ -134,7 +154,12 @@ export default function OtpModal({ open, onClose, onSuccess }) {
               onKeyDown={(e) => handleKeyDown(e, i)}
               maxLength={1}
               className={`
-                w-12 h-12 text-center text-xl font-bold rounded-md outline-none
+                w-10 h-12
+                sm:w-12 sm:h-14
+                md:w-14 md:h-16
+                text-center
+                rounded-lg
+                text-lg sm:text-xl
                 ${
                   status === "error"
                     ? "bg-red-800"

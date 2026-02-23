@@ -70,25 +70,53 @@ export default function Welcome() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-700 px-4">
       {/* Card */}
-      <div className="w-full max-w-6xl rounded-2xl md:rounded-[3rem] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
+      <div className="
+        w-full
+        max-w-sm
+        sm:max-w-md
+        md:max-w-2xl
+        lg:max-w-6xl
+        mx-auto
+        rounded-2xl lg:rounded-[3rem]
+        overflow-hidden
+        bg-gradient-to-br from-slate-900 to-slate-800
+        shadow-2xl
+      ">
 
         {/* Top content */}
-        <div className="grid grid-cols-1 md:grid-cols-2
-          px-6 md:px-16
-          py-8 md:py-14
-          gap-8 md:gap-16">
+        <div className="
+          grid
+          grid-cols-1
+          lg:grid-cols-2
+          px-6 sm:px-8 md:px-12 lg:px-16
+          py-8 sm:py-10 md:py-12 lg:py-14
+          gap-8 md:gap-10 lg:gap-16
+        ">
 
-          {/* LEFT */}
+         {/* LEFT */}
           <div className="flex flex-col items-center justify-center text-center h-full">
-            <h2 className="text-2xl md:text-4xl font-semibold text-blue-400 mb-4 md:mb-6">
+
+            {/* Welcome to → แสดงเฉพาะ desktop */}
+            <h2 className="hidden lg:block text-4xl font-semibold text-blue-400 mb-6">
               Welcome to
             </h2>
 
-            <img src={logo} alt="Idea Trade" className="w-48 md:w-72 mb-4 md:mb-6" />
+            {/* Logo */}
+            <img
+              src={logo}
+              alt="Idea Trade"
+              className="w-40 sm:w-52 md:w-64 lg:w-72 mb-4 md:mb-6"
+            />
 
-            <p className="text-lg md:text-2xl text-blue-400 font-semibold">
+            {/* Special Features */}
+            <p className="
+                text-blue-400 font-semibold
+                hidden sm:block
+                text-lg md:text-2xl
+            ">
               Special Features for our customers
             </p>
+
           </div>
 
           {/* RIGHT */}
@@ -181,10 +209,12 @@ export default function Welcome() {
         {/* Bottom CTA */}
         <div className="
           bg-slate-700/50
-          px-6 md:px-16
-          py-6 md:py-10
-          flex flex-col md:flex-row
-          gap-4 md:gap-8
+          px-6 md:px-12 lg:px-16
+          py-6 md:py-8
+          flex flex-col
+          md:flex-col
+          lg:flex-row
+          gap-4 md:gap-6
           justify-between
         ">
 
