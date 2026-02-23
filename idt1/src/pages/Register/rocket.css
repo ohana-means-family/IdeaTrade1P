@@ -9,7 +9,8 @@
   justify-content: center;
   align-items: flex-end; /* ให้จรวดอยู่ด้านล่าง */
   overflow: hidden;
-  border-radius: 0 2rem 2rem 0; /* (Option) ปรับมุมขวาให้มนรับกับ Card */
+  border-radius: 0 2rem 2rem 0;
+   position: relative; /* (Option) ปรับมุมขวาให้มนรับกับ Card */
 }
 
 /* 2. ปรับ container ให้ยืดหยุ่น */
@@ -189,3 +190,83 @@
   position: absolute; background-color: white; width: 3px; height: 3px; border-radius: 50%; opacity: 0.5; animation: twinkle 4s infinite;
 }
 @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ============================= */
+/* 📱 Tablet (<=1024px) */
+/* ============================= */
+@media (max-width: 1024px) {
+
+  .scene-container {
+    max-width: 100%;
+    padding-bottom: 10px;
+  }
+
+  .rocket-group {
+    bottom: 80px;
+    transform: scale(0.85);
+  }
+
+  .rocket-body {
+    width: 70px;
+    height: 130px;
+  }
+
+  .window {
+    width: 28px;
+    height: 28px;
+  }
+
+  .fin {
+    width: 22px;
+    height: 50px;
+  }
+
+  .nozzle {
+    width: 40px;
+  }
+
+  .smoke-trail {
+    height: 110px;
+    width: 28px;
+  }
+
+  .cloud-base {
+    height: 140px;
+  }
+
+  .c1 { width: 110px; height: 110px; }
+  .c2, .c3 { width: 95px; height: 95px; }
+  .c4, .c5 { width: 75px; height: 75px; }
+
+  .star {
+    width: 2px;
+    height: 2px;
+  }
+}
+
+
+/* ============================= */
+/* 📱 Mobile (<=640px) */
+/* ============================= */
+@media (max-width: 640px) {
+
+  .rocket-wrapper {
+    border-radius: 0 0 2rem 2rem; /* โค้งล่างแทน */
+    align-items: center;
+  }
+
+  .rocket-group {
+    bottom: 50px;
+    transform: scale(0.75);
+  }
+
+  .cloud-base {
+    height: 110px;
+  }
+
+  /* ลดแรง animation ไม่ให้ล้น */
+  @keyframes hoverFloat {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-10px); }
+  }
+}

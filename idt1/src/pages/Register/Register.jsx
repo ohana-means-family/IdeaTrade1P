@@ -106,10 +106,15 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
-      <div className="w-full max-w-5xl bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row">
+      <div className="w-full max-w-5xl
+        bg-slate-800
+        rounded-2xl md:rounded-[2rem]
+        shadow-2xl
+        overflow-hidden
+        flex flex-col lg:flex-row">
 
         {/* LEFT SIDE */}
-        <div className="w-full md:w-1/2 p-8 md:p-12">
+        <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-10 lg:p-12">
           <h2 className="text-3xl font-bold text-blue-500 mb-8 text-center">
             Registration
           </h2>
@@ -238,7 +243,11 @@ export default function Register() {
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="hidden md:flex w-1/2 relative">
+        <div className="w-full
+          h-72 sm:h-80 md:h-96
+          lg:w-1/2 lg:h-auto
+          relative
+          flex">
           <Rocket />
         </div>
       </div>
