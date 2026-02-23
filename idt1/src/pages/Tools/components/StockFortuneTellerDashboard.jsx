@@ -136,7 +136,7 @@ export default function StockDashboard() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
                 <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} domain={['dataMin - 0.2', 'dataMax + 0.2']} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fill="url(#colorLast)" />
+                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fill="url(#colorLast)" />
               </AreaChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -162,7 +162,7 @@ export default function StockDashboard() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
                 <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={3} dot={false} activeDot={{ r: 5, fill: '#151a25', stroke: '#f97316', strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 5, fill: '#151a25', stroke: '#f97316', strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -180,7 +180,7 @@ export default function StockDashboard() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
                 <YAxis orientation="right" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="value" stroke="#eab308" strokeWidth={3} fill="url(#colorPeak)" />
+                <Area type="monotone" dataKey="value" stroke="#eab308" strokeWidth={2} fill="url(#colorPeak)" />
               </AreaChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -188,7 +188,7 @@ export default function StockDashboard() {
           {/* Row 3 */}
           <ChartPanel title="Shareholder">
             <div className="w-full h-full flex flex-col items-center justify-center text-slate-600">
-              <FolderOpen size={48} className="mb-2 opacity-50" strokeWidth={1.5} />
+              <FolderOpen size={48} className="mb-2 opacity-50" strokeWidth={2} />
               <p className="text-sm font-medium">Shareholder {'>'} 5% ไม่มีข้อมูล</p>
             </div>
           </ChartPanel>

@@ -139,7 +139,7 @@ function Sub({ c, data, h, animated }) {
           <YAxis domain={c.yd} ticks={c.yt} orientation="right" tick={{ fontSize:8, fill:"#344560", fontFamily:"monospace" }} axisLine={false} tickLine={false} width={38} tickFormatter={v => c.f(v)}/>
           <XAxis dataKey="i" tick={{ fontSize:8, fill:"#344560", fontFamily:"monospace" }} axisLine={{ stroke:"rgba(255,255,255,0.04)" }} tickLine={false} height={14} ticks={[0,10,20,30,40,49]} tickFormatter={monthTickFormatter}/>
           <Tooltip content={<Tip f={c.f}/>}/>
-          <Area type="monotone" dataKey="v" stroke={c.col} strokeWidth={1.8} fill={`url(#${gid})`} dot={false} isAnimationActive={!animated}/>
+          <Area type="monotone" dataKey="v" stroke={c.col} strokeWidth={2} fill={`url(#${gid})`} dot={false} isAnimationActive={!animated}/>
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -196,7 +196,7 @@ export default function App() {
       <div style={{ height:38, flexShrink:0, background:"rgba(9,13,24,0.97)", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", padding:"0 12px", gap:10 }}>
         <button style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:6, color:"#556070", fontSize:14, cursor:"pointer", width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
         <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.09)", borderRadius:6, padding:"0 10px", height:26 }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#445566" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#445566" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <span style={{ color:"#c0cfe0", fontSize:11, fontWeight:700, letterSpacing:"0.08em" }}>XAUUSD</span>
           <span style={{ color:"#445566", fontSize:9 }}>▾</span>
         </div>

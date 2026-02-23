@@ -159,7 +159,7 @@ function ChartPanel({ title, data, color, isStep }) {
                   type="stepAfter" 
                   dataKey="value" 
                   stroke={color} 
-                  strokeWidth={3} 
+                  strokeWidth={2} 
                   dot={false}
                   activeDot={{ r: 5, fill: '#151a25', stroke: color, strokeWidth: 2 }} 
                />
@@ -188,7 +188,7 @@ function ChartPanel({ title, data, color, isStep }) {
                   type="monotone" 
                   dataKey="value" 
                   stroke={color} 
-                  strokeWidth={3} 
+                  strokeWidth={2} 
                   fill={`url(#${gradId})`} 
                   activeDot={{ r: 5, fill: '#151a25', stroke: color, strokeWidth: 2 }} 
                />

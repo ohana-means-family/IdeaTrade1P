@@ -91,7 +91,7 @@ function MiniChart({ stock, h = 140 }) {
             tickFormatter={v => v.toFixed(1)}/>
           <XAxis hide/>
           <Tooltip content={<Tip/>}/>
-          <Line type="monotone" dataKey="v" stroke={stock.color} strokeWidth={1.8} dot={false} isAnimationActive={!animated}/>
+          <Line type="monotone" dataKey="v" stroke={stock.color} strokeWidth={2} dot={false} isAnimationActive={!animated}/>
         </LineChart>
       </ResponsiveContainer>
     </div>

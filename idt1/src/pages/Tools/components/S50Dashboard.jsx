@@ -98,7 +98,7 @@ const LineChart = ({ data, color, data2, color2, min: minProp, max: maxProp, ani
       {/* Y grid lines */}
       {yTicks.map(({ y }, i) => (
         <line key={i} x1={pad.left} x2={W - pad.right} y1={y} y2={y}
-          stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+          stroke="rgba(255,255,255,0.04)" strokeWidth="2" />
       ))}
 
       {/* Area + Line */}
