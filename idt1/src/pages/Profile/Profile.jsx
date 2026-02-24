@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './Profile.css';
 
+// ✅ Import Firebase Auth และ Firestore
+import { auth, db } from "@/firebase"; 
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('Profile');
+  const [isSaving, setIsSaving] = useState(false); // สถานะปุ่ม Save
 
-  // Mock Data
+  // ข้อมูล State ของผู้ใช้
   const [userData, setUserData] = useState({
     firstName: '',
     lastName: '',
@@ -14,34 +20,86 @@ const Profile = () => {
     isVerified: true
   });
 
+  // ================= 1. ดึงข้อมูลจาก Firebase ตอนเปิดหน้า =================
   useEffect(() => {
-    // Logic จัดการ Last Login
-    const storedProfile = localStorage.getItem("userProfile");
-    let profile = storedProfile ? JSON.parse(storedProfile) : {};
-    let timestamp = profile.loginTime; 
+    // ใช้ onAuthStateChanged เพื่อรอให้ Firebase โหลดข้อมูล User ปัจจุบันเสร็จก่อน
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // 1.1 จัดการเวลา Last Login ดึงจากระบบ Firebase ตรงๆ
+        const lastSignIn = new Date(user.metadata.lastSignInTime);
+        const day = lastSignIn.getDate();
+        const month = lastSignIn.toLocaleString('en-US', { month: 'long' });
+        const year = lastSignIn.getFullYear();
+        const hours = String(lastSignIn.getHours()).padStart(2, '0');
+        const minutes = String(lastSignIn.getMinutes()).padStart(2, '0');
+        const formattedDate = `${day} ${month} ${year}, ${hours}:${minutes}`;
 
-    if (!timestamp) {
-      timestamp = new Date();
-      profile.loginTime = timestamp;
-      localStorage.setItem("userProfile", JSON.stringify(profile));
-    } else {
-      timestamp = new Date(timestamp);
-    }
+        // 1.2 เซ็ต Email และ LastLogin ทันที
+        setUserData(prev => ({
+          ...prev,
+          email: user.email || '',
+          lastLogin: formattedDate
+        }));
 
-    const day = timestamp.getDate();
-    const month = timestamp.toLocaleString('en-US', { month: 'long' });
-    const year = timestamp.getFullYear();
-    const hours = String(timestamp.getHours()).padStart(2, '0');
-    const minutes = String(timestamp.getMinutes()).padStart(2, '0');
-    
-    // Format: 13 May 2026, 14:32
-    const formattedDate = `${day} ${month} ${year}, ${hours}:${minutes}`;
+        // 1.3 ดึงข้อมูล ชื่อ นามสกุล เบอร์โทร จาก Firestore (Collection 'users')
+        try {
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
 
-    setUserData(prev => ({
-        ...prev,
-        lastLogin: formattedDate
-    }));
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserData(prev => ({
+              ...prev,
+              firstName: data.firstName || '',
+              lastName: data.lastName || '',
+              phone: data.phone || ''
+            }));
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup listener
   }, []);
+
+  // ================= 2. ฟังก์ชันบันทึกข้อมูลลง Firestore =================
+  const handleSave = async () => {
+    const user = auth.currentUser;
+    if (!user) return alert("กรุณาล็อกอินใหม่อีกครั้ง");
+
+    setIsSaving(true);
+    try {
+      // อ้างอิงไปที่ตาราง 'users' -> แถวที่ชื่อเดียวกับ UID ของผู้ใช้
+      const docRef = doc(db, "users", user.uid);
+      
+      // บันทึกข้อมูลลง Firestore (ใช้ merge: true เพื่อไม่ให้ข้อมูลอื่นที่อาจมีอยู่แล้วหายไป)
+      await setDoc(docRef, {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        email: user.email, // เซฟอีเมลเก็บไว้ดูในฐานข้อมูลด้วย
+        updatedAt: new Date()
+      }, { merge: true });
+
+      // ดึงโปรไฟล์ใน LocalStorage มาอัปเดตด้วย เพื่อให้ Sidebar หรือส่วนอื่นเปลี่ยนตามทันที
+      const storedProfile = localStorage.getItem("userProfile");
+      let profile = storedProfile ? JSON.parse(storedProfile) : {};
+      localStorage.setItem("userProfile", JSON.stringify({
+        ...profile,
+        firstName: userData.firstName,
+        lastName: userData.lastName
+      }));
+
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert("Failed to save profile. See console for details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="profile-page-container">
@@ -83,6 +141,7 @@ const Profile = () => {
                     className="dark-input"
                     value={userData.firstName}
                     onChange={(e) => setUserData({...userData, firstName: e.target.value})}
+                    placeholder="Enter first name"
                   />
                 </div>
                 <div className="form-group">
@@ -92,6 +151,7 @@ const Profile = () => {
                     className="dark-input"
                     value={userData.lastName}
                     onChange={(e) => setUserData({...userData, lastName: e.target.value})}
+                    placeholder="Enter last name"
                   />
                 </div>
               </div>
@@ -104,7 +164,8 @@ const Profile = () => {
                     type="email" 
                     className="dark-input"
                     value={userData.email}
-                    onChange={(e) => setUserData({...userData, email: e.target.value})}
+                    disabled // อีเมลไม่ควรแก้ได้จากตรงนี้
+                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
                   />
                 </div>
               </div>
@@ -118,20 +179,26 @@ const Profile = () => {
                     className="dark-input"
                     value={userData.phone}
                     onChange={(e) => setUserData({...userData, phone: e.target.value})}
+                    placeholder="Enter phone number"
                   />
                 </div>
               </div>
 
               {/* Save Button */}
               <div className="form-actions">
-                <button className="btn-save-changes">
-                  <LockIcon /> Save Changes
+                <button 
+                  className="btn-save-changes" 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{ opacity: isSaving ? 0.7 : 1 }}
+                >
+                  <LockIcon /> {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* --- RIGHT COLUMN: Profile Summary Only (Pro Plan Removed) --- */}
+          {/* --- RIGHT COLUMN: Profile Summary --- */}
           <div className="sidebar-column">
             
             {/* User Info Card */}
@@ -139,7 +206,11 @@ const Profile = () => {
               <div className="avatar-circle">
                 <UserIconLarge />
               </div>
-              <h3 className="user-fullname">{userData.firstName} {userData.lastName}</h3>
+              <h3 className="user-fullname">
+                {userData.firstName || userData.lastName 
+                  ? `${userData.firstName} ${userData.lastName}` 
+                  : "Idea Trade User"}
+              </h3>
               <div className="verified-badge">
                 <CheckCircleIcon /> Account Verified
               </div>

@@ -1,6 +1,7 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   // ⚠️ เอาค่าของจริงจาก Firebase Console มาใส่ในช่องที่มีคำว่า "ใส่_..." นะครับ
@@ -17,6 +18,7 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+export const db = getFirestore(app);
 
 // ✅ เพิ่มคำสั่งเชื่อมต่อ Auth Emulator เพื่อให้คุยกับ Backend รู้เรื่อง
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {

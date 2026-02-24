@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+// ✅ Import Firebase Auth เข้ามาเพื่อจัดการสถานะแบบ Real-time
+import { auth } from "@/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+
 import logo from "@/assets/images/logo.png";
 import ToggleIcon from "@/assets/icons/Vector.svg";
 
@@ -61,7 +65,6 @@ const projects = [
   { id: "dr", name: "DR", iconKey: "dr" },
 ];
 
-// ✅ MAPPING: จับคู่ ID โปรเจกต์ -> ไปยังหน้า Preview
 const PROJECT_PREVIEWS = {
   fortune: "stock-fortune",
   petroleum: "petroleum-preview",
@@ -126,23 +129,39 @@ export default function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
+  // ✅ ใช้ onAuthStateChanged เพื่อให้เมนูเปลี่ยนทันทีที่สถานะล็อกอินเปลี่ยน
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem("userProfile");
-      if (!savedUser) return;
-      const user = JSON.parse(savedUser);
-      setUnlockedList(user.unlockedItems || []);
-      setIsMember(user.role === "member" || user.unlockedItems?.length > 0);
-    } catch (e) {
-      console.error("Error parsing user profile", e);
-    }
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // ผู้ใช้ล็อกอินผ่าน Firebase แล้ว
+        setIsLoggedIn(true);
+        
+        // ดึงข้อมูลเรื่อง Member จาก LocalStorage มาประกอบ
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          setUnlockedList(parsedUser.unlockedItems || []);
+          setIsMember(parsedUser.role === "member" || parsedUser.unlockedItems?.length > 0);
+        }
+      } else {
+        // ไม่มีผู้ใช้ (ยังไม่ล็อกอิน หรือกดออกจากระบบ)
+        setIsLoggedIn(false);
+        setIsMember(false);
+        setUnlockedList([]);
+      }
+    });
+
+    // คืนค่าฟังก์ชันยกเลิกการดักจับเมื่อ Component ถูกทำลาย
+    return () => unsubscribe();
+  }, []); 
 
   /* ================= AUTH ACTIONS ================= */
   const handleSignUp = () => navigate("/register");
@@ -152,22 +171,23 @@ export default function Sidebar({
     setShowLogoutModal(true);
   };
 
-  const confirmSignOut = () => {
-    localStorage.removeItem("userProfile");
-    setIsMember(false);
-    setShowLogoutModal(false);
-    navigate("/welcome");
-    window.location.reload();
+  // ✅ อัปเดตฟังก์ชัน Logout ให้เตะออกจาก Firebase ด้วย
+  const confirmSignOut = async () => {
+    try {
+      await signOut(auth); // สั่งออกจากระบบ Firebase
+      localStorage.removeItem("userProfile"); // ล้างข้อมูลส่วนตัว
+      setIsLoggedIn(false); 
+      setIsMember(false);
+      setShowLogoutModal(false);
+      navigate("/welcome");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
-  // ✅ OPTIMIZED: ฟังก์ชันเดียวจัดการได้ทุก Project
   const handleNavigation = (id, projectItem = null) => {
-    
-    // 1. ตรวจสอบว่าเป็น Project ที่อยู่ในรายการ Preview Map หรือไม่
     if (PROJECT_PREVIEWS[id]) {
         const isUnlocked = unlockedList.includes(id);
-
-        // กรณี Free (ยังไม่ปลดล็อก) -> เปิดหน้า Preview ตาม Map ที่ตั้งไว้
         if (!isUnlocked) {
             const previewPage = PROJECT_PREVIEWS[id];
             setActivePage(previewPage);
@@ -179,7 +199,6 @@ export default function Sidebar({
         }
     }
 
-    // 2. Logic ปกติ
     setActivePage(id);
     if (projectItem && openProject) openProject(projectItem);
     
@@ -371,7 +390,6 @@ export default function Sidebar({
           {/* Project List */}
           {filteredProjects.length > 0 ? (
             filteredProjects.map((p) => {
-              // ✅ FIXED: เช็คทั้ง ID ปกติ และ ID ของหน้า Preview
               const unlocked = unlockedList.includes(p.id);
               const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
 
@@ -422,7 +440,8 @@ export default function Sidebar({
           {/* ================= ACCOUNT SECTION ================= */}
           {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
 
-          {isMember ? (
+          {/* ✅ ส่วนนี้ทำงานตามเงื่อนไขที่คุณต้องการเป๊ะๆ แล้วครับ */}
+          {isLoggedIn ? (
             <>
               {/* Profile */}
               <button
@@ -437,18 +456,20 @@ export default function Sidebar({
                  {!collapsed && <span className="pointer-events-none">Profile</span>}
               </button>
 
-              {/* Manage Subscription */}
-              <button
-                onClick={() => handleNavigation("subscription")}
-                onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
-                onMouseLeave={handleMouseLeave}
-                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-                ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-              >
-                 <SettingsIconSVG />
-                 {!collapsed && <span className="pointer-events-none">Manage Subscription</span>}
-              </button>
+              {/* ✅ Manage Subscription (แสดงเฉพาะ Member) */}
+              {isMember && (
+                <button
+                  onClick={() => handleNavigation("subscription")}
+                  onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
+                  onMouseLeave={handleMouseLeave}
+                  className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
+                  ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
+                  ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+                >
+                   <SettingsIconSVG />
+                   {!collapsed && <span className="pointer-events-none">Manage Subscription</span>}
+                </button>
+              )}
 
               {/* Sign Out */}
               <button
@@ -464,6 +485,7 @@ export default function Sidebar({
             </>
           ) : (
             <>
+              {/* Sign Up */}
               <button
                 onClick={handleSignUp}
                 onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")}
@@ -475,6 +497,7 @@ export default function Sidebar({
                  {!collapsed && <span className="pointer-events-none">Sign Up</span>}
               </button>
 
+              {/* Sign In */}
               <button
                 onClick={handleSignIn}
                 onMouseEnter={(e) => handleMouseEnter(e, "Sign In")}
