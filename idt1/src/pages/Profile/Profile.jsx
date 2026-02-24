@@ -47,6 +47,7 @@ const Profile = () => {
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
+            console.log("✅ เจอข้อมูลใน Firestore:", docSnap.data()); // 👈 เพิ่ม log ตรงนี้
             const data = docSnap.data();
             setUserData(prev => ({
               ...prev,
@@ -54,6 +55,8 @@ const Profile = () => {
               lastName: data.lastName || '',
               phone: data.phone || ''
             }));
+          } else {
+            console.log("ℹ️ ยังไม่มีข้อมูลโปรไฟล์ใน Firestore (เป็นผู้ใช้ใหม่)"); // 👈 เพิ่ม log ตรงนี้
           }
         } catch (error) {
           console.error("Error fetching user data:", error);

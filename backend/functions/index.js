@@ -99,6 +99,25 @@ exports.verifyOTP = functions.https.onRequest((req, res) => {
       // ลบ OTP ทิ้ง เพื่อไม่ให้ใช้ซ้ำได้อีก
       await db.collection("otp").doc(email).delete();
 
+      // 🌟🌟🌟 โค้ดส่วนที่เพิ่มใหม่: โอนย้ายข้อมูลจาก users_temp ไปตารางหลัก 🌟🌟🌟
+      try {
+        const tempDoc = await db.collection("users_temp").doc(email).get();
+        if (tempDoc.exists) {
+          // ถ้ามีคนกรอกชื่อไว้ตอนสมัคร ให้ก๊อปปี้มาลงตารางหลัก (ผูกกับ UID ของ Auth)
+          await db.collection("users").doc(userRecord.uid).set({
+            ...tempDoc.data(),
+            uid: userRecord.uid,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          
+          // ลบข้อมูลชั่วคราวทิ้ง เพื่อประหยัดพื้นที่และไม่ให้รกฐานข้อมูล
+          await db.collection("users_temp").doc(email).delete();
+        }
+      } catch (err) {
+        console.log("ไม่มีข้อมูล Temp ให้โอนย้าย หรือเกิดข้อผิดพลาด ข้ามไป...", err);
+      }
+      // 🌟🌟🌟 สิ้นสุดส่วนที่เพิ่มใหม่ 🌟🌟🌟
+
       // ส่ง Token กลับไปให้หน้าบ้าน
       res.status(200).send({ success: true, token: customToken });
 

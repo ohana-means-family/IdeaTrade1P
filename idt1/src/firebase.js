@@ -17,11 +17,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+export const db = getFirestore(app); 
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
 
-// ✅ เพิ่มคำสั่งเชื่อมต่อ Auth Emulator เพื่อให้คุยกับ Backend รู้เรื่อง
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-  console.log("🚀 Connected to Firebase Auth Emulator (Port 9099)");
+  // 🌟 ใส่ try-catch ป้องกันโค้ดรันซ้ำตอนที่ React รีเฟรชตัวเอง
+  try {
+    connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080); 
+    console.log("🚀 Connected to Firebase Auth & Firestore Emulators");
+  } catch (error) {
+    console.log("⚡ Firebase Emulators already connected.");
+  }
 }
