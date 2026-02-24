@@ -2,8 +2,12 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 const cors = require("cors")({ origin: true });
+const path = require("path"); // 🌟 1. เพิ่มตัวนี้เข้ามาช่วยหาตำแหน่งไฟล์กุญแจ
 
-// ✅ แก้ไข: ลบ serviceAccount ออก ปล่อยวงเล็บว่างไว้แบบนี้เพื่อให้ Emulator ทำงานได้ครับ
+// 🌟🌟 2. ท่าไม้ตาย: บังคับตั้งค่าระบบให้ใช้กุญแจนี้เป็น Master Key (แก้บัค Emulator หลงทาง)
+process.env.GOOGLE_APPLICATION_CREDENTIALS = path.resolve(__dirname, "./firebase-key.json");
+
+// 🌟🌟 3. สั่งเปิดใช้งาน (คราวนี้ปล่อยวงเล็บว่างไว้ได้เลยครับ มันจะดึงจากบรรทัดบนมาใช้เองแบบไม่หลุดแน่ๆ)
 admin.initializeApp();
 
 const db = admin.firestore();
@@ -107,7 +111,7 @@ exports.verifyOTP = functions.https.onRequest((req, res) => {
           await db.collection("users").doc(userRecord.uid).set({
             ...tempDoc.data(),
             uid: userRecord.uid,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date()
           }, { merge: true });
           
           // ลบข้อมูลชั่วคราวทิ้ง เพื่อประหยัดพื้นที่และไม่ให้รกฐานข้อมูล

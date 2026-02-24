@@ -8,9 +8,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('Profile');
-  const [isSaving, setIsSaving] = useState(false); // สถานะปุ่ม Save
+  const [isSaving, setIsSaving] = useState(false);
 
-  // ข้อมูล State ของผู้ใช้
   const [userData, setUserData] = useState({
     firstName: '',
     lastName: '',
@@ -22,10 +21,9 @@ const Profile = () => {
 
   // ================= 1. ดึงข้อมูลจาก Firebase ตอนเปิดหน้า =================
   useEffect(() => {
-    // ใช้ onAuthStateChanged เพื่อรอให้ Firebase โหลดข้อมูล User ปัจจุบันเสร็จก่อน
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // 1.1 จัดการเวลา Last Login ดึงจากระบบ Firebase ตรงๆ
+        // 1.1 จัดการเวลา Last Login
         const lastSignIn = new Date(user.metadata.lastSignInTime);
         const day = lastSignIn.getDate();
         const month = lastSignIn.toLocaleString('en-US', { month: 'long' });
@@ -34,29 +32,43 @@ const Profile = () => {
         const minutes = String(lastSignIn.getMinutes()).padStart(2, '0');
         const formattedDate = `${day} ${month} ${year}, ${hours}:${minutes}`;
 
-        // 1.2 เซ็ต Email และ LastLogin ทันที
         setUserData(prev => ({
           ...prev,
           email: user.email || '',
           lastLogin: formattedDate
         }));
 
-        // 1.3 ดึงข้อมูล ชื่อ นามสกุล เบอร์โทร จาก Firestore (Collection 'users')
+        // 1.2 ดึงข้อมูลแบบ 2 สเต็ป (หาตารางหลักก่อน ถ้าไม่เจอไปหาตารางสำรอง)
         try {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
+          // สเต็ป A: หาในตาราง users (หลัก)
+          const mainDocRef = doc(db, "users", user.uid);
+          const mainDocSnap = await getDoc(mainDocRef);
+          const mainData = mainDocSnap.data();
 
-          if (docSnap.exists()) {
-            console.log("✅ เจอข้อมูลใน Firestore:", docSnap.data()); // 👈 เพิ่ม log ตรงนี้
-            const data = docSnap.data();
+          if (mainDocSnap.exists() && mainData?.firstName) {
+            console.log("✅ เจอข้อมูลใน users (หลัก):", mainData);
             setUserData(prev => ({
               ...prev,
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              phone: data.phone || ''
+              firstName: mainData.firstName || '',
+              lastName: mainData.lastName || '',
+              phone: mainData.phone || ''
             }));
           } else {
-            console.log("ℹ️ ยังไม่มีข้อมูลโปรไฟล์ใน Firestore (เป็นผู้ใช้ใหม่)"); // 👈 เพิ่ม log ตรงนี้
+            // สเต็ป B: ถ้าไม่เจอ ไปหาในตาราง users_temp (สำรองตอนสมัคร)
+            console.log("⚠️ ไม่พบใน users กำลังหาใน users_temp...");
+            const tempDocRef = doc(db, "users_temp", user.email.toLowerCase()); 
+            const tempDocSnap = await getDoc(tempDocRef);
+            
+            if (tempDocSnap.exists()) {
+              console.log("✅ เจอข้อมูลใน users_temp:", tempDocSnap.data());
+              const data = tempDocSnap.data();
+              setUserData(prev => ({
+                ...prev,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                phone: data.phone || ''
+              }));
+            }
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -64,7 +76,7 @@ const Profile = () => {
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener
+    return () => unsubscribe();
   }, []);
 
   // ================= 2. ฟังก์ชันบันทึกข้อมูลลง Firestore =================
@@ -74,19 +86,18 @@ const Profile = () => {
 
     setIsSaving(true);
     try {
-      // อ้างอิงไปที่ตาราง 'users' -> แถวที่ชื่อเดียวกับ UID ของผู้ใช้
+      // เวลาบันทึก จะบันทึกเข้าตารางหลัก (users) เสมอ
       const docRef = doc(db, "users", user.uid);
       
-      // บันทึกข้อมูลลง Firestore (ใช้ merge: true เพื่อไม่ให้ข้อมูลอื่นที่อาจมีอยู่แล้วหายไป)
       await setDoc(docRef, {
         firstName: userData.firstName,
         lastName: userData.lastName,
         phone: userData.phone,
-        email: user.email, // เซฟอีเมลเก็บไว้ดูในฐานข้อมูลด้วย
+        email: user.email,
         updatedAt: new Date()
       }, { merge: true });
 
-      // ดึงโปรไฟล์ใน LocalStorage มาอัปเดตด้วย เพื่อให้ Sidebar หรือส่วนอื่นเปลี่ยนตามทันที
+      // อัปเดต LocalStorage ด้วย
       const storedProfile = localStorage.getItem("userProfile");
       let profile = storedProfile ? JSON.parse(storedProfile) : {};
       localStorage.setItem("userProfile", JSON.stringify({
@@ -106,11 +117,8 @@ const Profile = () => {
 
   return (
     <div className="profile-page-container">
-      
-      {/* Header Title */}
       <h1 className="page-title">Your account</h1>
 
-      {/* Navigation Tabs */}
       <div className="profile-tabs">
         <button 
           className={`tab-btn ${activeTab === 'Profile' ? 'active' : ''}`}
@@ -126,7 +134,6 @@ const Profile = () => {
         </button>
       </div>
 
-      {/* ================= PROFILE TAB CONTENT ================= */}
       {activeTab === 'Profile' && (
         <div className="profile-layout fade-in">
           
@@ -135,7 +142,6 @@ const Profile = () => {
             <h2 className="card-header">My Account Information</h2>
             
             <div className="form-content">
-              {/* Row 1: First Name & Last Name */}
               <div className="form-row two-cols">
                 <div className="form-group">
                   <label>First Name</label>
@@ -159,7 +165,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Row 2: Email */}
               <div className="form-row">
                 <div className="form-group">
                   <label>Email Address</label>
@@ -167,13 +172,12 @@ const Profile = () => {
                     type="email" 
                     className="dark-input"
                     value={userData.email}
-                    disabled // อีเมลไม่ควรแก้ได้จากตรงนี้
+                    disabled
                     style={{ opacity: 0.6, cursor: 'not-allowed' }}
                   />
                 </div>
               </div>
 
-              {/* Row 3: Phone */}
               <div className="form-row">
                 <div className="form-group">
                   <label>Phone Number</label>
@@ -187,7 +191,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Save Button */}
               <div className="form-actions">
                 <button 
                   className="btn-save-changes" 
@@ -203,8 +206,6 @@ const Profile = () => {
 
           {/* --- RIGHT COLUMN: Profile Summary --- */}
           <div className="sidebar-column">
-            
-            {/* User Info Card */}
             <div className="card profile-summary-card">
               <div className="avatar-circle">
                 <UserIconLarge />
@@ -219,12 +220,10 @@ const Profile = () => {
               </div>
               <p className="last-login-text">Last Login: {userData.lastLogin}</p>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* ================= API TAB CONTENT ================= */}
       {activeTab === 'API' && (
         <div className="api-content fade-in">
            <div className="card">
