@@ -30,9 +30,9 @@ export default function Welcome() {
   /* ======================
       EMAIL VALIDATION
   ====================== */
-  const isValidEmail = (email) => {
-    const emailRegex =
-      /^[^\s@]+@(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|company\.co\.th|university\.ac\.th)$/;
+ const isValidEmail = (email) => {
+    // ใช้ Regex มาตรฐานที่รองรับทุกโดเมน (ขอแค่มี @ และ . อย่างถูกต้อง)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 

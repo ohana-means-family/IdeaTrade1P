@@ -7,6 +7,14 @@ import Rocket from "./Rocket";
 import { db } from "@/firebase"; 
 import { doc, setDoc } from "firebase/firestore"; 
 
+// 🌟 ย้าย ErrorPopup ออกมาไว้ข้างนอก component หลัก เพื่อไม่ให้มันถูก render ใหม่ซ้ำๆ ทุกครั้งที่พิมพ์
+const ErrorPopup = () => (
+  <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
+    <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span>
+    Please fill out this field.
+  </div>
+);
+
 export default function Register() {
   const navigate = useNavigate();
 
@@ -23,7 +31,7 @@ export default function Register() {
 
   const [errorField, setErrorField] = useState("");
   const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // ป้องกันกดซ้ำ
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ======================
   // Handle Change
@@ -41,7 +49,7 @@ export default function Register() {
   // ======================
   // Submit (บันทึกข้อมูลลง Firestore ก่อนล็อกอิน)
   // ======================
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // --- ตรวจสอบข้อมูลเบื้องต้น ---
@@ -57,7 +65,7 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      // ✅ 1. บันทึกข้อมูลลงใน Firestore (users_temp)
+      // ✅ 1. บันทึกข้อมูลลงใน Firestore (users_temp) ของจริง
       const emailKey = formData.email.trim().toLowerCase();
       const docRef = doc(db, "users_temp", emailKey); 
       
@@ -69,7 +77,7 @@ export default function Register() {
         registeredAt: new Date()
       });
 
-      // ✅ 2. ยิง API ของคุณไปที่ Backend 8000 (แยก try-catch ไว้เพื่อไม่ให้ระบบพังถ้าไม่ได้รัน Backend)
+      // ✅ 2. ยิง API ไปที่ Backend 8000 (ถ้าไม่ได้ใช้แล้ว สามารถลบออกได้นะครับ)
       try {
         await fetch('http://localhost:8000/api/register', {
           method: 'POST',
@@ -88,20 +96,11 @@ export default function Register() {
 
     } catch (error) {
       console.error("Error Registration:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Firebase");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Firebase เช็ค Rules บนเว็บหรือยัง?");
     } finally {
       setIsSubmitting(false);
     }
   };
-  // ======================
-  // Error Popup
-  // ======================
-  const ErrorPopup = () => (
-    <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
-      <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span>
-      Please fill out this field.
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">

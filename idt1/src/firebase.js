@@ -18,6 +18,8 @@ const firebaseConfig = {
 // 🌟🌟 1. บรรทัดนี้สำคัญมาก! ต้องสร้าง app ก่อน
 const app = initializeApp(firebaseConfig);
 
+
+
 // 🌟🌟 2. ค่อยเอา app ไปใช้งานในคำสั่งอื่นๆ ด้านล่างนี้
 export const auth = getAuth(app);
 export const db = getFirestore(app); 
