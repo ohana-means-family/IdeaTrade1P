@@ -3,12 +3,8 @@ const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 const cors = require("cors")({ origin: true });
 
-// 👇 แก้ไขบรรทัด admin.initializeApp() เป็นแบบนี้:
-const serviceAccount = require("./service-account.json"); // ใส่ชื่อไฟล์ที่คุณตั้งไว้
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// ✅ แก้ไข: ลบ serviceAccount ออก ปล่อยวงเล็บว่างไว้แบบนี้เพื่อให้ Emulator ทำงานได้ครับ
+admin.initializeApp();
 
 const db = admin.firestore();
 
@@ -37,14 +33,14 @@ exports.requestOTP = functions.https.onRequest((req, res) => {
     try {
       // เซฟลง Firestore
       await db.collection("otp").doc(email).set({
-        otp: otp, // 👇 (จุดที่ 2) แก้จาก otpCode เป็น otp ให้ตรงกับตัวแปรด้านบน
+        otp: otp, 
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60000), 
       });
 
       // ส่งอีเมล
       const mailOptions = {
-        from: "jabjidjang@gmail.com", // 👇 (จุดที่ 3) แก้อีเมลผู้ส่งให้ตรงกับบัญชีที่ใช้ส่ง
+        from: "jabjidjang@gmail.com", 
         to: email,
         subject: "รหัส OTP สำหรับเข้าสู่ระบบ Idea Trade",
         html: `<h2>ยินดีต้อนรับสู่ Idea Trade</h2>
@@ -71,7 +67,6 @@ exports.verifyOTP = functions.https.onRequest((req, res) => {
 
     try {
       // ดึงข้อมูล OTP จาก Firestore 
-      // 👇 (จุดที่ 4) แก้จาก "otps" เป็น "otp" ให้ชื่อตารางตรงกันกับตอนเซฟ
       const doc = await db.collection("otp").doc(email).get();
       if (!doc.exists) return res.status(400).send({ error: "ไม่พบข้อมูล OTP หรือ OTP หมดอายุแล้ว" });
 

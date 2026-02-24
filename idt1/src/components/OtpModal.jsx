@@ -72,20 +72,26 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
         })
       });
 
-      if (!response.ok) throw new Error("Verification failed");
-
-      const data = await response.json();
+      // 1️⃣ อ่านข้อมูลจาก Backend ก่อนเลย จะได้รู้ว่าส่ง error อะไรมา
+      const data = await response.json(); 
       
-      if (data.success && data.token) {
-        await signInWithCustomToken(auth, data.token);
-        setStatus("success");
-        setTimeout(() => onSuccess(), 800);
-      } else {
-        throw new Error(data.error || "Invalid OTP");
+      // 2️⃣ ถ้า Response หรืองานไม่สำเร็จ ให้พ่น Error ของ Backend ออกมา
+      if (!response.ok || !data.success) {
+         throw new Error(data.error || "Verification failed"); 
       }
+
+      // 3️⃣ ถ้าสำเร็จค่อย Login
+      await signInWithCustomToken(auth, data.token);
+      setStatus("success");
+      setTimeout(() => onSuccess(), 800);
+      
     } catch (error) {
-      console.error("Verify Error:", error);
+      // ✅ ตอนนี้เราจะเห็นใน Console แล้วว่ามัน Error เพราะอะไร!
+      console.error("🔥 Verify Error:", error.message); 
       setStatus("error");
+      
+      // (ทางเลือก) ให้หน้าจอ Alert ข้อความ Error จริงๆ ออกมาดูเลย
+      alert("เกิดข้อผิดพลาด: " + error.message); 
     }
   };
 

@@ -6,8 +6,6 @@ import { auth, googleProvider } from "@/firebase";
 import Rocket from "@/assets/icons/rocket-lunch 1.svg";
 import Crown from "@/assets/icons/crown 1.svg";
 import OtpModal from "@/components/OtpModal";
-import signinIcon from "@/assets/icons/signin.svg";
-import signupIcon from "@/assets/icons/signup.svg";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -96,7 +94,10 @@ export default function Welcome() {
     // ✅ เริ่มกระบวนการส่ง OTP
     setIsLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:5001/ideatrade-9548f/us-central1/requestOTP", {
+      // ⚠️ จุดที่ต้องระวังตอนขึ้น Production: อย่าลืมเปลี่ยน URL ตรงนี้เป็นของจริง
+      const API_URL = "http://127.0.0.1:5001/ideatrade-9548f/us-central1/requestOTP"; 
+      
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -225,53 +226,13 @@ export default function Welcome() {
               </label>
             </div>
 
-            {/* Sign in */}
+            {/* Sign in - แก้ไขโค้ดที่ซ้ำซ้อนแล้ว */}
             <button
-
               onClick={handleSignIn}
               disabled={isLoading}
               className={`mt-2 py-3 rounded-lg text-lg font-semibold transition-all ${
                 isLoading ? "bg-slate-600 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-500"
               }`}
-
-              onClick={async () => {
-                // ❌ ยังไม่กรอกอีเมล
-                if (!email) {
-                  setPopupType("emailRequired");
-                  setOpenForgot(true);
-                  return;
-                }
-
-                // ❌ อีเมลผิดรูปแบบ
-                if (!isValidEmail(email)) {
-                  setPopupType("emailInvalid");
-                  setOpenForgot(true);
-                  return;
-                }
-
-                // ✅ อีเมลถูกต้อง (ยิง API ขอ OTP ก่อนเปิด Modal)
-                try {
-                  const response = await fetch("http://127.0.0.1:5001/ideatrade-9548f/us-central1/requestOTP", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: email })
-                  });
-
-                  const data = await response.json();
-
-                  if (response.ok && data.success) {
-                    // ถ้าเซิร์ฟเวอร์ส่งอีเมลสำเร็จ ค่อยเปิดหน้าต่างกรอก OTP
-                    setOpenOtp(true); 
-                  } else {
-                    alert("ไม่สามารถส่งอีเมลได้: " + (data.error || "ไม่ทราบสาเหตุ"));
-                  }
-                } catch (error) {
-                  console.error("Error requesting OTP:", error);
-                  alert("เซิร์ฟเวอร์ขัดข้อง ไม่สามารถขอ OTP ได้");
-                }
-              }}
-              className="mt-2 py-3 rounded-lg bg-sky-600 text-lg font-semibold"
-
             >
               {isLoading ? "Sending OTP..." : "Sign in"}
             </button>
