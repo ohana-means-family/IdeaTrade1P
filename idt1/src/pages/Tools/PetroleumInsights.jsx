@@ -478,22 +478,6 @@ export default function PetroleumInsights() {
 /* ==========================================================
     CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
 ========================================================== */
-<style>
-{`
-@keyframes symbolBounce {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.04); }
-  50% { transform: scale(0.98); }
-  70% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-.symbol-bounce {
-  animation: symbolBounce 1.8s ease-in-out infinite;
-}
-`}
-</style>
-
 if (isMember && enteredTool) {
 
   const metrics = [
@@ -567,12 +551,20 @@ if (isMember && enteredTool) {
                     </button>
                   )}
 
-                  <span
+                  <svg
                     onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                    className="text-slate-400 text-xs ml-2 cursor-pointer"
+                    className="w-4 h-4 text-slate-400 ml-2 cursor-pointer transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    ▾
-                  </span>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 9l6 6 6-6"
+                    />
+                  </svg>
                 </div>
               </div>
 
@@ -620,24 +612,37 @@ if (isMember && enteredTool) {
             </div>
 
             {/* Oil Type */}
-            <select
-            className="bg-[#111827] border border-slate-700 px-4 py-3 rounded-md text-sm text-white outline-none focus:border-cyan-400 w-64"
-          >
-            <option value="">Select oil type</option>
+            <div className="relative w-64">
+              <select
+                className="appearance-none bg-[#111827] border border-slate-700 px-4 py-3 pr-10 rounded-md text-sm text-white outline-none focus:border-cyan-400 w-full"
+              >
+                <option value="">Select oil type</option>
+                <option>GASOHOL95 E10</option>
+                <option>GASOHOL91</option>
+                <option>GASOHOL95 E20</option>
+                <option>GASOHOL95 E85</option>
+                <option>H-DIESEL</option>
+                <option>FO 600 (1) 2%S</option>
+                <option>FO 1500 (2) 2%S</option>
+                <option>LPG</option>
+                <option>ULG95</option>
+              </select>
 
-            <option>GASOHOL95 E10</option>
-            <option>GASOHOL91</option>
-            <option>GASOHOL95 E20</option>
-            <option>GASOHOL95 E85</option>
-
-            <option>H-DIESEL</option>
-
-            <option>FO 600 (1) 2%S</option>
-            <option>FO 1500 (2) 2%S</option>
-
-            <option>LPG</option>
-            <option>ULG95</option>
-          </select>
+              {/* Custom Arrow */}
+              <svg
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 9l6 6 6-6"
+                />
+              </svg>
+            </div>
           </div>
 
           {/* Period Buttons */}
@@ -707,6 +712,7 @@ if (isMember && enteredTool) {
     </div>
   );
 }
+
 return null;
 }
 

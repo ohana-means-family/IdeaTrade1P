@@ -3,6 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import PetroleumDashboard from "./components/StockFortuneTellerDashboard.jsx";
+import SearchIcon from "@mui/icons-material/Search";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import DownloadIcon from "@mui/icons-material/Download";
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -31,6 +35,8 @@ export default function StockFortuneTeller() {
     chart5: "Shareholder",
     chart6: "Manager",
   });
+
+  const [refreshing, setRefreshing] = useState(false);
 
   // --- [NEW] Search Logic ---
   const [symbol, setSymbol] = useState("");
@@ -216,10 +222,10 @@ export default function StockFortuneTeller() {
               </div>
               {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
             <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden group">
-  <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
-    <PetroleumDashboard />
-  </div>
-</div>
+              <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
+                <PetroleumDashboard />
+              </div>
+            </div>
              </div>
             </div>
 
@@ -353,10 +359,10 @@ export default function StockFortuneTeller() {
               </div>
               {/* ส่วนแสดงผลกราฟจริงในหน้า Preview */}
             <div className="aspect-[16/10] w-full bg-[#0B1221] relative overflow-hidden group">
-  <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
-    <PetroleumDashboard />
-  </div>
-</div>
+              <div className="w-[125%] h-[125%] origin-top-left transform scale-[0.8]">
+                <PetroleumDashboard />
+              </div>
+            </div>
              </div>
             </div>
             
@@ -461,7 +467,12 @@ export default function StockFortuneTeller() {
     <div className="w-full min-h-screen bg-[#0B1221] text-white px-6 py-6">
 
         <div className="flex items-center justify-between mb-6">
-          <div className="relative w-72">
+
+        {/* ================= SEARCH ================= */}
+        <div className="relative w-80">
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fontSize="small" />
+
             <input
               type="text"
               value={symbol}
@@ -472,48 +483,118 @@ export default function StockFortuneTeller() {
               onFocus={() => setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               placeholder="Type a Symbol..."
-              className="w-full bg-[#111827] border border-slate-700 rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-cyan-500"
+              className="
+                w-full bg-[#0f172a] 
+                border border-slate-600 
+                rounded-full 
+                pl-10 pr-4 py-2.5 
+                text-sm text-white
+                focus:outline-none 
+                focus:border-cyan-500
+                focus:ring-1 focus:ring-cyan-500
+                transition
+              "
             />
-            <span className="absolute left-3 top-2.5 text-slate-400 text-sm">
-              🔍
-            </span>
+          </div>
 
-            {showDropdown && symbol !== "" && (
-              <div className="absolute mt-2 w-full bg-[#111827] border border-slate-700 rounded-xl shadow-xl max-h-64 overflow-y-auto z-50">
-                {filteredSymbols.length > 0 ? (
-                  filteredSymbols.map((item, index) => (
-                    <div
-                      key={index}
-                      onClick={() => {
-                        setSymbol(item);
-                        setShowDropdown(false);
-                      }}
-                      className="px-4 py-2 text-sm hover:bg-cyan-500 hover:text-white cursor-pointer transition"
-                    >
-                      {item}
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-2 text-sm text-slate-400">
-                    No results
+          {/* DROPDOWN */}
+          {showDropdown && (
+            <div className="
+              absolute mt-2 w-full 
+              bg-[#0f172a] 
+              border border-slate-700 
+              rounded-xl 
+              shadow-2xl 
+              max-h-72 
+              overflow-y-auto 
+              z-50
+            ">
+              {filteredSymbols.length > 0 ? (
+                filteredSymbols.map((item, index) => (
+                  <div
+                    key={index}
+                    onMouseDown={() => {
+                      setSymbol(item);
+                      setShowDropdown(false);
+                    }}
+                    className="
+                      px-4 py-2.5 text-sm 
+                      text-slate-300 
+                      hover:bg-cyan-500/20 
+                      hover:text-white 
+                      cursor-pointer 
+                      transition
+                    "
+                  >
+                    {item}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <button className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-lg hover:border-cyan-500">
-              🔔
-            </button>
-            <button className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-lg hover:border-cyan-500">
-              ⟳
-            </button>
-            <button className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-lg hover:border-cyan-500">
-              ⬇
-            </button>
-          </div>
+                ))
+              ) : (
+                <div className="px-4 py-2 text-sm text-slate-500">
+                  No results
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+            {/* ================= ACTION BUTTONS ================= */}
+            <div className="flex gap-3">
+
+              <button className="
+                w-10 h-10 
+                bg-[#0f172a] 
+                border border-slate-700 
+                rounded-lg 
+                flex items-center justify-center
+                hover:border-cyan-500
+                hover:text-cyan-400
+                transition
+              ">
+                <NotificationsNoneIcon fontSize="small" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setRefreshing(true);
+
+                  // จำลองรีเฟรช 1 วิ
+                  setTimeout(() => {
+                    setRefreshing(false);
+                  }, 1000);
+                }}
+                className="
+                  w-10 h-10 
+                  bg-[#0f172a] 
+                  border border-slate-700 
+                  rounded-lg 
+                  flex items-center justify-center
+                  hover:border-cyan-500
+                  hover:text-cyan-400
+                  transition
+                "
+              >
+                <RefreshIcon
+                  fontSize="small"
+                  className={refreshing ? "animate-spin" : ""}
+                />
+              </button>
+
+              <button className="
+                w-10 h-10 
+                bg-[#0f172a] 
+                border border-slate-700 
+                rounded-lg 
+                flex items-center justify-center
+                hover:border-cyan-500
+                hover:text-cyan-400
+                transition
+              ">
+                <DownloadIcon fontSize="small" />
+              </button>
+
+            </div>
+          </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#111827] p-4 rounded-xl border border-slate-700">
