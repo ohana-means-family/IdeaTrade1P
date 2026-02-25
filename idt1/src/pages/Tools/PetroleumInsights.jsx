@@ -646,7 +646,7 @@ if (isMember && enteredTool) {
           </div>
 
           {/* Period Buttons */}
-          <div className="flex gap-2">
+         <div className="flex gap-2">
             {["3M","6M","1Y","YTD","MAX"].map(p => (
               <button
                 key={p}
@@ -716,7 +716,7 @@ if (isMember && enteredTool) {
 return null;
 }
 
-function PremiumChart({ title, step }) {
+function PremiumChart({ title, step, period }) {
 
   const width = 420;
   const height = 240;
@@ -726,9 +726,34 @@ function PremiumChart({ title, step }) {
   const paddingTop = 20;
   const paddingBottom = 30;
 
-  const data = step
-    ? [28,28,28,20,20,20,15]
-    : [16.5,17.2,16.6,17.8,17.4,16.8,17.9];
+  /* =======================
+      DATA BY PERIOD
+  ======================== */
+
+  const getDataByPeriod = () => {
+
+    if (step) {
+      switch (period) {
+        case "3M": return [28, 27, 26];
+        case "6M": return [28, 27, 26, 24, 22];
+        case "1Y": return [30, 29, 28, 26, 24, 22];
+        case "YTD": return [26, 25, 24, 22];
+        case "MAX": return [32, 30, 28, 26, 24, 22, 20];
+        default: return [28,28,28,20,20,20,15];
+      }
+    } else {
+      switch (period) {
+        case "3M": return [16.5, 17.2, 16.6];
+        case "6M": return [16.5, 17.2, 16.6, 17.8, 17.4];
+        case "1Y": return [15.8, 16.2, 16.5, 17.2, 16.6, 17.8];
+        case "YTD": return [16.2, 16.8, 17.1, 16.9];
+        case "MAX": return [14.5, 15.2, 16.5, 17.2, 16.6, 17.8, 17.4];
+        default: return [16.5,17.2,16.6,17.8,17.4,16.8,17.9];
+      }
+    }
+  };
+
+  const data = getDataByPeriod();
 
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -736,7 +761,7 @@ function PremiumChart({ title, step }) {
   const normalizeY = (value) =>
     height -
     paddingBottom -
-    ((value - min) / (max - min)) *
+    ((value - min) / (max - min || 1)) *
       (height - paddingTop - paddingBottom);
 
   const buildPath = (dataset) => {
@@ -745,6 +770,7 @@ function PremiumChart({ title, step }) {
         paddingLeft +
         (i * (width - paddingLeft - paddingRight)) /
           (arr.length - 1);
+
       const y = normalizeY(value);
 
       if (i === 0) return `M ${x},${y}`;
@@ -754,6 +780,7 @@ function PremiumChart({ title, step }) {
         ((i - 1) *
           (width - paddingLeft - paddingRight)) /
           (arr.length - 1);
+
       const prevY = normalizeY(arr[i - 1]);
 
       const cp1x = prevX + (x - prevX) / 3;
@@ -767,15 +794,9 @@ function PremiumChart({ title, step }) {
 
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-2xl p-5">
-
-      <p className="text-xs text-slate-400 mb-4">{title}</p>
+      <p className="text-xs text-slate-400 mb-4">{title} ({period})</p>
 
       <div className="relative w-full h-[240px] bg-[#0f172a] rounded-xl overflow-hidden">
-
-        {/* Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white/5 select-none">
-          {title}
-        </div>
 
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
 
@@ -790,8 +811,8 @@ function PremiumChart({ title, step }) {
           {[...Array(6)].map((_, i) => {
             const y =
               paddingTop +
-              (i * (height - paddingTop - paddingBottom)) /
-                5;
+              (i * (height - paddingTop - paddingBottom)) / 5;
+
             return (
               <line
                 key={i}
@@ -806,79 +827,25 @@ function PremiumChart({ title, step }) {
             );
           })}
 
-          {/* BASELINE */}
-          <line
-            x1={paddingLeft}
-            y1={height - paddingBottom}
-            x2={width - paddingRight}
-            y2={height - paddingBottom}
-            stroke="#374151"
-            strokeWidth="1"
-          />
-
-          {/* STEP STYLE */}
-          {step ? (
-            <>
-              <path
-                d={`M ${paddingLeft},${normalizeY(data[0])}
-                   H ${paddingLeft + (width - paddingLeft - paddingRight)/3}
-                   V ${normalizeY(data[3])}
-                   H ${paddingLeft + (width - paddingLeft - paddingRight)*0.75}
-                   V ${normalizeY(data[6])}
-                   H ${width - paddingRight}`}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="1.8"
-              />
-            </>
-          ) : (
-            <>
-              {/* AREA */}
-              <path
-                d={`${buildPath(data)}
-                   L ${width - paddingRight},${height - paddingBottom}
-                   L ${paddingLeft},${height - paddingBottom} Z`}
-                fill={`url(#${gradientId})`}
-              />
-
-              {/* LINE */}
-              <path
-                d={buildPath(data)}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="1.8"
-              />
-            </>
+          {/* AREA */}
+          {!step && (
+            <path
+              d={`${buildPath(data)}
+                 L ${width - paddingRight},${height - paddingBottom}
+                 L ${paddingLeft},${height - paddingBottom} Z`}
+              fill={`url(#${gradientId})`}
+            />
           )}
 
-          {/* Y AXIS */}
-          {[...Array(5)].map((_, i) => {
-            const value =
-              max - ((max - min) / 4) * i;
-            const y =
-              paddingTop +
-              (i * (height - paddingTop - paddingBottom)) /
-                4;
-
-            return (
-              <text
-                key={i}
-                x={width - 5}
-                y={y + 4}
-                textAnchor="end"
-                fontSize="10"
-                fill="#6b7280"
-              >
-                {value.toFixed(1)}
-              </text>
-            );
-          })}
+          {/* LINE */}
+          <path
+            d={buildPath(data)}
+            fill="none"
+            stroke="#22c55e"
+            strokeWidth="1.8"
+          />
 
         </svg>
-
-        {/* Bottom Fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-
       </div>
     </div>
   );
