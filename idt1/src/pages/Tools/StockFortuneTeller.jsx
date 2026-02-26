@@ -37,6 +37,7 @@ export default function StockFortuneTeller() {
   });
 
   const [refreshing, setRefreshing] = useState(false);
+  const [lastPrice, setLastPrice] = useState(5.30);
 
   // --- [NEW] Search Logic ---
   const [symbol, setSymbol] = useState("");
@@ -558,8 +559,9 @@ export default function StockFortuneTeller() {
                 onClick={() => {
                   setRefreshing(true);
 
-                  // จำลองรีเฟรช 1 วิ
                   setTimeout(() => {
+                    const randomPrice = (Math.random() * 10 + 1).toFixed(2);
+                    setLastPrice(randomPrice);
                     setRefreshing(false);
                   }, 1000);
                 }}
@@ -599,7 +601,9 @@ export default function StockFortuneTeller() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#111827] p-4 rounded-xl border border-slate-700">
             <p className="text-slate-400 text-xs">LAST PRICE</p>
-            <p className="text-green-400 text-lg font-bold">5.30 (+1.92%)</p>
+            <p className="text-green-400 text-lg font-bold">
+            {lastPrice} (+1.92%)
+          </p>
           </div>
 
           <div className="bg-[#111827] p-4 rounded-xl border border-slate-700">
