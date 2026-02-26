@@ -23,6 +23,9 @@ export default function PetroleumInsights() {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
 
+  const [selectedOilTypes, setSelectedOilTypes] = useState([]);
+  const [showOilDropdown, setShowOilDropdown] = useState(false);
+
   // --- [NEW] Refs สำหรับระบบเลื่อนอัตโนมัติ ---
   const scrollDirection = useRef(1); // 1 = ขวา, -1 = ซ้าย
   const isPaused = useRef(false);    // เก็บสถานะว่าเมาส์ชี้อยู่ไหม
@@ -128,6 +131,16 @@ export default function PetroleumInsights() {
     checkScroll();
     window.addEventListener("resize", checkScroll);
     return () => window.removeEventListener("resize", checkScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".oil-wrapper")) {
+        setShowOilDropdown(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   /* ===============================
@@ -618,37 +631,88 @@ if (isMember && enteredTool) {
 
             </div>
 
-            {/* Oil Type */}
-            <div className="relative w-64">
-              <select
-                className="appearance-none bg-[#111827] border border-slate-700 px-4 py-3 pr-10 rounded-md text-sm text-white outline-none focus:border-cyan-400 w-full"
-              >
-                <option value="">Select oil type</option>
-                <option>GASOHOL95 E10</option>
-                <option>GASOHOL91</option>
-                <option>GASOHOL95 E20</option>
-                <option>GASOHOL95 E85</option>
-                <option>H-DIESEL</option>
-                <option>FO 600 (1) 2%S</option>
-                <option>FO 1500 (2) 2%S</option>
-                <option>LPG</option>
-                <option>ULG95</option>
-              </select>
+           {/* Oil Type */}
+            <div className="relative w-72 oil-wrapper">
 
-              {/* Custom Arrow */}
-              <svg
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              {/* INPUT BOX */}
+              <div
+                onClick={() => setShowOilDropdown(!showOilDropdown)}
+                className="bg-[#111827] border border-slate-700 px-3 py-2 rounded-md flex flex-wrap gap-2 cursor-pointer min-h-[44px]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 9l6 6 6-6"
-                />
-              </svg>
+                {selectedOilTypes.length === 0 && (
+                  <span className="text-slate-400 text-sm">Select oil type</span>
+                )}
+
+                {selectedOilTypes.map((type) => (
+                  <div
+                    key={type}
+                    className="bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-md text-xs flex items-center gap-1"
+                  >
+                    {type}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedOilTypes(selectedOilTypes.filter(t => t !== type));
+                      }}
+                      className="cursor-pointer text-cyan-300 hover:text-white"
+                    >
+                      ✕
+                    </span>
+                  </div>
+                ))}
+
+                <svg
+                  className="ml-auto w-4 h-4 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+
+              {/* DROPDOWN */}
+              {showOilDropdown && (
+                <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50">
+                  {[
+                    "GASOHOL95 E10",
+                    "GASOHOL91",
+                    "GASOHOL95 E20",
+                    "GASOHOL95 E85",
+                    "H-DIESEL",
+                    "FO 600 (1) 2%S",
+                    "FO 1500 (2) 2%S",
+                    "LPG",
+                    "ULG95"
+                  ].map((type) => {
+
+                    const isSelected = selectedOilTypes.includes(type);
+
+                    return (
+                      <div
+                        key={type}
+                        onClick={() => {
+                        if (isSelected) {
+                          setSelectedOilTypes(selectedOilTypes.filter(t => t !== type));
+                        } else {
+                          setSelectedOilTypes([...selectedOilTypes, type]);
+                        }
+
+                        setShowOilDropdown(false);
+                      }}
+                        className={`px-4 py-2 text-sm cursor-pointer transition
+                          ${isSelected
+                            ? "bg-cyan-500 text-white"
+                            : "text-slate-300 hover:bg-cyan-500/20 hover:text-white"
+                          }`}
+                      >
+                        {type}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
             </div>
           </div>
 
