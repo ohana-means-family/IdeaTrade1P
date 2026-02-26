@@ -163,10 +163,17 @@ export default function PetroleumInsights() {
   const [symbolQuery, setSymbolQuery] = useState("");
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
 
-  const symbolList = [
-    "BBGI","BCP","BCPG","BANPU","BGRIM","EA","ESSO",
-    "GULF","IRPC","IVL","PTT","PTTEP","TOP"
-  ];
+  const symbolList = [...new Set([
+    "7UP","ACC","ACE","AGE","AI","AIE","BAFS","BANPU","BBGI","BCP","BCPG",
+    "BCT","BGRIM","BIOTEC","BPP","BRRGIF","CKP","CMAN","CV","EA","EASTW",
+    "EGATIF","EGCO","EP","ESSO","ETC","GC","GGC","GIFT","GPSC","GREEN",
+    "GULF","GUNKUL","IFEC","IRPC","IVL","KBSPIF","LANNA","MDX","NFC",
+    "NOVA","OR","PATO","PMTA","PRIME","PTG","PTT","PTTEP","PTTGC",
+    "RATCH","RPC","SCG","SCN","SEAOL","SGP","SKE","SPCG","SPRC",
+    "SSP","SUPER","SUPEREIF","SUSCO","SUTHA","TAE","TCC","TGE",
+    "TOP","TPA","TPIPP","TSE","TTW","UAC","UBE","UP","WHAUP","WP",
+    "BSRC","AE","RSXYZ","GULFI","ATLAS"
+  ])].sort();
 
   const filteredSymbols = symbolList.filter(s =>
     s.toLowerCase().includes(symbolQuery.toLowerCase())
