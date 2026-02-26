@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import FlowIntradayDashboard from "./components/FlowIntradayDashboard.jsx";
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -19,6 +20,7 @@ export default function FlowIntraday() {
 
   const [layout, setLayout] = useState("4");
   const [symbols, setSymbols] = useState(Array(12).fill(""));
+  const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const boxes = Array.from({ length: 12 });
 
@@ -119,6 +121,17 @@ export default function FlowIntraday() {
     window.addEventListener("resize", checkScroll);
     return () => window.removeEventListener("resize", checkScroll);
   }, []);
+
+  useEffect(() => {
+  const handleEsc = (e) => {
+    if (e.key === "Escape") {
+      setFullscreenIndex(null);
+    }
+  };
+
+  window.addEventListener("keydown", handleEsc);
+  return () => window.removeEventListener("keydown", handleEsc);
+}, []);
 
   const features = [
     {
@@ -394,13 +407,14 @@ export default function FlowIntraday() {
   /* ==========================================================
       CASE 3 : FULL PRODUCTION DASHBOARD
   ========================================================== */
-
   const normalizeData = (data, height = 150) => {
     const max = Math.max(...data);
     const min = Math.min(...data);
+    const range = max - min || 1; // 🔥 กันหาร 0
+
     return data.map((val, i) => {
       const x = (i / (data.length - 1)) * 100;
-      const y = height - ((val - min) / (max - min)) * height;
+      const y = height - ((val - min) / range) * height;
       return `${x},${y}`;
     }).join(" ");
   };
@@ -482,8 +496,33 @@ export default function FlowIntraday() {
                     <option>Flow</option>
                     <option>Price</option>
                   </select>
-                  <span className="cursor-pointer hover:text-white">🔔</span>
-                  <span className="cursor-pointer hover:text-white">🔄</span>
+                   {/* 🔔 */}
+                  <span className="cursor-pointer hover:text-white transition">
+                    🔔
+                  </span>
+
+                  {/* 🔍 แสดงเฉพาะตอนมี symbol */}
+                  {symbols[index] && (
+                    <ZoomInIcon
+                      onClick={() => setFullscreenIndex(index)}
+                      sx={{
+                        fontSize: 18,
+                        color: "#94a3b8",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          color: "#ffffff",
+                          transform: "scale(1.1)",
+                        },
+                      }}
+                    />
+                  )}
+
+                  {/* 🔄 */}
+                  <span className="cursor-pointer hover:text-white transition">
+                    🔄
+                  </span>
+
                 </div>
               </div>
 
@@ -515,6 +554,48 @@ export default function FlowIntraday() {
         </div>
 
       </div>
+      {fullscreenIndex !== null && (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col">
+
+    <div className="flex justify-between items-center px-6 py-4 border-b border-slate-700">
+      <h2 className="text-lg font-semibold">
+        {symbols[fullscreenIndex]} - Fullscreen View
+      </h2>
+      <button
+        onClick={() => setFullscreenIndex(null)}
+        className="text-slate-400 hover:text-white text-xl"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div className="flex-1 p-6">
+      {(() => {
+        const data = chartData[fullscreenIndex];
+
+        if (!data) return null; // 🔥 กัน crash
+
+        const points = normalizeData(data, 400);
+        const isUp = data[data.length - 1] >= data[0];
+
+        return (
+          <svg viewBox="0 0 100 400" preserveAspectRatio="none" className="w-full h-full">
+            <defs>
+              <linearGradient id="fullscreenGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isUp ? "#22c55e" : "#ef4444"} stopOpacity="0.4" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+            </defs>
+
+            <polygon fill="url(#fullscreenGrad)" points={`0,400 ${points} 100,400`} />
+            <polyline fill="none" stroke={isUp ? "#22c55e" : "#ef4444"} strokeWidth="2" points={points} />
+          </svg>
+        );
+      })()}
+    </div>
+
+  </div>
+)}
     </div>
   );
 }

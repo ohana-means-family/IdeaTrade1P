@@ -7,6 +7,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DownloadIcon from "@mui/icons-material/Download";
+import CloseIcon from "@mui/icons-material/Close";
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -472,9 +473,13 @@ export default function StockFortuneTeller() {
         {/* ================= SEARCH ================= */}
         <div className="relative w-80">
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fontSize="small" />
+            {/* Search Icon */}
+            <SearchIcon
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              fontSize="small"
+            />
 
-            <input
+             <input
               type="text"
               value={symbol}
               onChange={(e) => {
@@ -488,7 +493,7 @@ export default function StockFortuneTeller() {
                 w-full bg-[#0f172a] 
                 border border-slate-600 
                 rounded-full 
-                pl-10 pr-4 py-2.5 
+                pl-10 pr-10 py-2.5 
                 text-sm text-white
                 focus:outline-none 
                 focus:border-cyan-500
@@ -496,6 +501,25 @@ export default function StockFortuneTeller() {
                 transition
               "
             />
+
+            {/* ❌ CLEAR BUTTON (แสดงเมื่อมีค่าใน input) */}
+            {symbol && (
+            <button
+              onClick={() => {
+                setSymbol("");
+                setShowDropdown(false);
+              }}
+              className="
+                absolute right-3
+                inset-y-0
+                flex items-center
+                text-slate-400 hover:text-red-400
+                transition
+              "
+            >
+              <CloseIcon fontSize="small" />
+            </button>
+          )}
           </div>
 
           {/* DROPDOWN */}
