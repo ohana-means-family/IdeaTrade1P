@@ -1,4 +1,7 @@
 // src/pages/MemberRegister/MemberRegister.jsx
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db, auth } from "/src/firebase"; // เช็ค path ให้ตรงกับที่อยู่ไฟล์ firebase.js ของคุณ
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ เพิ่ม useNavigate
 
@@ -119,72 +122,100 @@ export default function MemberRegister() {
     }
   }, [status, selectedPayment]);
 
-  /* ================= 🔥 HANDLE PAYMENT (UPDATED) 🔥 ================= */
-  const handleConfirmPayment = () => {
-    // 1. ดึงข้อมูล User Profile เดิมจาก LocalStorage
-    const storedProfile = localStorage.getItem("userProfile");
-    let parsedProfile = {};
-    let oldUnlockedItems = [];
-    let oldSubscriptions = [];
+  /* ================= 🔥 HANDLE PAYMENT (รองรับ 2 ระบบ) 🔥 ================= */
+  const handleConfirmPayment = async () => {
+    try {
+      const currentUser = auth.currentUser;
 
-    if (storedProfile) {
-      try {
-        parsedProfile = JSON.parse(storedProfile);
-        oldUnlockedItems = parsedProfile.unlockedItems || [];
-        oldSubscriptions = parsedProfile.mySubscriptions || [];
-      } catch (error) {
-        console.error("Error parsing old profile:", error);
+      // สร้างข้อมูลแพ็กเกจที่เพิ่งกดซื้อ
+      const newSubscriptions = selectedTools.map((t) => {
+        const toolInfo = TOOLS.find((x) => x.id === t.id);
+        const isYearly = t.billing === "yearly";
+        const price = isYearly ? toolInfo.yearly : toolInfo.monthly;
+        
+        let methodLabel = "Credit Card";
+        if (selectedPayment === "bank") methodLabel = "Bank Transfer";
+        if (selectedPayment === "promptpay") methodLabel = "PromptPay";
+
+        return {
+          id: t.id,
+          name: toolInfo.name,
+          cycle: isYearly ? "Yearly" : "Monthly",
+          price: `${price.toLocaleString()} THB`,
+          purchaseDate: new Date().toISOString(),
+          status: "active",
+          paymentMethod: methodLabel
+        };
+      });
+
+      const newToolIds = selectedTools.map((t) => t.id);
+
+      // ---------------------------------------------------------
+      // ระบบที่ 1: สำหรับคนที่ LOGGED IN (เซฟลง Firebase)
+      // ---------------------------------------------------------
+      if (currentUser) {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        let oldUnlockedItems = [];
+        let oldSubscriptions = [];
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          oldUnlockedItems = userData.unlockedItems || [];
+          oldSubscriptions = userData.mySubscriptions || [];
+        }
+
+        const updatedSubscriptions = [
+          ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
+          ...newSubscriptions
+        ];
+        const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
+
+        await updateDoc(userRef, {
+          role: "membership",
+          unlockedItems: mergedUnlockedItems,
+          mySubscriptions: updatedSubscriptions 
+        });
+
+      } 
+      // ---------------------------------------------------------
+      // ระบบที่ 2: สำหรับ GUEST / DEMO MODE (เซฟลง LocalStorage)
+      // ---------------------------------------------------------
+      else {
+        const storedProfile = localStorage.getItem("userProfile");
+        let parsedProfile = storedProfile ? JSON.parse(storedProfile) : { role: "free", unlockedItems: [], mySubscriptions: [] };
+        
+        const oldSubscriptions = parsedProfile.mySubscriptions || [];
+        const oldUnlockedItems = parsedProfile.unlockedItems || [];
+
+        const updatedSubscriptions = [
+          ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
+          ...newSubscriptions
+        ];
+        const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
+
+        const updatedProfile = {
+          ...parsedProfile, 
+          role: "membership", 
+          unlockedItems: mergedUnlockedItems, 
+          mySubscriptions: updatedSubscriptions 
+        };
+
+        localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+        
+        // ส่งสัญญาณบอกหน้าอื่นว่ามีข้อมูลใหม่ใน Demo Mode แล้ว
+        window.dispatchEvent(new Event("storage"));
       }
+
+      alert("Payment Successful 🎉 (Demo/Real)");
+      setShowModal(false);
+      navigate("/dashboard", { state: { goTo: "subscription" } });
+
+    } catch (error) {
+      console.error("Payment Error:", error);
+      alert("เกิดข้อผิดพลาดในการทำรายการ");
     }
-
-    // 2. สร้างข้อมูล Subscription รายละเอียด (สำหรับหน้า Manage Subscription)
-    const newSubscriptions = selectedTools.map((t) => {
-      const toolInfo = TOOLS.find((x) => x.id === t.id);
-      const isYearly = t.billing === "yearly";
-      const price = isYearly ? toolInfo.yearly : toolInfo.monthly;
-      
-      // แปลงวิธีชำระเงินเป็นข้อความสวยๆ
-      let methodLabel = "Credit Card";
-      if (selectedPayment === "bank") methodLabel = "Bank Transfer";
-      if (selectedPayment === "promptpay") methodLabel = "PromptPay";
-
-      return {
-        id: t.id,
-        name: toolInfo.name,
-        cycle: isYearly ? "Yearly" : "Monthly",
-        price: `${price.toLocaleString()} THB`,
-        purchaseDate: new Date().toISOString(), // บันทึกเวลาปัจจุบัน
-        status: "active",
-        paymentMethod: methodLabel
-      };
-    });
-
-    // 3. รวม Subscription ใหม่เข้ากับของเดิม (ถ้ามี ID ซ้ำ ให้เอาอันใหม่ทับอันเก่า)
-    const updatedSubscriptions = [
-      ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
-      ...newSubscriptions
-    ];
-
-    // 4. อัปเดตรายการที่ปลดล็อค (Unlocked Items ID Only)
-    const newToolIds = selectedTools.map((t) => t.id);
-    const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
-
-    // 5. บันทึกทั้งหมดลง LocalStorage
-    const updatedProfile = {
-      ...parsedProfile, 
-      role: "membership", 
-      unlockedItems: mergedUnlockedItems, 
-      mySubscriptions: updatedSubscriptions // 🔥 ข้อมูลสำคัญสำหรับหน้า Manage Sub
-    };
-
-    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
-
-    // 6. แจ้งเตือนและเปลี่ยนหน้า
-    alert("Payment Successful 🎉");
-    setShowModal(false);
-    
-    // เปลี่ยนหน้าไปที่ Dashboard หน้า Subscription
-    navigate("/dashboard", { state: { goTo: "subscription" } });
   };
 
   const months = Array.from({ length: 12 }, (_, i) =>

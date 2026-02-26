@@ -1,40 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import './Subscriptions.css';
+import { doc, getDoc } from "firebase/firestore";
+import { db, auth } from "/src/firebase"; 
+// ✅ 1. เพิ่ม import สำหรับ onAuthStateChanged
+import { onAuthStateChanged } from "firebase/auth"; 
 
 const ManageSubscription = () => {
   const [mySubscriptions, setMySubscriptions] = useState([]);
   const [summary, setSummary] = useState({ monthly: 0, yearly: 0 });
 
   useEffect(() => {
-    try {
-      const savedUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      
-      // ✅ ดึงข้อมูลจาก 'mySubscriptions' ที่เราบันทึกไว้ตอนจ่ายเงิน
-      // ถ้าไม่มี (เช่น user เก่า) ให้ใช้ array ว่างไปก่อน
-      const savedSubs = savedUser.mySubscriptions || [];
-
-      // จัดรูปแบบข้อมูลสำหรับแสดงผล
+    // ✅ 2. สร้างฟังก์ชันจัดรูปแบบและคำนวณยอด (ใช้ร่วมกันทั้งระบบจริงและ Demo)
+    const processAndSetSubscriptions = (savedSubs) => {
       const activeSubs = savedSubs.map((sub, index) => {
-        // แปลงวันที่ซื้อให้สวยงาม
-        const dateObj = new Date(sub.purchaseDate);
+        // แปลงวันที่ซื้อให้สวยงาม (กัน error กรณีไม่มีวันที่)
+        const dateObj = new Date(sub.purchaseDate || new Date());
         const dateStr = dateObj.toLocaleDateString('en-GB', {
           day: 'numeric', month: 'short', year: 'numeric'
         });
 
         // คำนวณราคาเป็นตัวเลขเพื่อเอาไปรวมยอด (ลบลูกน้ำและ THB ออก)
-        const priceValue = parseInt(sub.price.replace(/,/g, '').replace(' THB', '')) || 0;
+        const priceValue = parseInt(String(sub.price).replace(/,/g, '').replace(' THB', '')) || 0;
 
         return {
-          ...sub, // เอาข้อมูลเดิมมาด้วย (id, name, cycle, price, paymentMethod)
-          key: `sub-${index}`, // key สำหรับ react map
+          ...sub, // เอาข้อมูลเดิมมาด้วย
+          key: `sub-${index}`, 
           statusDetail: `Paid on ${dateStr}`,
-          priceValue: priceValue // เก็บไว้คำนวณ Summary
+          priceValue: priceValue 
         };
       });
 
       setMySubscriptions(activeSubs);
 
-      // --- 🧮 คำนวณยอดรวมจากข้อมูลจริง ---
+      // --- 🧮 คำนวณยอดรวมจากข้อมูล ---
       const totalM = activeSubs
         .filter(s => s.cycle === 'Monthly')
         .reduce((sum, item) => sum + item.priceValue, 0);
@@ -44,10 +42,51 @@ const ManageSubscription = () => {
         .reduce((sum, item) => sum + item.priceValue, 0);
 
       setSummary({ monthly: totalM, yearly: totalY });
+    };
 
-    } catch (e) {
-      console.error("Error loading subscriptions", e);
-    }
+    // ✅ 3. ฟังก์ชันสำหรับโหลดโหมด Demo (ไม่ได้ล็อกอิน)
+    const loadDemoSubscriptions = () => {
+      try {
+        const saved = localStorage.getItem('userProfile');
+        const savedSubs = saved ? JSON.parse(saved).mySubscriptions || [] : [];
+        processAndSetSubscriptions(savedSubs);
+      } catch (e) {
+        console.error("Error loading demo subscriptions:", e);
+      }
+    };
+
+    // ✅ 4. ดักจับสถานะล็อกอินและดึงข้อมูลให้ถูกแหล่ง
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // 🔥 โหมดล็อกอินจริง: ดึงจาก Firebase
+          try {
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              processAndSetSubscriptions(userData.mySubscriptions || []);
+            } else {
+              processAndSetSubscriptions([]);
+            }
+          } catch (e) {
+            console.error("Error loading subscriptions from Firebase:", e);
+          }
+        } else {
+          // 🔥 โหมด DEMO: ดึงจาก LocalStorage
+          loadDemoSubscriptions();
+        }
+    });
+
+    // ดักฟัง Event กรณีมีการกดซื้อ Demo จากหน้าอื่น
+    window.addEventListener("storage", loadDemoSubscriptions);
+
+    // Cleanup function
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", loadDemoSubscriptions);
+    };
+
   }, []);
 
   return (
@@ -129,7 +168,7 @@ const ManageSubscription = () => {
   );
 };
 
-// --- Icons (เหมือนเดิม) ---
+// --- Icons ---
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );

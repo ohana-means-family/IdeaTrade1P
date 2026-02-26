@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 // ✅ Import Firebase Auth เข้ามาเพื่อจัดการสถานะแบบ Real-time
-import { auth } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { db, auth } from "@/firebase"; // เช็ค path ให้ตรงกับโปรเจกต์คุณ
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import logo from "@/assets/images/logo.png";
@@ -138,30 +139,63 @@ export default function Sidebar({
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
   // ✅ ใช้ onAuthStateChanged เพื่อให้เมนูเปลี่ยนทันทีที่สถานะล็อกอินเปลี่ยน
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // ผู้ใช้ล็อกอินผ่าน Firebase แล้ว
-        setIsLoggedIn(true);
+useEffect(() => {
+    // ฟังก์ชันสำหรับโหลดโหมด Demo จาก LocalStorage
+    const loadDemoProfile = () => {
+      const saved = localStorage.getItem("userProfile");
+      if (saved) {
+        const userData = JSON.parse(saved);
+        const subscriptions = userData.mySubscriptions || [];
+        const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+        const explicitUnlocked = userData.unlockedItems || [];
+        const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
         
-        // ดึงข้อมูลเรื่อง Member จาก LocalStorage มาประกอบ
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          setUnlockedList(parsedUser.unlockedItems || []);
-          setIsMember(parsedUser.role === "member" || parsedUser.unlockedItems?.length > 0);
-        }
+        const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+        setIsMember(hasAccess);
+        setUnlockedList(combinedUnlocked);
       } else {
-        // ไม่มีผู้ใช้ (ยังไม่ล็อกอิน หรือกดออกจากระบบ)
-        setIsLoggedIn(false);
         setIsMember(false);
         setUnlockedList([]);
       }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        try {
+          // ดึงจาก Firebase (รหัสเหมือนเดิม)
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const subscriptions = userData.mySubscriptions || [];
+            const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+            const explicitUnlocked = userData.unlockedItems || [];
+            const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
+            const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+
+            setIsMember(hasAccess);
+            setUnlockedList(combinedUnlocked);
+          }
+        } catch (error) {
+          console.error("Error fetching Firestore:", error);
+        }
+      } else {
+        // 🔥 ถ้าไม่ได้ล็อกอิน ให้เข้าสู่โหมด DEMO (อ่านจาก LocalStorage) 🔥
+        setIsLoggedIn(false);
+        loadDemoProfile(); 
+      }
     });
 
-    // คืนค่าฟังก์ชันยกเลิกการดักจับเมื่อ Component ถูกทำลาย
-    return () => unsubscribe();
-  }, []); 
+    // ดักฟังการจำลองจ่ายเงินในโหมด Demo
+    window.addEventListener("storage", loadDemoProfile);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", loadDemoProfile);
+    };
+  }, []);
 
   /* ================= AUTH ACTIONS ================= */
   const handleSignUp = () => navigate("/register");
@@ -440,52 +474,51 @@ export default function Sidebar({
           {/* ================= ACCOUNT SECTION ================= */}
           {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
 
-          {/* ✅ ส่วนนี้ทำงานตามเงื่อนไขที่คุณต้องการเป๊ะๆ แล้วครับ */}
-          {isLoggedIn ? (
-            <>
-              {/* Profile */}
-              <button
-                onClick={() => handleNavigation("profile")}
-                onMouseEnter={(e) => handleMouseEnter(e, "Profile")}
-                onMouseLeave={handleMouseLeave}
-                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-                ${activePage === "profile" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-              >
-                 <ProfileIconSVG />
-                 {!collapsed && <span className="pointer-events-none">Profile</span>}
-              </button>
+          {/* 1. Profile (ให้โชว์ตลอด ไม่ว่าจะล็อกอินจริงหรือเล่น Demo) */}
+          <button
+            onClick={() => handleNavigation("profile")}
+            onMouseEnter={(e) => handleMouseEnter(e, "Profile")}
+            onMouseLeave={handleMouseLeave}
+            className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
+            ${activePage === "profile" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
+            ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+          >
+             <ProfileIconSVG />
+             {!collapsed && <span className="pointer-events-none">Profile</span>}
+          </button>
 
-              {/* ✅ Manage Subscription (แสดงเฉพาะ Member) */}
-              {isMember && (
-                <button
-                  onClick={() => handleNavigation("subscription")}
-                  onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
-                  onMouseLeave={handleMouseLeave}
-                  className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-                  ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-                  ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-                >
-                   <SettingsIconSVG />
-                   {!collapsed && <span className="pointer-events-none">Manage Subscription</span>}
-                </button>
-              )}
+          {/* 2. Manage Subscription (ให้โชว์ถ้าเป็น Member หรือมีการกดซื้อ Demo ไว้) */}
+          {(isMember || unlockedList.length > 0) && (
+            <button
+              onClick={() => handleNavigation("subscription")}
+              onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
+              onMouseLeave={handleMouseLeave}
+              className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
+              ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
+              ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+            >
+               <SettingsIconSVG />
+               {!collapsed && <span className="pointer-events-none">Manage Subscription</span>}
+            </button>
+          )}
 
-              {/* Sign Out */}
-              <button
-                onClick={handleSignOutClick}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
-                onMouseLeave={handleMouseLeave}
-                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-              >
-                 <LogoutIconSVG />
-                 {!collapsed && <span className="pointer-events-none">Sign Out</span>}
-              </button>
-            </>
-          ) : (
+          {/* 3. ปุ่ม Sign Out (โชว์เฉพาะตอนเลือกล็อกอินของจริงเท่านั้น) */}
+          {isLoggedIn && (
+            <button
+              onClick={handleSignOutClick}
+              onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
+              onMouseLeave={handleMouseLeave}
+              className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
+              ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+            >
+               <LogoutIconSVG />
+               {!collapsed && <span className="pointer-events-none">Sign Out</span>}
+            </button>
+          )}
+
+          {/* 4. ปุ่ม Sign Up / Sign In (โชว์เมื่อยังไม่ได้ล็อกอิน ให้เค้ากดไปสมัครได้) */}
+          {!isLoggedIn && (
             <>
-              {/* Sign Up */}
               <button
                 onClick={handleSignUp}
                 onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")}
@@ -497,7 +530,6 @@ export default function Sidebar({
                  {!collapsed && <span className="pointer-events-none">Sign Up</span>}
               </button>
 
-              {/* Sign In */}
               <button
                 onClick={handleSignIn}
                 onMouseEnter={(e) => handleMouseEnter(e, "Sign In")}

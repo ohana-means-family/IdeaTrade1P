@@ -4,6 +4,10 @@ import { useNavigate } from "react-router-dom";
 import mitIcon from "@/assets/icons/amit.svg"; 
 import ToolsCard from "@/components/toolscard.jsx";
 
+import { auth, db } from "@/firebase"; 
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
 /* =======================
    Project Data
 ======================= */
@@ -92,18 +96,61 @@ export default function PreviewProjects() {
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
 
-  /* ===== Load user profile ===== */
+/* ===== Load user profile ===== */
+/* ===== Load user profile ===== */
   useEffect(() => {
-    try {
+    // ฟังก์ชันสำหรับโหลดโหมด Demo จาก LocalStorage
+    const loadDemoProfile = () => {
       const saved = localStorage.getItem("userProfile");
-      if (!saved) return;
+      if (saved) {
+        const userData = JSON.parse(saved);
+        const subscriptions = userData.mySubscriptions || [];
+        const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+        const explicitUnlocked = userData.unlockedItems || [];
+        const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
+        
+        const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+        setIsMember(hasAccess);
+        setUnlockedList(combinedUnlocked);
+      } else {
+        setIsMember(false);
+        setUnlockedList([]);
+      }
+    };
 
-      const user = JSON.parse(saved);
-      setIsMember(user.role === "member");
-      setUnlockedList(user.unlockedItems || []);
-    } catch (err) {
-      console.error("Invalid userProfile", err);
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const subscriptions = userData.mySubscriptions || [];
+            const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+            const explicitUnlocked = userData.unlockedItems || [];
+            const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
+            const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+
+            setIsMember(hasAccess);
+            setUnlockedList(combinedUnlocked);
+          }
+        } catch (err) {
+          console.error("Error fetching Firestore:", err);
+        }
+      } else {
+        // 🔥 เข้าสู่โหมด DEMO (อ่านจาก LocalStorage) 🔥
+        loadDemoProfile();
+      }
+    });
+
+    // ดักฟังการจำลองจ่ายเงินในโหมด Demo
+    window.addEventListener("storage", loadDemoProfile);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", loadDemoProfile);
+    };
   }, []);
 
   /* ===== Permission Logic ===== */
@@ -222,11 +269,12 @@ export default function PreviewProjects() {
           <ToolsCard
             key={project.id}
             project={project}
-            isMember={isMember}
+            // 🔥 แก้ตรงนี้: ให้มันส่งค่า true ไปปลดล็อกการ์ดเฉพาะเครื่องมือที่มี ID ตรงกับที่ซื้อเท่านั้น
+            isMember={unlockedList.includes(project.id)} 
             unlockedList={unlockedList}
           />
         ))}
-      </div>
+        </div>
       </section>
     </div>
   );
