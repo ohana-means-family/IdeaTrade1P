@@ -513,6 +513,8 @@ const [symbol, setSymbol] = useState("");
 const [isFocused, setIsFocused] = useState(false);
 const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
 const [speed, setSpeed] = useState(1);
+const [symbolHistory, setSymbolHistory] = useState([]);
+const [filteredSymbols, setFilteredSymbols] = useState([]);
 
 const generateEmptyOrderBook = () => {
   const rows = [];
@@ -574,6 +576,26 @@ const [endTime] = useState(formatTime(today)); // 🔒 เวลาปัจจ�
     const s = String(seconds % 60).padStart(2, "0");
     return `${h}:${m}:${s}`;
   };
+
+  useEffect(() => {
+  const saved = localStorage.getItem("bidask_symbol_history");
+  if (saved) {
+    setSymbolHistory(JSON.parse(saved));
+  }
+}, []);
+
+useEffect(() => {
+  if (!symbol.trim()) {
+    setFilteredSymbols(symbolHistory);
+    return;
+  }
+
+  const filtered = symbolHistory.filter((item) =>
+    item.toLowerCase().includes(symbol.toLowerCase())
+  );
+
+  setFilteredSymbols(filtered);
+}, [symbol, symbolHistory]);
 
   // ===== Sync slider -> time =====
 useEffect(() => {
@@ -668,23 +690,44 @@ if (!symbol.trim()) {
           <div className="relative bg-[#111827] border border-slate-600 rounded-md px-3 py-2 flex items-center">
             <input
               value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              onChange={(e) => {
+                setSymbol(e.target.value);
+                setShowSymbolDropdown(true);
+              }}
+              onFocus={() => {
+                setIsFocused(true);
+                setShowSymbolDropdown(true);
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowSymbolDropdown(false), 150);
+                setIsFocused(false);
+              }}
               className="w-full bg-transparent outline-none text-white text-xs"
             />
           </div>
 
+          {/* DROPDOWN */}
+          {showSymbolDropdown && filteredSymbols.length > 0 && (
+            <div className="absolute left-0 right-0 mt-1 bg-[#0f172a] border border-slate-700 rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
+              {filteredSymbols.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    setSymbol(item);
+                    setShowSymbolDropdown(false);
+                  }}
+                  className="px-3 py-2 text-xs text-white hover:bg-indigo-600 cursor-pointer transition"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
+
           <label
-            className={`
-              absolute left-3 text-[10px] px-1 bg-[#0f172a] text-slate-300
-              transition-all duration-200 ease-in-out pointer-events-none
-              ${
-                isFocused || symbol
-                  ? "-top-2"
-                  : "top-2 scale-100"
-              }
-            `}
+            className={`absolute left-3 text-[10px] px-1 bg-[#0f172a] text-slate-300 transition-all duration-200 ease-in-out pointer-events-none ${
+              isFocused || symbol ? "-top-2" : "top-2"
+            }`}
           >
             Symbol*
           </label>
@@ -785,9 +828,25 @@ if (!symbol.trim()) {
             </div>
 
             {/* SEARCH */}
-            <button className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-semibold text-white transition">
-              SEARCH
-            </button>
+           <button
+            onClick={() => {
+              if (!symbol.trim()) return;
+
+              const updated = [
+                symbol,
+                ...symbolHistory.filter((s) => s !== symbol)
+              ].slice(0, 10); // เก็บแค่ 10 ตัวล่าสุด
+
+              setSymbolHistory(updated);
+              localStorage.setItem(
+                "bidask_symbol_history",
+                JSON.stringify(updated)
+              );
+            }}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-semibold text-white transition"
+          >
+            SEARCH
+          </button>
 
           </div>
         </div>
