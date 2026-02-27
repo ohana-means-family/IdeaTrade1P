@@ -470,11 +470,13 @@ return (
 
           <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
             🔍
-            <select className="bg-transparent text-sm outline-none text-white">
-              <option>XAUUSD</option>
-              <option>GOLD THAI</option>
-              <option>SILVER</option>
-            </select>
+            <select
+            className="bg-transparent text-sm text-white outline-none pr-5 cursor-pointer"
+          >
+            <option className="bg-[#0f172a] text-white">XAUUSD</option>
+            <option className="bg-[#0f172a] text-white">GOLD THAI</option>
+            <option className="bg-[#0f172a] text-white">SILVER</option>
+          </select>
           </div>
 
         </div>

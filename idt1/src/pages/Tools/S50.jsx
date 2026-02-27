@@ -400,12 +400,16 @@ export default function S50() {
             </button>
 
             <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-sm">🔍</span>
-              <select className="bg-transparent text-sm outline-none text-white">
-                <option>S50H26</option>
-                <option>S50M26</option>
-                <option>S50U26</option>
+              <span className="text-sm text-slate-400">🔍</span>
+
+              <select
+                className="bg-transparent text-sm text-white outline-none pr-6 cursor-pointer"
+              >
+                <option className="bg-[#0f172a] text-white">S50H26</option>
+                <option className="bg-[#0f172a] text-white">S50M26</option>
+                <option className="bg-[#0f172a] text-white">S50U26</option>
               </select>
+
             </div>
           </div>
 
