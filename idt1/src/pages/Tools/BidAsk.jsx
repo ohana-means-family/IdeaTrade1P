@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BidAskDashboard from "./components/BidAskDashboard.jsx";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
 
 const scrollbarHideStyle = {
   msOverflowStyle: 'none',
@@ -507,9 +509,30 @@ function ChartCard({ title }) {
 }
 
 function ReplayPanel() {
+const [symbol, setSymbol] = useState("");
+const [isFocused, setIsFocused] = useState(false);
+const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
+const [speed, setSpeed] = useState(1);
 
-const [startTime, setStartTime] = useState("00:00");
-const [endTime, setEndTime] = useState("00:00");
+// ===== DATE & TIME DEFAULT SETUP =====
+const today = new Date();
+
+// format YYYY-MM-DD
+const formatDate = (date) => {
+  return date.toISOString().split("T")[0];
+};
+
+// format HH:MM
+const formatTime = (date) => {
+  return date.toTimeString().slice(0, 5);
+};
+
+// STATE
+const [startDate, setStartDate] = useState(formatDate(today));
+const [endDate] = useState(formatDate(today)); // 🔒 ล็อค ไม่ให้เปลี่ยน
+
+const [startTime, setStartTime] = useState("10:00"); // 🔥 default 10:00
+const [endTime] = useState(formatTime(today)); // 🔒 เวลาปัจจุบัน ล็อค
 
   const [sliderValue, setSliderValue] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -530,24 +553,6 @@ const [endTime, setEndTime] = useState("00:00");
     return h * 3600 + m * 60;
   };
 
-  useEffect(() => {
-    const startSec = toSeconds(startTime);
-    const endSec = toSeconds(endTime);
-
-    if (endSec <= startSec) {
-      setCurrentTime("00:00:00");
-      return;
-    }
-
-    const total = endSec - startSec;
-    const percent = Number(sliderValue) || 0;
-
-    const current = startSec + (percent / 100) * total;
-
-    setCurrentTime(toHHMMSS(Math.floor(current)));
-
-  }, [sliderValue, startTime, endTime]);
-
   const toHHMMSS = (seconds) => {
     const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
     const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
@@ -556,37 +561,38 @@ const [endTime, setEndTime] = useState("00:00");
   };
 
   // ===== Sync slider -> time =====
-  useEffect(() => {
-    const startSec = toSeconds(startTime);
-    const endSec = toSeconds(endTime);
+useEffect(() => {
+  const startSec = toSeconds(startTime);
+  const endSec = toSeconds(endTime);
 
-    if (endSec <= startSec) return; // กันช่วงเวลาไม่ถูกต้อง
+  if (endSec <= startSec) return;
 
-    const total = endSec - startSec;
+  const total = endSec - startSec;
 
-    const current = startSec + (percent / 100) * total;
-    setCurrentTime(toHHMMSS(Math.floor(current)));
+  const current = startSec + (Number(sliderValue) / 100) * total;
 
-  }, [sliderValue, startTime, endTime]);
+  setCurrentTime(toHHMMSS(Math.floor(current)));
+
+}, [sliderValue, startTime, endTime]);
 
   // ===== Play system =====
-  useEffect(() => {
+useEffect(() => {
 
-    if (!isPlaying) return;
+  if (!isPlaying) return;
 
-    const interval = setInterval(() => {
-      setSliderValue((prev) => {
-        if (prev >= 100) {
-          setIsPlaying(false);
-          return 100;
-        }
-        return Number(prev) + 1;
-      });
-    }, 100);
+  const interval = setInterval(() => {
+    setSliderValue((prev) => {
+      if (prev >= 100) {
+        setIsPlaying(false);
+        return 100;
+      }
+      return prev + speed;
+    });
+  }, 100);
 
-    return () => clearInterval(interval);
+  return () => clearInterval(interval);
 
-  }, [isPlaying]);
+}, [isPlaying, speed]);
 
   const generateOrderBook = (timePercent) => {
 
@@ -628,84 +634,140 @@ useEffect(() => {
       {/* HEADER */}
       <div className="p-4 border-b border-slate-700 bg-[#0f172a]">
 
-        <div className="grid grid-cols-3 gap-3 mb-3 text-xs text-slate-400">
-          <div>
-            <div>Symbol</div>
-            <input className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded" defaultValue="DELTA"/>
+        <div className="grid grid-cols-3 gap-3 mb-3 text-xs text-slate-500">
+        {/* SYMBOL */}
+        <div className="relative">
+          <div className="relative bg-[#111827] border border-slate-600 rounded-md px-3 py-2 flex items-center">
+            <input
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className="w-full bg-transparent outline-none text-white text-xs"
+            />
           </div>
-          <div>
-            <div>Date</div>
-            <input type="date" className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded"/>
+
+          <label
+            className={`
+              absolute left-3 text-[10px] px-1 bg-[#0f172a] text-slate-300
+              transition-all duration-200 ease-in-out pointer-events-none
+              ${
+                isFocused || symbol
+                  ? "-top-2"
+                  : "top-2 scale-100"
+              }
+            `}
+          >
+            Symbol*
+          </label>
+        </div>
+
+          {/* START DATE */}
+          <div className="relative">
+            <div className="bg-[#111827] border border-slate-600 rounded-md px-3 py-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-transparent outline-none text-white text-xs 
+                          [&::-webkit-calendar-picker-indicator]:invert
+                          [&::-webkit-calendar-picker-indicator]:opacity-70"
+              />
+            </div>
+            <label className="absolute left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300">
+              Start Date
+            </label>
           </div>
-          <div>
-            <div>Speed</div>
-            <input className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded" defaultValue="1"/>
+
+          {/* END DATE (LOCKED) */}
+          <div className="relative">
+            <div className="bg-[#0f172a] border border-slate-700 rounded-md px-3 py-2 opacity-80">
+              <input
+                type="date"
+                value={endDate}
+                disabled
+                className="w-full bg-transparent outline-none text-slate-500 text-xs cursor-not-allowed
+                          [&::-webkit-calendar-picker-indicator]:invert
+                          [&::-webkit-calendar-picker-indicator]:opacity-40"
+              />
+            </div>
+            <label className="absolute left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300">
+              End Date
+            </label>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 text-xs text-slate-400">
-          <div>
-            <div>Start</div>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              step="60"
-              className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded"
-            />
+         {/* START TIME */}
+          <div className="relative">
+            <div className="bg-[#111827] border border-slate-600 rounded-md px-3 py-2">
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full bg-transparent outline-none text-white text-xs
+                          [&::-webkit-calendar-picker-indicator]:invert
+                          [&::-webkit-calendar-picker-indicator]:opacity-80"
+              />
+            </div>
+            <label className="absolute left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300">
+              Start Time
+            </label>
           </div>
+
           <div>
-            <div>End</div>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              step="60"
-              className="w-full bg-[#111827] border border-slate-600 px-2 py-1 rounded"
-            />
+            
+      {/* END TIME */}
+      <div className="relative">
+        <div className="bg-[#0f172a] border border-slate-700 rounded-md px-3 py-2 opacity-80">
+          <input
+            type="time"
+            value={endTime}
+            disabled
+            className="w-full bg-transparent outline-none text-slate-500 text-xs cursor-not-allowed
+                      [&::-webkit-calendar-picker-indicator]:invert
+                      [&::-webkit-calendar-picker-indicator]:opacity-40"
+          />
+        </div>
+        <label className="absolute left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300">
+          End Time
+        </label>
+      </div>
           </div>
-          <button className="bg-indigo-600 hover:bg-indigo-500 rounded text-sm font-semibold text-white">
-            SEARCH
-          </button>
+          
+          {/* SPEED + SEARCH */}
+          <div className="grid grid-cols-2 gap-3">
+
+            {/* SPEED */}
+            <div className="relative">
+              <div className="bg-[#111827] border border-slate-600 rounded-md px-3 py-2">
+                <input
+                  type="number"
+                  value={speed}
+                  min="1"
+                  max="10"
+                  step="1"
+                  onChange={(e) => setSpeed(Number(e.target.value))}
+                  className="w-full bg-transparent outline-none text-white text-xs"
+                />
+              </div>
+              <label className="absolute left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300">
+                Speed
+              </label>
+            </div>
+
+            {/* SEARCH */}
+            <button className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-semibold text-white transition">
+              SEARCH
+            </button>
+
+          </div>
         </div>
 
         <div className="mt-3 bg-black text-yellow-400 font-mono text-center py-2 rounded">
           {currentTime}
         </div>
       </div>
-
-      {/* SLIDER */}
-    <div className="px-4 py-3 bg-[#0f172a] border-t border-slate-700">
-
-      <div className="flex items-center gap-4">
-
-        {/* RANGE BAR */}
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={sliderValue}
-          onChange={(e) => setSliderValue(e.target.value)}
-          className="flex-1 h-[3px] appearance-none bg-slate-600 rounded-full 
-                    [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:w-4
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:bg-yellow-400
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:cursor-pointer"
-        />
-
-        {/* PLAY BUTTON */}
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="w-7 h-7 flex items-center justify-center bg-yellow-400 hover:bg-yellow-300 rounded-full text-black text-xs font-bold transition"
-        >
-          {isPlaying ? "❚❚" : "▶"}
-        </button>
-
-      </div>
-
-    </div>
 
       {/* ORDER BOOK */}
       <div className="bg-[#0b111a]">
@@ -741,6 +803,45 @@ useEffect(() => {
 
         </div>
       </div>
+
+       {/* SLIDER */}
+    <div className="px-4 py-3 bg-[#0f172a] border-t border-slate-700">
+
+      <div className="flex items-center gap-4">
+
+        {/* RANGE BAR */}
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={sliderValue}
+          onChange={(e) => setSliderValue(Number(e.target.value))}
+          className="flex-1 h-[3px] appearance-none bg-slate-600 rounded-full 
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
+            [&::-webkit-slider-thumb]:bg-yellow-400
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:cursor-pointer"
+        />
+
+        {/* PLAY BUTTON */}
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="w-8 h-8 flex items-center justify-center 
+           text-white rounded-full
+           transition-all duration-200"
+        >
+          {isPlaying ? (
+            <PauseIcon fontSize="small" />
+          ) : (
+            <PlayArrowIcon fontSize="small" />
+          )}
+        </button>
+
+      </div>
+
+    </div>
 
       {/* STATS */}
       <div className="grid grid-cols-2 gap-4 p-4 border-t border-slate-700 bg-[#0f172a]">
