@@ -514,6 +514,21 @@ const [isFocused, setIsFocused] = useState(false);
 const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
 const [speed, setSpeed] = useState(1);
 
+const generateEmptyOrderBook = () => {
+  const rows = [];
+
+  for (let i = 0; i < 10; i++) {
+    rows.push({
+      bidVol: 0,
+      bid: "-",
+      ask: "-",
+      askVol: 0
+    });
+  }
+
+  return rows;
+};
+
 // ===== DATE & TIME DEFAULT SETUP =====
 const today = new Date();
 
@@ -620,13 +635,26 @@ useEffect(() => {
 };
 
 useEffect(() => {
-  setOrderBook(generateOrderBook(0));
-}, []);
+  if (symbol.trim()) {
+    setOrderBook(generateOrderBook(0));
+  } else {
+    setOrderBook(generateEmptyOrderBook());
+  }
+}, [symbol]);
 
   useEffect(() => {
+
+  // ถ้าไม่มี symbol → ไม่แสดงข้อมูล
+if (!symbol.trim()) {
+  setOrderBook(generateEmptyOrderBook());
+  setIsPlaying(false);
+  return;
+}
+
   const newBook = generateOrderBook(sliderValue);
   setOrderBook(newBook);
-}, [sliderValue]);
+
+}, [sliderValue, symbol]);
 
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden">
@@ -773,14 +801,14 @@ useEffect(() => {
       <div className="bg-[#0b111a]">
 
         {orderBook.map((row, i) => (
-    <OrderRow
-      key={i}
-      bidVol={row.bidVol.toLocaleString()}
-      bid={row.bid}
-      ask={row.ask}
-      askVol={row.askVol.toLocaleString()}
-    />
-  ))}
+          <OrderRow
+            key={i}
+            bidVol={row.bidVol.toLocaleString()}
+            bid={row.bid}
+            ask={row.ask}
+            askVol={row.askVol.toLocaleString()}
+          />
+        ))}
 
         {/* TOTAL ROW */}
          <div className="grid grid-cols-4 h-[36px] items-center border-t border-slate-700 bg-[#111827] text-[12px] font-semibold">
@@ -827,10 +855,15 @@ useEffect(() => {
 
         {/* PLAY BUTTON */}
         <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="w-8 h-8 flex items-center justify-center 
-           text-white rounded-full
-           transition-all duration-200"
+          onClick={() => {
+            if (!symbol.trim()) return;
+            setIsPlaying(!isPlaying);
+          }}
+          disabled={!symbol.trim()}
+          className={`w-8 h-8 flex items-center justify-center 
+            rounded-full transition-all duration-200
+            ${symbol.trim() ? "text-white" : "text-slate-600 cursor-not-allowed"}
+          `}
         >
           {isPlaying ? (
             <PauseIcon fontSize="small" />
