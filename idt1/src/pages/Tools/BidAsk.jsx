@@ -510,6 +510,7 @@ function ChartCard({ title }) {
 
 function ReplayPanel() {
 const [symbol, setSymbol] = useState("");
+const [isSearched, setIsSearched] = useState(false);
 const [isFocused, setIsFocused] = useState(false);
 const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
 const [speed, setSpeed] = useState(1);
@@ -657,26 +658,22 @@ useEffect(() => {
 };
 
 useEffect(() => {
-  if (symbol.trim()) {
-    setOrderBook(generateOrderBook(0));
-  } else {
-    setOrderBook(generateEmptyOrderBook());
-  }
+  setIsSearched(false);
+  setIsPlaying(false);
 }, [symbol]);
 
-  useEffect(() => {
+useEffect(() => {
 
-  // ถ้าไม่มี symbol → ไม่แสดงข้อมูล
-if (!symbol.trim()) {
-  setOrderBook(generateEmptyOrderBook());
-  setIsPlaying(false);
-  return;
-}
+  if (!isSearched) {
+    setOrderBook(generateEmptyOrderBook());
+    setIsPlaying(false);
+    return;
+  }
 
   const newBook = generateOrderBook(sliderValue);
   setOrderBook(newBook);
 
-}, [sliderValue, symbol]);
+}, [sliderValue, isSearched]);
 
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden">
@@ -832,16 +829,26 @@ if (!symbol.trim()) {
             onClick={() => {
               if (!symbol.trim()) return;
 
+              // บันทึก history
               const updated = [
                 symbol,
                 ...symbolHistory.filter((s) => s !== symbol)
-              ].slice(0, 10); // เก็บแค่ 10 ตัวล่าสุด
+              ].slice(0, 10);
 
               setSymbolHistory(updated);
               localStorage.setItem(
                 "bidask_symbol_history",
                 JSON.stringify(updated)
               );
+
+              // 🔥 เปิดระบบแสดงข้อมูล
+              setIsSearched(true);
+
+              // 🔥 รีเซ็ต slider
+              setSliderValue(0);
+
+              // 🔥 Auto Play ทันที
+              setIsPlaying(true);
             }}
             className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-semibold text-white transition"
           >
@@ -918,10 +925,10 @@ if (!symbol.trim()) {
             if (!symbol.trim()) return;
             setIsPlaying(!isPlaying);
           }}
-          disabled={!symbol.trim()}
+          disabled={!isSearched}
           className={`w-8 h-8 flex items-center justify-center 
             rounded-full transition-all duration-200
-            ${symbol.trim() ? "text-white" : "text-slate-600 cursor-not-allowed"}
+            ${isSearched ? "text-white" : "text-slate-600 cursor-not-allowed"}
           `}
         >
           {isPlaying ? (
