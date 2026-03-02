@@ -153,6 +153,30 @@ const allStockOptions = [
 // ชุดสีสำหรับจุดไข่ปลาหน้าชื่อหุ้น
 const dotColors = ["bg-blue-500", "bg-orange-500", "bg-green-500", "bg-red-500", "bg-purple-500", "bg-cyan-500", "bg-yellow-500", "bg-pink-500"];
 
+/* ===============================
+    MOCK DATA GENERATOR (แทน API)
+================================ */
+const generateMockStockData = (basePrice, points = 100) => {
+  let price = basePrice;
+  const data = [];
+  for (let i = 0; i < points; i++) {
+      price += (Math.random() - 0.48) * (basePrice * 0.02);
+      data.push(price);
+  }
+  return data;
+};
+
+const buildSvgPath = (data, min, max) => {
+  if (!data || data.length === 0) return "M0,50 L300,50";
+  const range = max - min || 1;
+  const points = data.map((val, idx) => {
+      const x = (idx / (data.length - 1)) * 300;
+      const y = 100 - ((val - min) / range) * 100;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  return `M ${points[0]} ` + points.slice(1).map(p => `L ${p}`).join(" ");
+};
+
 export default function DRInsight() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
@@ -163,26 +187,20 @@ export default function DRInsight() {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
   
-  // State สำหรับเก็บตำแหน่งแกน X (%)
   const [hoverPos, setHoverPos] = useState(null);       
   
-  // ใช้ useRef เก็บ Path และ State เพื่อเก็บข้อมูลเส้นที่สแกนแล้ว
-  const pathRefs = useRef([]);
-  const [yLookupTable, setYLookupTable] = useState([[], [], []]);
+  const [chartData, setChartData] = useState({ chart1: [], chart2: [], chart3: [] });
+  const [chartMinMax, setChartMinMax] = useState({
+      chart1: { min: 0, max: 100 },
+      chart2: { min: 0, max: 100 },
+      chart3: { min: 0, max: 100 }
+  });
 
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-  // Filter States แยกของแต่ละประเทศ
   const [filters, setFilters] = useState({
-    usa: "",
-    europe: "",
-    etc: "",
-    Japan: "",
-    China: "",
-    Singapore: "",
-    Vietnam: "",
-    Taiwan: ""
+    usa: "", europe: "", etc: "", Japan: "", China: "", Singapore: "", Vietnam: "", Taiwan: ""
   });
 
   const handleFilterChange = (region, value) => {
@@ -195,45 +213,37 @@ export default function DRInsight() {
     chart3: "BABA80",
   });
 
-  /* ===============================
-      0. PRE-CALCULATE GRAPH POINTS (Fixed Timing Bug)
-  ================================ */
-  // สแกนเส้นกราฟเมื่อหน้า Dashboard (enteredTool === true) ถูกเปิดขึ้นมาแล้วเท่านั้น!
+  // -----------------------------------------------------------------
+  // 🌟 NEW: State สำหรับเช็คว่ากราฟไหนกำลังทำงานอยู่ (ถูกคลิกโฟกัสไว้)
+  // -----------------------------------------------------------------
+  const [activeTargetChart, setActiveTargetChart] = useState("chart1");
+
+  // ฟังก์ชันสำหรับกดเลือกหุ้นจาก List ด้านข้าง
+  const handleStockClick = (symbol) => {
+    setChartSelections(prev => ({
+      ...prev,
+      [activeTargetChart]: symbol // เปลี่ยนชื่อหุ้นให้เฉพาะกราฟที่กำลังโฟกัสอยู่
+    }));
+  };
+
+  // อัปเดตกราฟเมื่อ chartSelections เปลี่ยน
   useEffect(() => {
-    if (!enteredTool) return; // ออกทันทีถ้ายังอยู่หน้า Preview
+    const newData = { ...chartData };
+    const newMinMax = { ...chartMinMax };
 
-    const timer = setTimeout(() => {
-      const newLookup = [[], [], []];
-      pathRefs.current.forEach((pathNode, index) => {
-        if (pathNode) {
-          const length = pathNode.getTotalLength();
-          const lookup = new Array(1001).fill(null); // ความละเอียด 0.0% - 100.0%
-          const step = length / 3000; // สแกนถี่ยิบ
-          
-          for (let i = 0; i <= length; i += step) {
-            const point = pathNode.getPointAtLength(i);
-            const xIndex = Math.round((point.x / 300) * 1000);
-            if (xIndex >= 0 && xIndex <= 1000 && lookup[xIndex] === null) {
-              lookup[xIndex] = point.y;
-            }
-          }
-          
-          let lastY = lookup[0] || 50;
-          for (let i = 0; i <= 1000; i++) {
-            if (lookup[i] === null) {
-              lookup[i] = lastY;
-            } else {
-              lastY = lookup[i];
-            }
-          }
-          newLookup[index] = lookup;
-        }
-      });
-      setYLookupTable(newLookup);
-    }, 300); // ให้เวลา Component วาด SVG ลงจอก่อนนิดนึง
+    Object.keys(chartSelections).forEach((key) => {
+        const stockName = chartSelections[key];
+        const basePrice = (stockName.length * 15) + 50; 
+        const data = generateMockStockData(basePrice, 80); 
+        
+        newData[key] = data;
+        newMinMax[key] = { min: Math.min(...data), max: Math.max(...data) };
+    });
 
-    return () => clearTimeout(timer);
-  }, [enteredTool]); // <--- เพิ่ม Dependency ตรงนี้เพื่อให้ทำงานถูกจังหวะ
+    setChartData(newData);
+    setChartMinMax(newMinMax);
+  // eslint-disable-next-line
+  }, [chartSelections]);
 
   /* ===============================
       1. MEMBER CHECK & LOGIC
@@ -319,12 +329,10 @@ export default function DRInsight() {
 
     return (
       <div className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flexClass}`}>
-          {/* Header */}
           <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
               <span className="font-bold text-[13px] text-white">{title}</span>
               <span className="text-cyan-500 text-[11px] font-bold">{iconText}</span>
           </div>
-          {/* Filter */}
           <div className="p-2 border-b border-slate-800/60 bg-[#0B1221]">
               <input
                   type="text"
@@ -334,14 +342,17 @@ export default function DRInsight() {
                   className="w-full bg-[#1a2235] border border-slate-700/50 rounded flex-1 px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 placeholder-slate-600"
               />
           </div>
-          {/* List - ใช้ style={scrollbarHideStyle} ซ่อน Scrollbar หนาๆ */}
           <div className="overflow-y-auto flex-1 p-2 bg-[#0B1221]" style={scrollbarHideStyle}>
               <div className="flex justify-between text-[9px] text-slate-500 mb-2 px-1 font-semibold uppercase tracking-wider sticky top-0 bg-[#0B1221] z-10 pb-1">
                  <span>DR/DRx</span>
                  <span>TradingView</span>
               </div>
               {filteredStocks.map((stock, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-[10px] p-1.5 hover:bg-slate-800/60 rounded cursor-pointer transition-colors group">
+                  <div 
+                    key={idx} 
+                    onClick={() => handleStockClick(stock.dr)} // 🌟 NEW: กดชื่อหุ้นเพื่อเปลี่ยนกราฟที่ Active อยู่
+                    className="flex justify-between items-center text-[10px] p-1.5 hover:bg-slate-800/60 rounded cursor-pointer transition-colors group"
+                  >
                       <div className="flex items-center gap-2">
                           <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
                           <span className="text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
@@ -452,18 +463,35 @@ export default function DRInsight() {
                 const themeColors = ["#3b82f6", "#ef4444", "#22c55e"]; 
                 const lineColor = themeColors[index];
 
-                // แปลงค่า X ของเมาส์ให้เป็น Index แล้วดึงค่า Y ของกราฟนั้นๆ มาแสดง
-                const lookupIndex = hoverPos !== null ? Math.round(hoverPos * 10) : null;
-                const currentYPercent = lookupIndex !== null && yLookupTable[index] && yLookupTable[index].length > 0 
-                    ? yLookupTable[index][lookupIndex] 
-                    : null;
+                const data = chartData[chartKey];
+                const { min, max } = chartMinMax[chartKey];
+                const range = max - min || 1;
+                const pathD = buildSvgPath(data, min, max);
+
+                let currentYPercent = null;
+                let hoverValue = null;
+                let actualXPercent = hoverPos;
+
+                if (hoverPos !== null && data.length > 0) {
+                    const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
+                    hoverValue = data[dataIndex];
+                    currentYPercent = 100 - ((hoverValue - min) / range) * 100;
+                    actualXPercent = (dataIndex / (data.length - 1)) * 100;
+                }
+
+                // 🌟 ตรวจสอบว่ากราฟนี้ถูกโฟกัสอยู่หรือไม่
+                const isActive = activeTargetChart === chartKey;
 
                 return (
-                    <div key={chartKey} className="bg-[#111827] border border-slate-800/80 rounded-xl p-4 flex flex-col flex-1 shadow-lg overflow-hidden min-h-0">
+                    <div 
+                        key={chartKey} 
+                        onClick={() => setActiveTargetChart(chartKey)} // 🌟 NEW: กดตรงไหนของกล่องกราฟนี้ก็ทำให้มันกลายเป็น Active Chart ทันที
+                        className={`bg-[#111827] border ${isActive ? 'border-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.3)]' : 'border-slate-800/80'} rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative transition-all duration-200 cursor-pointer`}
+                    >
                         
                         {/* Chart Header */}
-                        <div className="flex justify-between items-start shrink-0">
-                            {/* Select แบบใส ซ่อนไว้ทับ Text */}
+                        <div className="flex justify-between items-start shrink-0 z-40 relative">
+                            {/* Select แบบใส ซ่อนไว้ทับ Text (ยังกดเปลี่ยนจากตรงนี้ได้เหมือนเดิม) */}
                             <div className="relative group/select cursor-pointer flex items-baseline gap-2">
                                  <select
                                     value={stockName}
@@ -478,6 +506,9 @@ export default function DRInsight() {
                                  </select>
                                  <span className="font-bold text-[15px] text-white tracking-wide">{stockName}</span>
                                  <span className="text-xs text-slate-500 font-medium">({stockData.name || "Company"})</span>
+                                 
+                                 {/* จุดบอกสถานะ Active เล็กๆ ตรงชื่อหุ้น */}
+                                 {isActive && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 ml-2 animate-pulse"></span>}
                             </div>
                             <div className="flex gap-3 text-slate-600">
                                 <button className="hover:text-white transition">⛶</button>
@@ -489,14 +520,11 @@ export default function DRInsight() {
                         <div 
                           className="flex-1 w-full bg-[#0B1221] border border-slate-800/40 rounded-lg relative overflow-hidden flex items-end mt-3 group/chart cursor-crosshair"
                           onMouseMove={(e) => {
-                            // หาตำแหน่ง X เพียงอย่างเดียว
                             const rect = e.currentTarget.getBoundingClientRect();
                             const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
                             setHoverPos(Math.max(0, Math.min(100, xPercent)));
                           }}
-                          onMouseLeave={() => {
-                            setHoverPos(null);
-                          }}
+                          onMouseLeave={() => setHoverPos(null)}
                         >
                             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
                             
@@ -507,92 +535,75 @@ export default function DRInsight() {
                                             <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
                                     </linearGradient>
                                 </defs>
-                                {/* วาดเส้นกราฟหลัก และเก็บ ref ไว้สแกนค่า Y */}
                                 <path 
-                                    ref={(el) => (pathRefs.current[index] = el)}
-                                    d={index === 0 
-                                        ? "M0,80 C30,70 60,90 90,50 C120,30 150,60 180,40 C210,20 240,30 270,10 L300,25" 
-                                        : index === 1 
-                                        ? "M0,90 C40,90 80,60 120,80 C160,50 200,60 240,40 L300,20"
-                                        : "M0,90 C50,90 100,70 150,70 C200,40 250,50 300,40"
-                                    } 
+                                    d={pathD} 
                                     fill="none" 
                                     stroke={lineColor} 
                                     strokeWidth="2" 
                                     vectorEffect="non-scaling-stroke"
                                 />
-                                {/* พื้นหลังกราฟแบบไล่สี */}
                                 <path 
-                                    d={(index === 0 
-                                        ? "M0,80 C30,70 60,90 90,50 C120,30 150,60 180,40 C210,20 240,30 270,10 L300,25" 
-                                        : index === 1 
-                                        ? "M0,90 C40,90 80,60 120,80 C160,50 200,60 240,40 L300,20"
-                                        : "M0,90 C50,90 100,70 150,70 C200,40 250,50 300,40"
-                                    ) + " V 100 H 0 Z"} 
+                                    d={pathD + " V 100 H 0 Z"} 
                                     fill={`url(#grad-${index})`} 
                                     stroke="none" 
                                 />
                             </svg>
 
-                            <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none">
-                                <span>189.5</span>
-                                <span>188.0</span>
-                                <span>186.5</span>
-                                <span>185.0</span>
+                            <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none z-10">
+                                <span>{max.toFixed(2)}</span>
+                                <span>{(min + range * 0.75).toFixed(2)}</span>
+                                <span>{(min + range * 0.5).toFixed(2)}</span>
+                                <span>{(min + range * 0.25).toFixed(2)}</span>
+                                <span>{min.toFixed(2)}</span>
                             </div>
 
-                            {/* วาดแกน X, แกน Y และ จุด ก็ต่อเมื่อดึงค่า Y มาสำเร็จแล้ว */}
                             {hoverPos !== null && currentYPercent !== null && (
                                 <>
-                                    {/* เส้นแกน X (แนวตั้ง) */}
                                     <div 
                                         className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80"
-                                        style={{ left: `${hoverPos}%` }}
+                                        style={{ left: `${actualXPercent}%` }}
                                     ></div>
 
-                                    {/* เส้นแกน Y (แนวนอน) วิ่งเลาะตามเส้นกราฟ */}
                                     <div 
                                         className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80"
                                         style={{ top: `${currentYPercent}%` }}
                                     ></div>
                                     
-                                    {/* จุดตัด (Dot) ล็อคตรงกลางพอดีเป๊ะ */}
                                     <div 
                                         className="absolute z-30 pointer-events-none w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
                                         style={{ 
-                                            left: `${hoverPos}%`, 
+                                            left: `${actualXPercent}%`, 
                                             top: `${currentYPercent}%`,
                                             backgroundColor: lineColor, 
                                             boxShadow: `0 0 10px ${lineColor}`
                                         }}
                                     ></div>
+
+                                    <div 
+                                        className="absolute right-0 z-30 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 text-white text-[9px] rounded shadow-md border border-slate-600 pointer-events-none"
+                                        style={{ top: `${currentYPercent}%` }}
+                                    >
+                                        {hoverValue?.toFixed(2)}
+                                    </div>
                                 </>
                             )}
-
                         </div>
                     </div>
                 );
             })}
         </div>
 
-        {/* === Right Column: Asia Pacific (3/12) แบ่งเป็น 2 คอลัมน์ย่อย === */}
+        {/* === Right Column: Asia Pacific (3/12) === */}
         <div className="col-span-12 md:col-span-3 flex flex-col h-full bg-[#111827] border border-slate-800/80 rounded-xl p-4 shadow-xl overflow-hidden">
-            {/* Header Asia */}
             <div className="text-center pb-3 mb-4 border-b border-slate-800/60 shrink-0">
                 <span className="font-bold text-base text-white tracking-wide">Asia</span>
             </div>
-            
-            {/* กรอบด้านใน แยก 2 คอลัมน์ (ซ้าย-ขวา) ล็อก overflow-hidden ไม่ให้ทะลุกรอบ */}
             <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
-                
-                {/* ซีกซ้าย (Japan, Singapore, Vietnam) - ให้ flex-1 แบ่งความสูงเท่าๆ กัน 3 ส่วน */}
                 <div className="flex flex-col gap-4 h-full overflow-hidden">
                     {renderFigmaPanel("Japan", "Japan", japanStocks, "JP", "flex-1")}
                     {renderFigmaPanel("Singapore", "Singapore", singaporeStocks, "SG", "flex-1")}
                     {renderFigmaPanel("Vietnam", "Vietnam", vietnamStocks, "VN", "flex-1")}
                 </div>
-
-                {/* ซีกขวา (China, Taiwan) - หุ้นจีนเยอะ เลยกำหนดให้ China กินพื้นที่ flex-[3] และ Taiwan เป็น flex-1 */}
                 <div className="flex flex-col gap-4 h-full overflow-hidden">
                     {renderFigmaPanel("China", "China", chinaStocks, "CN", "flex-[3]")}
                     {renderFigmaPanel("Taiwan", "Taiwan", taiwanStocks, "TW", "flex-1")}
