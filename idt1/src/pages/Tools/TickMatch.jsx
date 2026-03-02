@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import TickMatchDashboard from "./components/TickMatchDashboard.jsx";
+import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
+import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
 
 // Style ซ่อน Scrollbar (เหมือนต้นแบบ DR)
 const scrollbarHideStyle = {
@@ -202,6 +204,7 @@ export default function TickMatch() {
 const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSynced, setIsSynced] = useState(true);
 
   const [symbol, setSymbol] = useState(defaultSymbol);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
@@ -279,11 +282,37 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
           {/* SYNC */}
           <div className="col-span-2">
             <button
-              onClick={handleSearch}
-              disabled={isSyncing}
-              className="w-full h-[38px] bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded transition active:scale-95 disabled:opacity-50"
+              onClick={() => setIsSynced(!isSynced)}
+              className={`
+                w-full h-[40px] flex items-center justify-center gap-2
+                text-sm font-semibold rounded-lg transition-all duration-200
+                ${isSynced
+                  ? "bg-[#0E3A6D] hover:bg-[#124a8a] text-white"
+                  : "bg-[#8FA3B5] hover:bg-[#7f95a8] text-white"
+                }
+              `}
             >
-              SYNC
+              {isSynced ? (
+                <>
+                  <LinkOutlinedIcon
+                    sx={{
+                      fontSize: 17,
+                      opacity: 0.95
+                    }}
+                  />
+                  SYNC
+                </>
+              ) : (
+                <>
+                  <LinkOffOutlinedIcon
+                    sx={{
+                      fontSize: 17,
+                      opacity: 0.9
+                    }}
+                  />
+                  UNSYNC
+                </>
+              )}
             </button>
           </div>
 
@@ -438,58 +467,58 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
         {/* --- Extra Sections (Flip & Charts) จะโชว์เมื่อมีการค้นหาข้อมูลแล้วเท่านั้น --- */}
         {hasSearched && (
-  <>
-    {/* ===== Flip Section Skeleton ===== */}
-    <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-4 overflow-hidden shrink-0">
+          <>
+            {/* ===== Flip Section Skeleton ===== */}
+            <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-4 overflow-hidden shrink-0">
 
-      <div className="bg-[#1f2937] p-2 flex justify-between items-center">
-        <span className="text-xs font-bold text-white">
-          Total Flip Count: 0
-        </span>
-        <div className="flex gap-3 text-[10px]">
-          <span className="flex items-center gap-1 text-red-400">
-            <div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0
-          </span>
-          <span className="flex items-center gap-1 text-green-400">
-            <div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0
-          </span>
-        </div>
-      </div>
+              <div className="bg-[#1f2937] p-2 flex justify-between items-center">
+                <span className="text-xs font-bold text-white">
+                  Total Flip Count: 0
+                </span>
+                <div className="flex gap-3 text-[10px]">
+                  <span className="flex items-center gap-1 text-red-400">
+                    <div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0
+                  </span>
+                  <span className="flex items-center gap-1 text-green-400">
+                    <div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0
+                  </span>
+                </div>
+              </div>
 
-      {/* Timeline Bar Placeholder */}
-      <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
-        <div className="h-2 w-full bg-slate-800 rounded animate-pulse"></div>
-      </div>
+              {/* Timeline Bar Placeholder */}
+              <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
+                <div className="h-2 w-full bg-slate-800 rounded animate-pulse"></div>
+              </div>
 
-      {/* Empty Table */}
-      <table className="w-full text-center border-collapse">
-        <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
-          <tr>
-            <th className="p-1.5">ครั้งที่</th>
-            <th className="p-1.5">Time</th>
-            <th className="p-1.5">From Acc. Vol</th>
-            <th className="p-1.5">To Acc. Vol</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colSpan="4" className="p-6 text-slate-500 text-xs">
-              No Flip Data
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              {/* Empty Table */}
+              <table className="w-full text-center border-collapse">
+                <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
+                  <tr>
+                    <th className="p-1.5">ครั้งที่</th>
+                    <th className="p-1.5">Time</th>
+                    <th className="p-1.5">From Acc. Vol</th>
+                    <th className="p-1.5">To Acc. Vol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan="4" className="p-6 text-slate-500 text-xs">
+                      No Flip Data
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-    {/* ===== Chart Skeleton ===== */}
-    <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 h-[200px] flex flex-col justify-center items-center">
-      <div className="w-full h-24 bg-slate-800 rounded animate-pulse mb-4"></div>
-      <span className="text-xs text-slate-500">
-        Chart will appear here
-      </span>
-    </div>
-  </>
-)}
+            {/* ===== Chart Skeleton ===== */}
+            <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 h-[200px] flex flex-col justify-center items-center">
+              <div className="w-full h-24 bg-slate-800 rounded animate-pulse mb-4"></div>
+              <span className="text-xs text-slate-500">
+                Chart will appear here
+              </span>
+            </div>
+          </>
+        )}
       </div>
     );
   };
