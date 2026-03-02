@@ -20,8 +20,6 @@ const features = [
   { title: "Price-Based Distribution", desc: "Identifies price levels where the heaviest trading volume has occurred." },
 ];
 
-const stockList = ["DELTA", "NVDA", "TSLA"];
-
 const mockDatabase = {
   "": {
     sumBuy: "0", sumSell: "0", netVol: "0",
@@ -201,27 +199,70 @@ export default function TickMatch() {
   /* ===============================
       3. COMPONENT: AnalysisPanel (เฉพาะของ TickMatch)
   ================================ */
-  const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
-    const [inputSymbol, setInputSymbol] = useState(defaultSymbol);
-    const [inputDate, setInputDate] = useState(defaultDate);
-    const todayMax = new Date().toISOString().split('T')[0];
-    const [activeSymbol, setActiveSymbol] = useState(defaultSymbol);
-    const [isSyncing, setIsSyncing] = useState(false);
+const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
-    const data = mockDatabase[activeSymbol] || mockDatabase[""];
+  const [hasSearched, setHasSearched] = useState(false);
 
-    const handleSearch = () => {
-        setIsSyncing(true);
-        setTimeout(() => {
-            setActiveSymbol(inputSymbol);
-            setIsSyncing(false);
-        }, 800);
-    };
+  const [symbol, setSymbol] = useState(defaultSymbol);
+  const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
+  const [symbolHistory, setSymbolHistory] = useState([]);
+  const [filteredSymbols, setFilteredSymbols] = useState([]);
 
-    const totalBuy = parseInt(data.sumBuy.replace(/,/g, '')) || 0;
-    const totalSell = parseInt(data.sumSell.replace(/,/g, '')) || 0;
-    const total = totalBuy + totalSell;
-    const buyPercent = total === 0 ? 50 : (totalBuy / total) * 100;
+  const todayMax = new Date().toISOString().split("T")[0];
+  const [date, setDate] = useState(defaultDate);
+  const [activeSymbol, setActiveSymbol] = useState(defaultSymbol);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("tickmatch_symbol_history");
+    if (saved) {
+      setSymbolHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!symbol.trim()) {
+      setFilteredSymbols(symbolHistory);
+      return;
+    }
+
+    const filtered = symbolHistory.filter((item) =>
+      item.toLowerCase().includes(symbol.toLowerCase())
+    );
+
+    setFilteredSymbols(filtered);
+  }, [symbol, symbolHistory]);
+
+  const handleSearch = () => {
+    if (!symbol.trim()) return;
+
+    setIsSyncing(true);
+
+    setTimeout(() => {
+      setHasSearched(true); 
+      setActiveSymbol(symbol.toUpperCase());
+
+      const updated = [
+        symbol.toUpperCase(),
+        ...symbolHistory.filter((s) => s !== symbol.toUpperCase())
+      ].slice(0, 10);
+
+      setSymbolHistory(updated);
+      localStorage.setItem(
+        "tickmatch_symbol_history",
+        JSON.stringify(updated)
+      );
+
+      setIsSyncing(false);
+    }, 800);
+  };
+
+  const data = mockDatabase[activeSymbol?.toUpperCase()] || mockDatabase[""];
+
+  const totalBuy = parseInt(data.sumBuy.replace(/,/g, "")) || 0;
+  const totalSell = parseInt(data.sumSell.replace(/,/g, "")) || 0;
+  const total = totalBuy + totalSell;
+  const buyPercent = total === 0 ? 50 : (totalBuy / total) * 100;
 
     return (
       <div className="flex flex-col h-full bg-[#111827] border border-slate-700 rounded-lg p-3 shadow-lg overflow-y-auto hide-scrollbar relative" style={scrollbarHideStyle}>
@@ -234,57 +275,101 @@ export default function TickMatch() {
 
         {/* --- Header & Inputs --- */}
         <div className="grid grid-cols-12 gap-2 mb-3 items-end shrink-0">
-            <div className="col-span-5 flex flex-col gap-1">
-               <div className="flex items-center gap-2">
-                  <button 
-                      onClick={handleSearch}
-                      disabled={isSyncing}
-                      className="bg-purple-600 hover:bg-purple-500 text-[10px] text-white px-1.5 py-0.5 rounded font-bold cursor-pointer transition active:scale-90 flex items-center gap-1"
+
+          {/* SYNC */}
+          <div className="col-span-2">
+            <button
+              onClick={handleSearch}
+              disabled={isSyncing}
+              className="w-full h-[38px] bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded transition active:scale-95 disabled:opacity-50"
+            >
+              SYNC
+            </button>
+          </div>
+
+          {/* SYMBOL */}
+          <div className="col-span-4 relative">
+
+            <input
+              value={symbol}
+              placeholder=" "
+              onChange={(e) => {
+                setSymbol(e.target.value);
+                setShowSymbolDropdown(true);
+              }}
+              onFocus={() => setShowSymbolDropdown(true)}
+              onBlur={() => setTimeout(() => setShowSymbolDropdown(false), 150)}
+              className="peer w-full bg-[#111827] border border-slate-600 rounded-md px-3 py-2 text-white text-xs uppercase outline-none"
+            />
+
+            <label
+              className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 
+                        transition-all duration-200 pointer-events-none
+                        peer-placeholder-shown:top-2 
+                        peer-placeholder-shown:text-slate-500
+                        peer-focus:-top-2 
+                        peer-focus:text-cyan-400
+                        -top-2"
+            >
+              Symbol*
+            </label>
+
+            {showSymbolDropdown && filteredSymbols.length > 0 && (
+              <div className="absolute left-0 right-0 mt-1 bg-[#0f172a] border border-slate-700 rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
+                {filteredSymbols.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      setSymbol(item);
+                      setShowSymbolDropdown(false);
+                    }}
+                    className="px-3 py-2 text-xs text-white hover:bg-indigo-600 cursor-pointer transition"
                   >
-                      <svg className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      SYNC
-                  </button>
-                  <span className="text-xs text-slate-400">Symbol *</span>
-               </div>
-               <div className="bg-[#0B1221] border border-slate-600 rounded px-2 h-9 flex items-center relative">
-                  <select 
-                      value={inputSymbol} 
-                      onChange={(e) => setInputSymbol(e.target.value)}
-                      className="bg-transparent text-white font-bold text-sm w-full focus:outline-none uppercase appearance-none cursor-pointer z-10 relative"
-                  >
-                      <option value="" className="bg-[#0B1221] text-slate-300">SELECT</option>
-                      {stockList.map(s => <option key={s} value={s} className="bg-[#0B1221] text-slate-300">{s}</option>)}
-                  </select>
-                  <span className="absolute right-2 text-slate-400 text-[10px] pointer-events-none">▼</span>
-               </div>
-            </div>
-            
-            <div className="col-span-4 flex flex-col gap-1">
-               <span className="text-xs text-slate-400 pl-1">Date</span>
-               <div className="bg-[#0B1221] border border-slate-600 rounded px-2 h-9 flex items-center justify-between relative overflow-hidden">
-                  <span className="text-white text-sm absolute left-2 pointer-events-none z-0">
-                      {inputDate ? `${inputDate.split('-')[2]}/${inputDate.split('-')[1]}/${inputDate.split('-')[0]}` : ''}
-                  </span>
-                  <input 
-                      type="date" 
-                      value={inputDate} 
-                      max={todayMax} 
-                      onChange={(e) => setInputDate(e.target.value)}
-                      className="w-full focus:outline-none cursor-pointer text-transparent bg-transparent z-10" 
-                      style={{colorScheme: 'dark'}}
-                  />
-               </div>
-            </div>
-            
-            <div className="col-span-3">
-               <button 
-                  onClick={handleSearch}
-                  disabled={isSyncing}
-                  className="w-full h-9 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition shadow-[0_0_10px_rgba(37,99,235,0.3)] active:scale-95 disabled:opacity-50"
-               >
-                  SEARCH
-               </button>
-            </div>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* DATE */}
+          <div className="col-span-3 relative">
+
+            <input
+              type="date"
+              value={date}
+              max={todayMax}
+              placeholder=" "
+              onChange={(e) => setDate(e.target.value)}
+              className="peer w-full bg-[#0B1221] border border-slate-600 rounded-md px-3 py-2 text-white text-xs outline-none
+                        [&::-webkit-calendar-picker-indicator]:invert"
+            />
+
+            <label
+              className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 
+                        transition-all duration-200 pointer-events-none
+                        peer-placeholder-shown:top-2
+                        peer-placeholder-shown:text-slate-500
+                        peer-focus:-top-2
+                        peer-focus:text-cyan-400
+                        -top-2"
+            >
+              Date
+            </label>
+
+          </div>
+
+          {/* SEARCH */}
+          <div className="col-span-3">
+            <button
+              onClick={handleSearch}
+              disabled={isSyncing}
+              className="w-full h-[38px] bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition active:scale-95 disabled:opacity-50"
+            >
+              SEARCH
+            </button>
+          </div>
+
         </div>
 
         {/* --- Summary --- */}
@@ -352,76 +437,59 @@ export default function TickMatch() {
         </div>
 
         {/* --- Extra Sections (Flip & Charts) จะโชว์เมื่อมีการค้นหาข้อมูลแล้วเท่านั้น --- */}
-        {activeSymbol && data.flips.length > 0 && (
-            <>
-                <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-4 overflow-hidden shrink-0">
-                    <div className="bg-[#1f2937] p-2 flex justify-between items-center">
-                        <span className="text-xs font-bold text-white">Total Flip Count: {data.flips.length}</span>
-                        <div className="flex gap-3 text-[10px]">
-                            <span className="flex items-center gap-1 text-red-400"><div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0</span>
-                            <span className="flex items-center gap-1 text-green-400"><div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0</span>
-                        </div>
-                    </div>
-                    <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
-                        <div className="h-2 w-full flex rounded overflow-hidden">
-                            <div className="bg-[#22c55e] w-[60%]"></div>
-                            <div className="bg-[#ef4444] w-[5%] border-x border-[#111827]"></div>
-                            <div className="bg-[#22c55e] w-[10%] border-r border-[#111827]"></div>
-                            <div className="bg-[#ef4444] w-[25%]"></div>
-                        </div>
-                        <div className="flex justify-between text-[9px] text-slate-400 mt-1">
-                            <span>13:57</span><span>14:30</span><span>15:00</span><span>15:30</span><span>16:00</span><span>16:30</span>
-                        </div>
-                    </div>
-                    <table className="w-full text-center border-collapse">
-                        <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
-                            <tr>
-                                <th className="p-1.5">ครั้งที่</th>
-                                <th className="p-1.5">Time</th>
-                                <th className="p-1.5">From Acc. Vol</th>
-                                <th className="p-1.5">To Acc. Vol</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-xs font-mono text-slate-300">
-                            {data.flips.map((flip, idx) => (
-                                <tr key={idx} className="border-b border-slate-800/50">
-                                    <td className="p-1.5 text-white">{flip.id}</td>
-                                    <td className="p-1.5">{flip.time}</td>
-                                    <td className={`p-1.5 font-bold ${flip.from.includes('-') ? 'text-red-500' : 'text-green-500'}`}>{flip.from}</td>
-                                    <td className={`p-1.5 font-bold ${flip.to.includes('-') ? 'text-red-500' : 'text-green-500'}`}>{flip.to}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+        {hasSearched && (
+  <>
+    {/* ===== Flip Section Skeleton ===== */}
+    <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-4 overflow-hidden shrink-0">
 
-                <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 h-[200px] flex flex-col relative shrink-0">
-                    <div className="flex justify-center gap-4 text-[10px] mb-2 z-10">
-                        <span className="flex items-center gap-1 text-slate-400"><div className="w-4 h-2 bg-green-600 rounded-sm"></div> Buy Volume</span>
-                        <span className="flex items-center gap-1 text-slate-400"><div className="w-4 h-2 bg-red-600 rounded-sm"></div> Sell Volume</span>
-                    </div>
-                    <div className="flex-1 flex items-end gap-2 relative pl-10 border-b border-slate-700/50 pb-5 pt-2">
-                        <div className="absolute inset-y-0 left-10 right-0 flex flex-col justify-between pointer-events-none pb-5 pt-2">
-                            <div className="border-t border-slate-800 w-full opacity-50"></div>
-                            <div className="border-t border-slate-800 w-full opacity-50"></div>
-                            <div className="border-t border-slate-800 w-full opacity-50"></div>
-                        </div>
-                        <div className="absolute left-0 top-0 bottom-5 flex flex-col justify-between text-[8px] text-slate-600 py-1 font-mono w-8 text-right">
-                            <span>8M</span><span>6M</span><span>4M</span><span>2M</span><span>0</span>
-                        </div>
-                        {data.charts.map((bar, i) => (
-                            <div key={i} className="flex-1 flex flex-col justify-end items-center h-full group relative z-10">
-                                <div className="w-full flex flex-col-reverse max-w-[30px] opacity-80 hover:opacity-100 transition h-full cursor-pointer">
-                                    <div className="w-full bg-[#ef4444]" style={{ height: `${bar.sell}%` }}></div>
-                                    <div className="w-full bg-[#22c55e]" style={{ height: `${bar.buy}%` }}></div>
-                                </div>
-                                <span className="absolute -bottom-5 text-[8px] text-slate-500">{bar.price}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </>
-        )}
+      <div className="bg-[#1f2937] p-2 flex justify-between items-center">
+        <span className="text-xs font-bold text-white">
+          Total Flip Count: 0
+        </span>
+        <div className="flex gap-3 text-[10px]">
+          <span className="flex items-center gap-1 text-red-400">
+            <div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0
+          </span>
+          <span className="flex items-center gap-1 text-green-400">
+            <div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0
+          </span>
+        </div>
+      </div>
+
+      {/* Timeline Bar Placeholder */}
+      <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
+        <div className="h-2 w-full bg-slate-800 rounded animate-pulse"></div>
+      </div>
+
+      {/* Empty Table */}
+      <table className="w-full text-center border-collapse">
+        <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
+          <tr>
+            <th className="p-1.5">ครั้งที่</th>
+            <th className="p-1.5">Time</th>
+            <th className="p-1.5">From Acc. Vol</th>
+            <th className="p-1.5">To Acc. Vol</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colSpan="4" className="p-6 text-slate-500 text-xs">
+              No Flip Data
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {/* ===== Chart Skeleton ===== */}
+    <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 h-[200px] flex flex-col justify-center items-center">
+      <div className="w-full h-24 bg-slate-800 rounded animate-pulse mb-4"></div>
+      <span className="text-xs text-slate-500">
+        Chart will appear here
+      </span>
+    </div>
+  </>
+)}
       </div>
     );
   };
