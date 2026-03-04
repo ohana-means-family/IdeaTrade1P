@@ -555,43 +555,290 @@ export default function FlowIntraday() {
 
       </div>
       {fullscreenIndex !== null && (
-  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col">
+  <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col" onClick={() => setFullscreenIndex(null)}>
+    
+    {/* ===== OUTER TOPBAR (Outside Chart Box) ===== */}
+    <div className="bg-[#0b111a] border-b border-slate-700 px-6 py-4 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-3">
+        
+        {/* 1. ปุ่ม กลับ/ปิด */}
+        <button
+          onClick={() => setFullscreenIndex(null)}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700/40 hover:bg-red-600/60 rounded-full text-sm text-slate-300 hover:text-white transition font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back</span>
+        </button>
 
-    <div className="flex justify-between items-center px-6 py-4 border-b border-slate-700">
-      <h2 className="text-lg font-semibold">
-        {symbols[fullscreenIndex]} - Fullscreen View
-      </h2>
+        {/* 2. ปุ่ม Refresh */}
+        <button className="w-9 h-9 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white flex items-center justify-center transition">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+
+        {/* 3,4,5. Capsule Box (Search + Clear + Dropdown) */}
+        <div className="flex items-center bg-slate-800/50 border border-slate-700 rounded-full h-9 px-4 gap-3">
+          {/* 3. Search Icon & Input */}
+          <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Type a Symbol..."
+            className="bg-transparent border-none outline-none text-xs text-slate-300 placeholder-slate-600 w-32 font-medium"
+          />
+
+          {/* 4. Clear Icon */}
+          <button className="text-slate-500 hover:text-red-400 text-sm">✕</button>
+
+          {/* Separator */}
+          <div className="w-px h-5 bg-slate-600"></div>
+
+          {/* 5. Dropdown Button */}
+          <select className="bg-transparent border-none outline-none text-xs text-slate-300 font-medium cursor-pointer">
+            <option>1DIV</option>
+            <option>2DIV</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Title (Center) */}
+      <h2 className="text-2xl font-bold text-white">{symbols[fullscreenIndex]}</h2>
+
+      {/* Close X Button (Right) */}
       <button
         onClick={() => setFullscreenIndex(null)}
-        className="text-slate-400 hover:text-white text-xl"
+        className="text-slate-400 hover:text-white text-2xl font-light"
       >
         ✕
       </button>
     </div>
 
-    <div className="flex-1 p-6">
-      {(() => {
-        const data = chartData[fullscreenIndex];
+    {/* ===== CHART CONTAINER ===== */}
+    <div className="flex-1 p-6 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full h-full bg-slate-900 rounded-lg border border-slate-700 p-6 relative flex flex-col">
 
-        if (!data) return null; // 🔥 กัน crash
+        {/* Info Box (Top Right) */}
+        <div className="absolute top-8 right-8 bg-slate-800/90 border border-slate-700 rounded-lg p-4 z-10">
+          <div className="text-xs text-slate-400 font-semibold mb-3">12:03</div>
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+              <span className="text-slate-300">Price: <span className="text-white font-bold">5,300</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-orange-400 rounded-full"></div>
+              <span className="text-slate-300">Flow: <span className="text-white font-bold">-1,800</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
+              <span className="text-slate-300">Limit: <span className="text-white font-bold">400</span></span>
+            </div>
+          </div>
+        </div>
 
-        const points = normalizeData(data, 400);
-        const isUp = data[data.length - 1] >= data[0];
+        {/* SVG Chart */}
+        {(() => {
+          const data = chartData[fullscreenIndex];
+          if (!data) return null;
 
-        return (
-          <svg viewBox="0 0 100 400" preserveAspectRatio="none" className="w-full h-full">
-            <defs>
-              <linearGradient id="fullscreenGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isUp ? "#22c55e" : "#ef4444"} stopOpacity="0.4" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
+          const generateMultipleLines = (baseData) => {
+            return {
+              prices: baseData,
+              flows: baseData.map(v => v * 0.7 - 50),
+              limits: baseData.map(v => v * 0.5)
+            };
+          };
 
-            <polygon fill="url(#fullscreenGrad)" points={`0,400 ${points} 100,400`} />
-            <polyline fill="none" stroke={isUp ? "#22c55e" : "#ef4444"} strokeWidth="2" points={points} />
-          </svg>
-        );
-      })()}
+          const { prices, flows, limits } = generateMultipleLines(data);
+          
+          const normalizeData = (dataset, height = 350) => {
+            const max = Math.max(...dataset);
+            const min = Math.min(...dataset);
+            const range = max - min || 1;
+            return dataset.map((val, i) => {
+              const x = (i / (dataset.length - 1)) * 100;
+              const y = height - ((val - min) / range) * height;
+              return `${x},${y}`;
+            }).join(" ");
+          };
+
+          const priceLine = normalizeData(prices);
+          const flowLine = normalizeData(flows);
+          const limitLine = normalizeData(limits);
+
+          const timeLabels = ['09:57', '10:08', "26 ต.ค.'25 10:32:00", '10:47', '11:40', '12:03', '12:28', '13:55'];
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+
+          const gridLines = [];
+          for (let i = 0; i <= 6; i++) {
+            const ratio = i / 6;
+            gridLines.push({
+              y: ratio * 100,
+              label: Math.round(maxPrice - (maxPrice - minPrice) * ratio)
+            });
+          }
+
+          return (
+            <svg viewBox="0 0 1200 500" preserveAspectRatio="none" className="w-full h-full">
+              <defs>
+                <linearGradient id="priceGradFull" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+              </defs>
+
+              {/* ===== HORIZONTAL GRID LINES (Y-Axis) ===== */}
+              {gridLines.map((line, i) => (
+                <g key={`hgrid-${i}`}>
+                  <line
+                    x1="80"
+                    y1={line.y * 5}
+                    x2="1200"
+                    y2={line.y * 5}
+                    stroke="#444"
+                    strokeWidth="0.8"
+                    opacity="0.5"
+                    strokeDasharray="4,4"
+                  />
+                  <text
+                    x="65"
+                    y={line.y * 5 + 4}
+                    fontSize="12"
+                    fill="#a0aec0"
+                    textAnchor="end"
+                    fontWeight="500"
+                  >
+                    {line.label.toLocaleString()}
+                  </text>
+                </g>
+              ))}
+
+              {/* ===== VERTICAL GRID LINES (X-Axis) ===== */}
+              {timeLabels.map((label, i) => {
+                const x = 80 + (i / (timeLabels.length - 1)) * 1120;
+                return (
+                  <g key={`vgrid-${i}`}>
+                    <line
+                      x1={x}
+                      y1="0"
+                      x2={x}
+                      y2="350"
+                      stroke="#444"
+                      strokeWidth="0.8"
+                      opacity="0.3"
+                    />
+                    <text
+                      x={x}
+                      y="380"
+                      fontSize="11"
+                      fill="#a0aec0"
+                      textAnchor="middle"
+                      fontWeight="500"
+                    >
+                      {label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* ===== REFERENCE LINE (Green Dashed) ===== */}
+              <line
+                x1="80"
+                y1="175"
+                x2="1200"
+                y2="175"
+                stroke="#10b981"
+                strokeWidth="1"
+                opacity="0.4"
+                strokeDasharray="6,3"
+              />
+
+              {/* ===== PRICE LINE (WHITE) ===== */}
+              <polyline
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={priceLine.split(" ").map((p, i) => {
+                  const [x, y] = p.split(",");
+                  return `${80 + (parseFloat(x) / 100) * 1120},${parseFloat(y) * 3.5}`;
+                }).join(" ")}
+              />
+
+              {/* Price Points */}
+              {priceLine.split(" ").map((p, i) => {
+                if (i % 5 === 0) {
+                  const [x, y] = p.split(",");
+                  return (
+                    <circle
+                      key={`pprice-${i}`}
+                      cx={80 + (parseFloat(x) / 100) * 1120}
+                      cy={parseFloat(y) * 3.5}
+                      r="4.5"
+                      fill="white"
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                  );
+                }
+                return null;
+              })}
+
+              {/* ===== FLOW LINE (ORANGE) ===== */}
+              <polyline
+                fill="none"
+                stroke="#f97316"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={flowLine.split(" ").map((p, i) => {
+                  const [x, y] = p.split(",");
+                  return `${80 + (parseFloat(x) / 100) * 1120},${parseFloat(y) * 3.5}`;
+                }).join(" ")}
+              />
+
+              {/* ===== LIMIT LINE (GREEN) ===== */}
+              <polyline
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={limitLine.split(" ").map((p, i) => {
+                  const [x, y] = p.split(",");
+                  return `${80 + (parseFloat(x) / 100) * 1120},${parseFloat(y) * 3.5}`;
+                }).join(" ")}
+              />
+
+              {/* Limit Points */}
+              {limitLine.split(" ").map((p, i) => {
+                if (i % 5 === 0) {
+                  const [x, y] = p.split(",");
+                  return (
+                    <circle
+                      key={`plimit-${i}`}
+                      cx={80 + (parseFloat(x) / 100) * 1120}
+                      cy={parseFloat(y) * 3.5}
+                      r="4.5"
+                      fill="#22c55e"
+                      stroke="white"
+                      strokeWidth="1.5"
+                    />
+                  );
+                }
+                return null;
+              })}
+
+            </svg>
+          );
+        })()}
+      </div>
     </div>
 
   </div>
