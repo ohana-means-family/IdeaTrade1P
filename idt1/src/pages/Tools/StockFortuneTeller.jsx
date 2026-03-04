@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 
 import StockFortuneTellerDashboard from "./components/StockFortuneTellerDashboard.jsx";
 import SearchIcon from "@mui/icons-material/Search";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import DownloadIcon from "@mui/icons-material/Download";
+import FastForwardIcon from "@mui/icons-material/FastForward";
 import CloseIcon from "@mui/icons-material/Close";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -17,9 +17,9 @@ const scrollbarHideStyle = {
 };
 
 // ====================================================
-// ScaledDashboardPreview
+// ScaledDashboardPreview (ตัวจัดการนำ 6 กราฟไปใส่ในกรอบ Browser)
 // ====================================================
-function ScaledDashboardPreview({ dashboardWidth = 1280, dashboardHeight = 900 }) {
+function ScaledDashboardPreview({ dashboardWidth = 1400, dashboardHeight = 850 }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
 
@@ -27,12 +27,14 @@ function ScaledDashboardPreview({ dashboardWidth = 1280, dashboardHeight = 900 }
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!outer || !inner) return;
+
     const applyScale = () => {
       const w = outer.getBoundingClientRect().width;
       const s = w / dashboardWidth;
       inner.style.transform = `scale(${s})`;
       outer.style.height = `${dashboardHeight * s}px`;
     };
+
     applyScale();
     const ro = new ResizeObserver(applyScale);
     ro.observe(outer);
@@ -40,24 +42,31 @@ function ScaledDashboardPreview({ dashboardWidth = 1280, dashboardHeight = 900 }
   }, [dashboardWidth, dashboardHeight]);
 
   return (
-    <div ref={outerRef} className="w-full bg-[#0B1221]" style={{ overflow: "hidden", position: "relative" }}>
-      <div ref={innerRef} style={{ width: dashboardWidth, height: dashboardHeight, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
+    <div ref={outerRef} className="w-full bg-[#0b1221]" style={{ overflow: "hidden", position: "relative" }}>
+      <div 
+        ref={innerRef} 
+        style={{ 
+          width: dashboardWidth, 
+          height: dashboardHeight, 
+          transformOrigin: "top left", 
+          position: "absolute", 
+          top: 0, 
+          left: 0 
+        }}
+      >
+        {/* 🔥 ดึงหน้าพรีวิว 6 กราฟมาแสดงผลข้างใน 🔥 */}
         <StockFortuneTellerDashboard />
       </div>
     </div>
   );
 }
-
 // ============================================================
-// DYNAMIC DATA GENERATOR — mulberry32 PRNG (deterministic)
+// DYNAMIC DATA GENERATOR
 // ============================================================
-
-// แปลงชื่อหุ้นเป็น seed
 function symbolToSeed(sym) {
   return sym.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1) * 31, 0);
 }
 
-// mulberry32 — fast, high-quality 32-bit PRNG
 function createRng(seed) {
   let s = seed | 0;
   return () => {
@@ -68,7 +77,6 @@ function createRng(seed) {
   };
 }
 
-// Cache
 const MOCK_CACHE = {};
 
 function generateMockData(symbol) {
@@ -79,9 +87,8 @@ function generateMockData(symbol) {
   const rng  = createRng(seed);
   const n    = 20;
 
-  // ── Last: random walk ราคาหุ้น สมจริง มี trend + noise ──
-  const priceBase  = 5 + rng() * 95;           // 5–100 ฿
-  const priceTrend = (rng() - 0.48) * 0.15;    // bias เล็กน้อย
+  const priceBase  = 5 + rng() * 95;
+  const priceTrend = (rng() - 0.48) * 0.15;
   const priceVol   = priceBase * (0.015 + rng() * 0.025);
   let   pv         = priceBase;
   const Last = Array.from({ length: n }, () => {
@@ -90,7 +97,6 @@ function generateMockData(symbol) {
     return parseFloat(pv.toFixed(2));
   });
 
-  // ── %Short A & B: คล้ายกันแต่ต่างกัน มี regime shift ──
   const shortBase  = 10 + rng() * 15;
   const shortTrend = (rng() - 0.5) * 0.3;
   let   saVal      = shortBase;
@@ -106,19 +112,16 @@ function generateMockData(symbol) {
     return parseFloat(sbVal.toFixed(2));
   });
 
-  // ── PredictTrend: momentum indicator มี breakout ──
   const ptBase  = 20 + rng() * 15;
-  const ptTrend = (rng() - 0.4) * 0.5;   // bias ขาขึ้นเล็กน้อย
+  const ptTrend = (rng() - 0.4) * 0.5;
   let   ptVal   = ptBase;
   const PredictTrend = Array.from({ length: n }, () => {
-    // บางจุดมี momentum surge
     const surge = rng() < 0.15 ? (rng() - 0.3) * 4 : 0;
     ptVal += (rng() - 0.5) * 2.5 + ptTrend + surge;
     ptVal  = Math.max(ptBase * 0.5, Math.min(ptBase * 2.5, ptVal));
     return parseFloat(ptVal.toFixed(2));
   });
 
-  // ── Peak: spike chart — ส่วนใหญ่ต่ำ บางจุด spike สูง ──
   const peakBase = 4 + rng() * 4;
   const Peak = Array.from({ length: n }, () => {
     const isSpike = rng() < 0.20;
@@ -126,7 +129,6 @@ function generateMockData(symbol) {
     return parseFloat((peakBase + rng() * 3).toFixed(2));
   });
 
-  // ── Shareholder: step function — เปลี่ยนทีละน้อยมากๆ ──
   const shBase    = 8 + rng() * 5;
   const shLevels  = [
     parseFloat(shBase.toFixed(2)),
@@ -135,7 +137,7 @@ function generateMockData(symbol) {
   ];
   let   shIdx     = 0;
   let   shCounter = 0;
-  const shHold    = Math.floor(5 + rng() * 6); // ถือ level ไว้กี่จุด
+  const shHold    = Math.floor(5 + rng() * 6);
   const Shareholder = Array.from({ length: n }, () => {
     shCounter++;
     if (shCounter >= shHold && shIdx < shLevels.length - 1) {
@@ -144,16 +146,13 @@ function generateMockData(symbol) {
     return shLevels[shIdx];
   });
 
-  // ── Manager: 5 lines step chart คงที่แต่ต่างกันต่อหุ้น ──
-  // แต่ละ manager มีตำแหน่งต่างกัน — บวกและลบ
   const managerBases = [
-    +(2 + rng() * 4).toFixed(2),          // top positive
-    +(0.5 + rng() * 2).toFixed(2),        // small positive
-    +((rng() - 0.5) * 1.5).toFixed(2),    // near zero
-    -(1 + rng() * 4).toFixed(2),           // negative
-    -(4 + rng() * 6).toFixed(2),           // deep negative
+    +(2 + rng() * 4).toFixed(2),
+    +(0.5 + rng() * 2).toFixed(2),
+    +((rng() - 0.5) * 1.5).toFixed(2),
+    -(1 + rng() * 4).toFixed(2),
+    -(4 + rng() * 6).toFixed(2),
   ];
-  // แต่ละ manager มีจุดเปลี่ยน step 1–2 ครั้ง
   const Manager = managerBases.map((base, mi) => {
     const rngM   = createRng(seed + mi * 997 + 1);
     const shift1 = Math.floor(rngM() * (n - 4)) + 2;
@@ -172,12 +171,11 @@ function generateMockData(symbol) {
     Peak,
     Shareholder,
     Manager,
-    // meta สำหรับ StatCards
     _lastPrice:  Last[Last.length - 1],
     _prevPrice:  Last[Last.length - 2],
     _high:       parseFloat(Math.max(...Last).toFixed(2)),
     _low:        parseFloat(Math.min(...Last).toFixed(2)),
-    _volume:     parseFloat((50 + rng() * 950).toFixed(1)),  // M
+    _volume:     parseFloat((50 + rng() * 950).toFixed(1)),
   };
 
   MOCK_CACHE[symbol] = result;
@@ -306,18 +304,6 @@ function WaveSkeleton({ delay = 0 }) {
 }
 
 // ============================================================
-// StatCard
-// ============================================================
-function StatCard({ label, value, color }) {
-  return (
-    <div className="bg-[#111827] p-4 rounded-xl border border-slate-700">
-      <p className="text-slate-400 text-xs">{label}</p>
-      <p className={`${color} text-lg font-bold`}>{value}</p>
-    </div>
-  );
-}
-
-// ============================================================
 // ChartCard
 // ============================================================
 function ChartCard({ title, type, onChange, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol }) {
@@ -398,7 +384,8 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
       setGlobalHoverIndex(null);
       return;
     }
-    const mouseX = e.clientX - scrollRef.current.getBoundingClientRect().left + scrollRef.current.scrollLeft;
+    const rect = scrollRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left + scrollRef.current.scrollLeft;
     const index  = Math.max(0, Math.min(Math.round((mouseX - paddingLeft) / pointGap), primaryData.length - 1));
     setGlobalHoverIndex(index);
   };
@@ -632,13 +619,8 @@ export default function StockFortuneTeller() {
   ];
   const filteredSymbols = symbols.filter(s => s.toLowerCase().includes(symbol.toLowerCase()));
 
-  // mock data สำหรับ StatCards — reactive กับ selectedSymbol
+  // mock data สำหรับเช็ก state ภายใน แต่เราไม่แสดง StatCard แล้ว
   const mockData = useMemo(() => generateMockData(selectedSymbol), [selectedSymbol]);
-  const lastPrice  = mockData?._lastPrice  ?? 0;
-  const prevPrice  = mockData?._prevPrice  ?? 0;
-  const priceDiff  = lastPrice - prevPrice;
-  const pricePct   = prevPrice ? ((priceDiff / prevPrice) * 100).toFixed(2) : "0.00";
-  const priceUp    = priceDiff >= 0;
 
   /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
@@ -648,7 +630,6 @@ export default function StockFortuneTeller() {
         const user = JSON.parse(userProfile);
         if (user.unlockedItems && user.unlockedItems.includes("fortune")) {
           setIsMember(true);
-          // เอา sessionStorage.getItem("fortuneToolEntered") ออก เพื่อให้โชว์หน้า Preview เสมอ
         }
       }
     } catch (error) {
@@ -672,6 +653,18 @@ export default function StockFortuneTeller() {
     scrollDirection.current = direction === "left" ? -1 : 1;
     setTimeout(checkScroll, 300);
     setTimeout(() => { isPaused.current = false; }, 500);
+  };
+
+  // ฟังชันเลื่อนกราฟไปทางขวาสุด (ล่าสุด)
+  const scrollToLatest = () => {
+    Object.values(chartRefs.current).forEach((node) => {
+      if (node) {
+        node.scrollTo({
+          left: node.scrollWidth,
+          behavior: "smooth"
+        });
+      }
+    });
   };
 
   useEffect(() => {
@@ -754,7 +747,7 @@ export default function StockFortuneTeller() {
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
             <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
               {windowChrome}
-              <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={900} />
+              <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={800} />
             </div>
           </div>
           {featuresSection}
@@ -784,12 +777,12 @@ export default function StockFortuneTeller() {
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
             <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
               {windowChrome}
-              <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={900} />
+              <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={800} />
             </div>
           </div>
           {featuresSection}
           <button
-            onClick={() => { setEnteredTool(true); }} // เอา sessionStorage.setItem ออก
+            onClick={() => { setEnteredTool(true); }}
             className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
           >
             <span className="mr-2">Start Using Tool</span>
@@ -808,8 +801,8 @@ export default function StockFortuneTeller() {
       <div className="w-full min-h-screen bg-[#0B1221] text-white px-6 py-6">
         <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
 
-        {/* TOP BAR */}
-        <div className="flex items-center justify-between mb-6">
+        {/* TOP BAR - ปรับปุ่มให้มาชิดกล่องค้นหา */}
+        <div className="flex items-center gap-3 mb-6">
           <div className="relative w-80">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fontSize="small" />
             <input
@@ -842,10 +835,11 @@ export default function StockFortuneTeller() {
             )}
           </div>
 
-          <div className="flex gap-3">
-            <button className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 hover:text-cyan-400 transition">
-              <NotificationsNoneIcon fontSize="small" />
+          <div className="flex gap-2">
+            <button className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 hover:text-cyan-400 transition" title="Save">
+              <SaveOutlinedIcon fontSize="small" />
             </button>
+
             <button
               onClick={() => {
                 setSymbol(""); setSelectedSymbol(""); setShowDropdown(false);
@@ -853,15 +847,20 @@ export default function StockFortuneTeller() {
                 setTimeout(() => { setRefreshing(false); searchInputRef.current?.focus(); }, 500);
               }}
               className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 hover:text-cyan-400 transition"
+              title="Refresh"
             >
               <RefreshIcon fontSize="small" className={refreshing ? "animate-spin" : ""} />
             </button>
-            <button className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 hover:text-cyan-400 transition">
-              <DownloadIcon fontSize="small" />
+
+            <button 
+              onClick={scrollToLatest}
+              className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 hover:text-cyan-400 transition"
+              title="Scroll to latest"
+            >
+              <FastForwardIcon fontSize="small" />
             </button>
           </div>
         </div>
-
 
         {/* CHART GRID หรือ Skeleton */}
         {selectedSymbol ? (

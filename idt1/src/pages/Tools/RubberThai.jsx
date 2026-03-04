@@ -474,7 +474,7 @@ export default function RubberThai() {
                   setSymbol("");
                 }}
                 onFocus={() => setShowSymbolDropdown(true)}
-                placeholder="Symbol (e.g. STA)"
+                placeholder="Type a Symbol..."
                 className="w-full bg-transparent outline-none text-white text-sm placeholder:text-slate-600"
               />
               <div className="flex items-center gap-2">
