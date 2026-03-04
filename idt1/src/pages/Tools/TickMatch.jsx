@@ -729,8 +729,6 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
   return (
     <div className="w-full min-h-screen bg-[#0B1221] text-white p-4 animate-fade-in flex flex-col gap-4">
       
-      {/* Title Header */}
-      <h1 className="text-xl font-bold mb-2 text-white border-l-4 border-cyan-500 pl-3">TickMatch Analysis</h1>
 
       {/* Main Grid Layout (2 Panels ของ TickMatch) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[calc(100vh-100px)]">

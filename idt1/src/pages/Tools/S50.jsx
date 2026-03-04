@@ -1,5 +1,5 @@
 // src/pages/tools/S50.jsx
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import S50Dashboard from "./components/S50Dashboard.jsx";
@@ -9,49 +9,256 @@ const scrollbarHideStyle = {
   scrollbarWidth: 'none'
 };
 
-// ===== MOCK DATA GENERATOR =====
-const generateMockData = (seed = 1, points = 60, volatility = 2) => {
-  const data = [];
-  let value = 100 + seed * 5;
-
-  for (let i = 0; i < points; i++) {
-    const change = (Math.sin(i + seed) + Math.random() - 0.5) * volatility;
-    value += change;
-    data.push(value);
-  }
-
-  return data;
+// ============================================================
+// CHART CONSTANTS & HELPERS
+// ============================================================
+const CHART_CONFIG = {
+  height: 250,
+  paddingLeft: 15,
+  paddingRight: 60,
+  paddingTop: 15,
+  paddingBottom: 25,
+  pointGap: 40,
+  minWidth: 620,
 };
+
+// สร้าง Label จำลองให้ครอบคลุมจำนวนจุดสูงสุด (300 จุดสำหรับ timeframe Week)
+const LABELS = Array.from({ length: 300 }, (_, i) => {
+  const d = new Date("2024-01-01");
+  d.setDate(d.getDate() + i);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(2);
+  return `${dd}/${mm}/${yy}`;
+});
+
+function calcYScale(data) {
+  const rawMax = Math.max(...data);
+  const rawMin = Math.min(...data);
+  const range = rawMax - rawMin || 1;
+  return { max: rawMax + range * 0.15, min: rawMin - range * 0.15 };
+}
+
+function makeNormalizeY({ height, paddingTop, paddingBottom }, { max, min }) {
+  return (value) =>
+    height - paddingBottom - ((value - min) / (max - min)) * (height - paddingTop - paddingBottom);
+}
+
+function buildCurvePath(dataset, normalizeY, paddingLeft, pointGap) {
+  if (!dataset || dataset.length === 0) return "";
+  return dataset.reduce((path, value, i) => {
+    const x = paddingLeft + i * pointGap;
+    const y = normalizeY(value);
+    if (i === 0) return `M ${x},${y}`;
+    const prevX = paddingLeft + (i - 1) * pointGap;
+    const prevY = normalizeY(dataset[i - 1]);
+    const cp1x = prevX + (x - prevX) / 3;
+    const cp2x = prevX + (x - prevX) * 2 / 3;
+    return `${path} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
+  }, "");
+}
 
 // ===== DETERMINISTIC MASTER DATA =====
 const generateMasterData = (seed = 1, totalPoints = 300) => {
   const data = [];
-  let value = 100 + seed * 5;
+  let value = 850 + seed * 10; // Base ราคา S50 สมจริงแถวๆ 850-950
 
   for (let i = 0; i < totalPoints; i++) {
     const random = Math.sin(i * 0.7 + seed) * 10000;
-    const change = (random - Math.floor(random)) * 2 - 1;
+    const change = (random - Math.floor(random)) * 4 - 2; // ความผันผวน
     value += change;
-    data.push(value);
+    data.push(parseFloat(value.toFixed(1)));
   }
 
   return data;
 };
 
-const normalizeData = (data, height = 280) => {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
+// ============================================================
+// REUSABLE CHART CARD (NEW STYLE)
+// ============================================================
+function ChartCard({ title, timeframe, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs }) {
+  const seed = title.length;
+  const masterDataRef = useRef(generateMasterData(seed));
 
-  return data
-    .map((val, i) => {
-      const x = (i / (data.length - 1)) * 100;
-      const y = height - ((val - min) / range) * height;
-      return `${x},${y}`;
-    })
-    .join(" ");
-};
+  const data = useMemo(() => {
+    const master = masterDataRef.current;
+    let sliceSize = 60;
+    if (timeframe === "15m") sliceSize = 40;
+    if (timeframe === "1H") sliceSize = 80;
+    if (timeframe === "Day") sliceSize = 150;
+    if (timeframe === "Week") sliceSize = 300;
+    return master.slice(master.length - sliceSize);
+  }, [timeframe]);
 
+  const scrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragScrollLeft, setDragScrollLeft] = useState(0);
+
+  const yScale = calcYScale(data);
+  const normalizeY = makeNormalizeY(CHART_CONFIG, yScale);
+
+  const { paddingLeft, paddingRight, paddingTop, paddingBottom, pointGap, height, minWidth } = CHART_CONFIG;
+  const chartWidth = Math.max(minWidth, paddingLeft + paddingRight + (data.length - 1) * pointGap);
+
+  const isUp = data[data.length - 1] >= data[0];
+  const color = isUp ? "#22c55e" : "#ef4444";
+  const linePath = buildCurvePath(data, normalizeY, paddingLeft, pointGap);
+  const lastX = paddingLeft + (data.length - 1) * pointGap;
+  const areaId = `area-${chartId}`;
+  const lastPt = data[data.length - 1];
+
+  // Sync Scrolling
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    chartRefs.current[chartId] = scrollRef.current;
+    scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    return () => { delete chartRefs.current[chartId]; };
+  }, [chartId, timeframe, chartRefs]);
+
+  const syncScroll = (sourceEl) => {
+    Object.values(chartRefs.current).forEach((node) => {
+      if (node && node !== sourceEl && Math.abs(node.scrollLeft - sourceEl.scrollLeft) > 1)
+        node.scrollLeft = sourceEl.scrollLeft;
+    });
+  };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStartX(e.pageX - scrollRef.current.offsetLeft);
+    setDragScrollLeft(scrollRef.current.scrollLeft);
+    setGlobalHoverIndex(null);
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      e.preventDefault();
+      const x = e.pageX - scrollRef.current.offsetLeft;
+      scrollRef.current.scrollLeft = dragScrollLeft - (x - dragStartX) * 1.5;
+      setGlobalHoverIndex(null);
+      return;
+    }
+    const mouseX = e.clientX - scrollRef.current.getBoundingClientRect().left + scrollRef.current.scrollLeft;
+    const index = Math.max(0, Math.min(Math.round((mouseX - paddingLeft) / pointGap), data.length - 1));
+    setGlobalHoverIndex(index);
+  };
+
+  const isHovering = globalHoverIndex !== null && !isDragging && globalHoverIndex < data.length;
+  const hoverX = isHovering ? paddingLeft + globalHoverIndex * pointGap : null;
+
+  return (
+    <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="px-4 py-3 bg-[#0f172a] border-b border-slate-700/50 flex justify-between items-center">
+        <span className="text-sm font-bold text-slate-300">{title}</span>
+        <span className="text-xs text-slate-500 bg-[#1e293b] px-2 py-1 rounded">{timeframe}</span>
+      </div>
+
+      {/* SVG Interactive Area */}
+      <div className="relative w-full bg-[#0f172a]" style={{ height }}>
+        <div
+          ref={scrollRef}
+          className={`w-full h-full relative overflow-x-auto overflow-y-hidden hide-scrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-crosshair"}`}
+          style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+          onScroll={(e) => syncScroll(e.target)}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={() => { setIsDragging(false); setGlobalHoverIndex(null); }}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseMove={handleMouseMove}
+        >
+          <svg width={chartWidth} height={height} className="overflow-visible pointer-events-none">
+            {/* Grid */}
+            {[...Array(5)].map((_, i) => {
+              const y = paddingTop + (i * (height - paddingTop - paddingBottom)) / 4;
+              return <line key={i} x1={0} y1={y} x2={chartWidth} y2={y} stroke="#1e293b" strokeWidth="1" />;
+            })}
+            <line x1={0} y1={height - paddingBottom} x2={chartWidth} y2={height - paddingBottom} stroke="#334155" strokeWidth="1.5" />
+
+            {/* Labels */}
+            {data.map((_, i) => (
+              <text key={i} x={paddingLeft + i * pointGap} y={height - paddingBottom + 16} fill="#64748b" fontSize="9" textAnchor="middle">
+                {LABELS[i % LABELS.length]}
+              </text>
+            ))}
+
+            {/* Area Fill */}
+            <defs>
+              <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                <stop offset="100%" stopColor={color} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              d={`${linePath} L ${lastX},${height - paddingBottom} L ${paddingLeft},${height - paddingBottom} Z`}
+              fill={`url(#${areaId})`}
+            />
+
+            {/* Line Path */}
+            <path 
+              d={linePath} 
+              fill="none" 
+              stroke={color} 
+              strokeWidth="2.5" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
+            />
+
+            {/* Hover Crosshair & Values */}
+            {isHovering && (
+              <g>
+                <line x1={hoverX} y1={paddingTop} x2={hoverX} y2={height - paddingBottom} stroke="#475569" strokeWidth="1" strokeDasharray="4 4" />
+                <circle cx={hoverX} cy={normalizeY(data[globalHoverIndex])} r="4" fill={color} stroke="#0f172a" strokeWidth="2" />
+                <text x={hoverX} y={normalizeY(data[globalHoverIndex]) - 10} fill={color} fontSize="11" fontWeight="700" textAnchor="middle">
+                  {data[globalHoverIndex].toFixed(1)}
+                </text>
+              </g>
+            )}
+          </svg>
+
+          {/* Floating Tooltip */}
+          {isHovering && (
+            <div
+              className="absolute top-2 z-50 flex flex-col items-center min-w-[60px] bg-[#1e293b] border border-slate-600 rounded-md p-1.5 shadow-xl pointer-events-none transition-transform duration-75"
+              style={{
+                left: `${hoverX}px`,
+                transform: globalHoverIndex > data.length - 5 ? "translateX(calc(-100% - 10px))" : "translateX(10px)",
+              }}
+            >
+              <span className="text-[10px] text-slate-400 font-medium mb-1">{LABELS[globalHoverIndex % LABELS.length]}</span>
+              <span className="text-white text-[12px] font-bold">{data[globalHoverIndex].toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Fade */}
+        <div className="absolute inset-y-0 left-0 right-[55px] bg-gradient-to-t from-[#0f172a]/90 via-transparent to-transparent pointer-events-none" style={{ top: "75%" }} />
+
+        {/* Right Y-Axis Panel */}
+        <div className="absolute right-0 top-0 w-[55px] h-full pointer-events-none bg-[#0f172a] z-10 border-l border-slate-800/50">
+          <svg className="w-full h-full absolute right-0 top-0 overflow-visible pointer-events-none">
+            {[...Array(5)].map((_, i) => {
+              const y = paddingTop + (i * (height - paddingTop - paddingBottom)) / 4;
+              const value = yScale.max - (i * (yScale.max - yScale.min)) / 4;
+              return <text key={i} x="48" y={y} fill="#64748b" fontSize="10" textAnchor="end" dominantBaseline="central">{value.toFixed(1)}</text>;
+            })}
+
+            {/* Current Value Badge */}
+            <g transform={`translate(6, ${normalizeY(lastPt)})`}>
+              <rect x="0" y="-10" width="42" height="20" fill={color} rx="4" />
+              <text x="21" y="0" fill="#ffffff" fontSize="10" textAnchor="middle" dominantBaseline="central" fontWeight="bold">
+                {lastPt.toFixed(1)}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN EXPORT S50
+// ============================================================
 export default function S50() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
@@ -61,7 +268,11 @@ export default function S50() {
 
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
-  const [timeframe, setTimeframe] = useState("Day");
+  const [timeframe, setTimeframe] = useState("Day"); // ยังคงเก็บ State ไว้ให้ Component ด้านในใช้งาน
+
+  // Shared Hover State (Sync across charts)
+  const [globalHoverIndex, setGlobalHoverIndex] = useState(null);
+  const chartRefs = useRef({});
 
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
@@ -70,17 +281,11 @@ export default function S50() {
   useEffect(() => {
     try {
       const userProfile = localStorage.getItem("userProfile");
-
       if (userProfile) {
         const user = JSON.parse(userProfile);
-
         if (user.unlockedItems?.includes("s50")) {
           setIsMember(true);
-
-          const hasEntered = sessionStorage.getItem("s50ToolEntered");
-          if (hasEntered === "true") {
-            setEnteredTool(true);
-          }
+          // ใช้งาน Preview ตลอด เอา sessionStorage.getItem("s50ToolEntered") ออก
         }
       }
     } catch (err) {
@@ -91,18 +296,14 @@ export default function S50() {
   /* ================= SCROLL LOGIC ================= */
   const checkScroll = () => {
     if (!scrollContainerRef.current) return;
-
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-
     setShowLeft(scrollLeft > 1);
     setShowRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2);
   };
 
   const scroll = (direction) => {
     if (!scrollContainerRef.current) return;
-
     isPaused.current = true;
-
     const { current } = scrollContainerRef;
     const scrollAmount = 350;
 
@@ -121,7 +322,6 @@ export default function S50() {
   // Auto Scroll Effect
   useEffect(() => {
     const container = scrollContainerRef.current;
-
     if (!container) return;
 
     const speed = 1;
@@ -129,7 +329,6 @@ export default function S50() {
 
     const autoScrollInterval = setInterval(() => {
       if (isPaused.current || !container) return;
-
       const { scrollLeft, scrollWidth, clientWidth } = container;
       const maxScroll = scrollWidth - clientWidth;
 
@@ -146,7 +345,6 @@ export default function S50() {
     return () => clearInterval(autoScrollInterval);
   }, [isMember, enteredTool]);
 
-  // Resize Listener
   useEffect(() => {
     checkScroll();
     window.addEventListener("resize", checkScroll);
@@ -154,27 +352,14 @@ export default function S50() {
   }, []);
 
   const features = [
-    {
-      title: "Last",
-      desc: "Track the daily price action of the SET50 Index.",
-    },
-    {
-      title: "Confirm Up/Down S50",
-      desc: "Forecast bullish or bearish momentum.",
-    },
-    {
-      title: "Trend (Flow Analysis)",
-      desc: "Visualizes net buying/selling in SET50.",
-    },
-    {
-      title: "Mid-Trend (Market Sentiment)",
-      desc: "Monitor overall SET market activity.",
-    },
+    { title: "Last", desc: "Track the daily price action of the SET50 Index." },
+    { title: "Confirm Up/Down S50", desc: "Forecast bullish or bearish momentum." },
+    { title: "Trend (Flow Analysis)", desc: "Visualizes net buying/selling in SET50." },
+    { title: "Mid-Trend (Market Sentiment)", desc: "Monitor overall SET market activity." },
   ];
 
   /* ==========================================================
-    SHARED JSX — Features Scroll Section (inline, not a component,
-    so scrollContainerRef / isPaused refs work correctly)
+    SHARED JSX — Features Scroll Section
   ========================================================== */
   const featuresSectionJSX = (
     <div className="w-full max-w-5xl mb-12">
@@ -187,7 +372,6 @@ export default function S50() {
         onMouseEnter={() => (isPaused.current = true)}
         onMouseLeave={() => (isPaused.current = false)}
       >
-        {/* Left Button */}
         <button
           onClick={() => scroll("left")}
           className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20
@@ -204,7 +388,6 @@ export default function S50() {
           </svg>
         </button>
 
-        {/* Scroll Container */}
         <div
           ref={scrollContainerRef}
           onScroll={checkScroll}
@@ -230,7 +413,6 @@ export default function S50() {
           ))}
         </div>
 
-        {/* Right Button */}
         <button
           onClick={() => scroll("right")}
           className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20
@@ -361,7 +543,6 @@ export default function S50() {
             <button
               onClick={() => {
                 setEnteredTool(true);
-                sessionStorage.setItem("s50ToolEntered", "true");
               }}
               className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
             >
@@ -384,137 +565,42 @@ export default function S50() {
     <div className="w-full min-h-screen bg-[#0b111a] text-white px-6 py-6">
       <div className="max-w-[1600px] mx-auto">
 
-        {/* ================= TOP HEADER ================= */}
-        <div className="flex items-center justify-between mb-6">
-
-          {/* Left Side */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                setEnteredTool(false);
-                sessionStorage.removeItem("s50ToolEntered");
-              }}
-              className="text-slate-400 hover:text-white transition"
-            >
-              ←
-            </button>
-
-            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-sm text-slate-400">🔍</span>
-
-              <select
-                className="bg-transparent text-sm text-white outline-none pr-6 cursor-pointer"
-              >
-                <option className="bg-[#0f172a] text-white">S50H26</option>
-                <option className="bg-[#0f172a] text-white">S50M26</option>
-                <option className="bg-[#0f172a] text-white">S50U26</option>
-              </select>
-
-            </div>
-          </div>
-
-          {/* Center Badges */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-xs text-slate-400">SIGNAL</span>
-              <span className="text-green-400 font-semibold text-sm">LONG ↑</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-xs text-slate-400">TREND SCORE</span>
-              <span className="text-white font-semibold text-sm">8/10</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-4 py-2 rounded-full">
-              <span className="text-xs text-slate-400">STATUS</span>
-              <span className="text-blue-400 font-semibold text-sm">CONFIRM</span>
-            </div>
-          </div>
-
-          {/* Right Side Timeframe */}
-          <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 p-1 rounded-lg">
-            {["15m", "1H", "Day", "Week"].map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 text-xs rounded-md transition-all duration-200
-                  ${timeframe === tf
-                    ? "bg-slate-600 text-white shadow-inner"
-                    : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                  }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* ================= CHART GRID ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="1. Last (SET50 Daily)" timeframe={timeframe} />
-          <ChartCard title="2. Confirm Up/Down S50" timeframe={timeframe} />
-          <ChartCard title="3. Trend (Volume Flow)" timeframe={timeframe} />
-          <ChartCard title="4. Mid-Trend (SET Context)" timeframe={timeframe} />
+          <ChartCard 
+            title="1. Last (SET50 Daily)" 
+            timeframe={timeframe} 
+            chartId="chart1"
+            globalHoverIndex={globalHoverIndex}
+            setGlobalHoverIndex={setGlobalHoverIndex}
+            chartRefs={chartRefs}
+          />
+          <ChartCard 
+            title="2. Confirm Up/Down S50" 
+            timeframe={timeframe} 
+            chartId="chart2"
+            globalHoverIndex={globalHoverIndex}
+            setGlobalHoverIndex={setGlobalHoverIndex}
+            chartRefs={chartRefs}
+          />
+          <ChartCard 
+            title="3. Trend (Volume Flow)" 
+            timeframe={timeframe} 
+            chartId="chart3"
+            globalHoverIndex={globalHoverIndex}
+            setGlobalHoverIndex={setGlobalHoverIndex}
+            chartRefs={chartRefs}
+          />
+          <ChartCard 
+            title="4. Mid-Trend (SET Context)" 
+            timeframe={timeframe} 
+            chartId="chart4"
+            globalHoverIndex={globalHoverIndex}
+            setGlobalHoverIndex={setGlobalHoverIndex}
+            chartRefs={chartRefs}
+          />
         </div>
 
-      </div>
-    </div>
-  );
-}
-
-/* ================= REUSABLE CHART CARD ================= */
-function ChartCard({ title, timeframe }) {
-  const seed = title.length;
-
-  const masterDataRef = useRef(generateMasterData(seed));
-
-  const data = useMemo(() => {
-    const master = masterDataRef.current;
-
-    let sliceSize = 60;
-    if (timeframe === "15m") sliceSize = 40;
-    if (timeframe === "1H") sliceSize = 80;
-    if (timeframe === "Day") sliceSize = 150;
-    if (timeframe === "Week") sliceSize = 300;
-
-    return master.slice(master.length - sliceSize);
-  }, [timeframe]);
-
-  const points = normalizeData(data);
-  const isUp = data[data.length - 1] >= data[0];
-
-  return (
-    <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden">
-      <div className="px-4 py-3 bg-[#0f172a] border-b border-slate-700 flex justify-between items-center">
-        <span className="text-sm text-slate-300">{title}</span>
-        <span className="text-xs text-slate-500">{timeframe}</span>
-      </div>
-
-      <div className="h-[300px] relative">
-        <svg
-          viewBox="0 0 100 280"
-          preserveAspectRatio="none"
-          className="w-full h-full"
-        >
-          <defs>
-            <linearGradient id={`grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={isUp ? "#22c55e" : "#ef4444"} stopOpacity="0.4" />
-              <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-          </defs>
-
-          <polygon
-            fill={`url(#grad-${seed})`}
-            points={`0,280 ${points} 100,280`}
-          />
-
-          <polyline
-            fill="none"
-            stroke={isUp ? "#22c55e" : "#ef4444"}
-            strokeWidth="2"
-            points={points}
-          />
-        </svg>
       </div>
     </div>
   );

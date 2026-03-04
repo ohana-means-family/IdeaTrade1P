@@ -452,18 +452,6 @@ return (
   <div className="w-full min-h-screen bg-[#0b111a] text-white px-6 py-6">
     <div className="max-w-[1800px] mx-auto">
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3 text-lg font-semibold">
-          <span>📊</span>
-          <span>BidAsk Replay</span>
-        </div>
-
-        <button className="px-3 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded">
-          Sync Panels
-        </button>
-      </div>
-
       {/* TWO PANELS */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 

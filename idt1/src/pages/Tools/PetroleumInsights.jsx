@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+// นำเข้า Dashboard ตัวเต็มมาใช้แสดงในพรีวิว
 import PetroleumDashboard from "./components/PetroleumDashboard";
 
 const scrollbarHideStyle = {
@@ -35,14 +36,17 @@ function ScaledDashboardPreview({ dashboardWidth = 1280, dashboardHeight = 900 }
   return (
     <div ref={outerRef} className="w-full bg-[#0e1118]" style={{ overflow: "hidden", position: "relative" }}>
       <div ref={innerRef} style={{ width: dashboardWidth, height: dashboardHeight, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
+        
+        {/* เรียกใช้ Dashboard ตัวเต็ม เพื่อแสดงพรีวิวให้เห็นกราฟ */}
         <PetroleumDashboard />
+        
       </div>
     </div>
   );
 }
 
 // ============================================================
-// CHART CONSTANTS — same pattern as StockFortuneTeller
+// CHART CONSTANTS 
 // ============================================================
 const CHART_CONFIG = {
   height:        200,
@@ -54,7 +58,6 @@ const CHART_CONFIG = {
   minWidth:      620,
 };
 
-// 20 weekly dates starting 2024-07-01
 const LABELS = Array.from({ length: 20 }, (_, i) => {
   const d = new Date("2024-07-01");
   d.setDate(d.getDate() + i * 7);
@@ -66,10 +69,7 @@ const LABELS = Array.from({ length: 20 }, (_, i) => {
 
 // ============================================================
 // DYNAMIC DATA GENERATOR
-// ใช้ชื่อหุ้นเป็น seed → แต่ละหุ้นมีรูปทรงกราฟไม่เหมือนกัน
 // ============================================================
-
-// Deterministic pseudo-random (mulberry32 PRNG)
 function createRng(seed) {
   let s = seed;
   return () => {
@@ -80,20 +80,17 @@ function createRng(seed) {
   };
 }
 
-// แปลงชื่อหุ้นเป็นตัวเลข seed
 function symbolToSeed(sym) {
   return sym.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1) * 31, 0);
 }
 
-// สร้างข้อมูลสำหรับหุ้นหนึ่งตัว
 function generateSymbolData(symbol, n = 20) {
   const seed = symbolToSeed(symbol);
   const rng  = createRng(seed);
 
-  // ─── ExRefin: random walk รอบ base ที่ต่างกันต่อหุ้น ───
-  const exBase  = 14 + rng() * 8;          // 14–22
-  const exVol   = 0.3 + rng() * 1.2;       // ความผันผวน
-  const exTrend = (rng() - 0.5) * 0.08;    // trend เล็กน้อย
+  const exBase  = 14 + rng() * 8;
+  const exVol   = 0.3 + rng() * 1.2;
+  const exTrend = (rng() - 0.5) * 0.08;
   let exVal     = exBase;
   const ExRefin = Array.from({ length: n }, () => {
     exVal += (rng() - 0.5) * exVol * 2 + exTrend;
@@ -101,7 +98,6 @@ function generateSymbolData(symbol, n = 20) {
     return parseFloat(exVal.toFixed(2));
   });
 
-  // ─── MktMargin: random walk ค่าน้อย decimal ───
   const mgBase  = 0.2 + rng() * 0.5;
   const mgVol   = 0.02 + rng() * 0.06;
   const mgTrend = (rng() - 0.5) * 0.004;
@@ -112,7 +108,6 @@ function generateSymbolData(symbol, n = 20) {
     return parseFloat(mgVal.toFixed(2));
   });
 
-  // ─── OilFund: step chart หลายระดับ เลือก level set ต่างกันต่อหุ้น ───
   const levelSets = [
     [28, 20, 15],
     [30, 22, 18, 10],
@@ -122,11 +117,9 @@ function generateSymbolData(symbol, n = 20) {
   ];
   const levels     = levelSets[Math.floor(rng() * levelSets.length)];
   const numLevels  = levels.length;
-  // กำหนดจุดที่จะเปลี่ยน level แบบ deterministic
   const changeSeeds = Array.from({ length: n }, () => rng());
   let currentLevel  = Math.floor(rng() * numLevels);
   const OilFund = changeSeeds.map((r) => {
-    // มีโอกาส ~20% ต่อจุดที่จะเปลี่ยน level
     if (r < 0.20) {
       const dir = rng() < 0.5 ? 1 : -1;
       currentLevel = Math.max(0, Math.min(numLevels - 1, currentLevel + dir));
@@ -134,9 +127,8 @@ function generateSymbolData(symbol, n = 20) {
     return levels[currentLevel];
   });
 
-  // ─── LastPrice: ราคาปิด random walk สมจริง ───
-  const priceBase  = 5 + rng() * 195;        // ราคาเริ่มต้น 5–200 ฿ ต่างกันต่อหุ้น
-  const priceVol   = priceBase * (0.01 + rng() * 0.02); // ความผันผวน ~1–3% ต่อจุด
+  const priceBase  = 5 + rng() * 195;
+  const priceVol   = priceBase * (0.01 + rng() * 0.02);
   const priceTrend = (rng() - 0.48) * priceBase * 0.003;
   let priceVal     = priceBase;
   const LastPrice = Array.from({ length: n }, () => {
@@ -148,7 +140,6 @@ function generateSymbolData(symbol, n = 20) {
   return { ExRefin, MktMargin, OilFund, LastPrice };
 }
 
-// Cache: เก็บข้อมูลที่สร้างแล้วไม่ให้สร้างซ้ำ
 const DATA_CACHE = {};
 function getSymbolData(symbol, oilType = "") {
   const key = `${symbol}__${oilType}`;
@@ -196,7 +187,7 @@ function buildStepPath(dataset, normalizeY, paddingLeft, pointGap) {
 }
 
 // ============================================================
-// WaveSkeleton — shimmer loading (same pattern as StockFortuneTeller)
+// LOADING SKELETONS
 // ============================================================
 function WaveSkeleton({ delay = 0 }) {
   return (
@@ -246,12 +237,12 @@ function SkeletonBig() {
 }
 
 // ============================================================
-// ChartRenderer — SVG, drag-scroll, sync, tooltip + dot value
+// ChartRenderer 
 // ============================================================
 function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHoverIndex, chartRefs, chartId, symbolProp, oilTypeProp }) {
   const scrollRef    = useRef(null);
-  const [isDragging,     setIsDragging]     = useState(false);
-  const [dragStartX,     setDragStartX]     = useState(0);
+  const [isDragging,      setIsDragging]      = useState(false);
+  const [dragStartX,      setDragStartX]      = useState(0);
   const [dragScrollLeft, setDragScrollLeft] = useState(0);
 
   const data       = getSymbolData(symbolProp, oilTypeProp)[dataKey];
@@ -316,22 +307,18 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
         onMouseMove={handleMouseMove}
       >
         <svg width={chartWidth} height={height} className="overflow-visible pointer-events-none">
-
-          {/* Grid lines */}
           {[...Array(5)].map((_, i) => {
             const y = paddingTop + (i * (height - paddingTop - paddingBottom)) / 4;
             return <line key={i} x1={0} y1={y} x2={chartWidth} y2={y} stroke="#1e293b" strokeWidth="1" />;
           })}
           <line x1={0} y1={height - paddingBottom} x2={chartWidth} y2={height - paddingBottom} stroke="#334155" strokeWidth="1.5" />
 
-          {/* X-axis date labels */}
           {data.map((_, i) => (
             <text key={i} x={paddingLeft + i * pointGap} y={height - paddingBottom + 16} fill="#64748b" fontSize="9" textAnchor="middle">
               {LABELS[i]}
             </text>
           ))}
 
-          {/* Area fill (curve only) */}
           {!isStep && (
             <>
               <defs>
@@ -347,10 +334,8 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
             </>
           )}
 
-          {/* Line */}
           <path d={linePath} fill="none" stroke={color} strokeWidth="2" />
 
-          {/* Hover: crosshair + dot + value label above dot */}
           {isHovering && (
             <g>
               <line
@@ -380,7 +365,6 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
           )}
         </svg>
 
-        {/* Floating tooltip card — same as StockFortuneTeller */}
         {isHovering && (
           <div
             className="absolute top-2 z-50 flex flex-col items-center min-w-[60px] bg-[#1e293b] border border-slate-600 rounded-md p-1.5 shadow-xl pointer-events-none transition-transform duration-75"
@@ -397,13 +381,11 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
         )}
       </div>
 
-      {/* Bottom fade */}
       <div
         className="absolute inset-y-0 left-0 right-[55px] bg-gradient-to-t from-[#0f172a]/90 via-transparent to-transparent pointer-events-none"
         style={{ top: "75%" }}
       />
 
-      {/* Y-axis panel — right side, same as StockFortuneTeller */}
       <div className="absolute right-0 top-0 w-[55px] h-full pointer-events-none bg-[#0f172a] z-10 border-l border-slate-800/50">
         <svg className="w-full h-full absolute right-0 top-0 overflow-visible pointer-events-none">
           {[...Array(5)].map((_, i) => {
@@ -415,8 +397,6 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
               </text>
             );
           })}
-
-          {/* Last-value badge — same style as Shareholder badge in StockFortuneTeller */}
           {(() => {
             const lastVal = data[data.length - 1];
             const badgeY  = normalizeY(lastVal);
@@ -436,13 +416,13 @@ function ChartRenderer({ dataKey, isStep, color, globalHoverIndex, setGlobalHove
 }
 
 // ============================================================
-// PremiumChart — outer shell (same as ChartCard in StockFortuneTeller)
+// PremiumChart
 // ============================================================
 function PremiumChart({ title, dataKey, isStep, color, globalHoverIndex, setGlobalHoverIndex, chartRefs, chartId, symbolProp, oilTypeProp }) {
   return (
     <div className="bg-[#111827] border border-slate-700 rounded-2xl p-5">
       <p className="text-xs text-slate-400 mb-4">{title}</p>
-      <div className="relative w-full h-[200px] bg-[#0f172a] rounded-xl overflow-hidden">
+      <div className="relative w-full h-[220px] bg-[#0f172a] rounded-xl overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white/5 select-none">{title}</div>
         <ChartRenderer
           dataKey={dataKey}
@@ -461,7 +441,7 @@ function PremiumChart({ title, dataKey, isStep, color, globalHoverIndex, setGlob
 }
 
 // ============================================================
-// ClosePriceBig — ราคาปิด reactive กับ hover (top-left cell)
+// ClosePriceBig
 // ============================================================
 function ClosePriceBig({ globalHoverIndex, symbolProp, oilTypeProp }) {
   const data = getSymbolData(symbolProp, oilTypeProp).LastPrice;
@@ -469,7 +449,7 @@ function ClosePriceBig({ globalHoverIndex, symbolProp, oilTypeProp }) {
   const val  = data[idx];
   const prev = data[Math.max(idx - 1, 0)];
   const diff = (val - prev).toFixed(2);
-  const pct  = ((val - prev) / prev * 100).toFixed(2);
+  const pct  = prev !== 0 ? ((val - prev) / prev * 100).toFixed(2) : "0.00";
   const up   = Number(diff) >= 0;
 
   return (
@@ -507,7 +487,6 @@ export default function PetroleumInsights() {
   const [showLeft,  setShowLeft]  = useState(false);
   const [showRight, setShowRight] = useState(true);
 
-  // shared hover index — same pattern as StockFortuneTeller
   const [globalHoverIndex, setGlobalHoverIndex] = useState(null);
   const chartRefs = useRef({});
 
@@ -527,8 +506,6 @@ export default function PetroleumInsights() {
         const user = JSON.parse(userProfile);
         if (user.unlockedItems?.includes("petroleum")) {
           setIsMember(true);
-          const hasEntered = sessionStorage.getItem("petroleumToolEntered");
-          if (hasEntered === "true") setEnteredTool(true);
         }
       }
     } catch (error) {
@@ -537,7 +514,7 @@ export default function PetroleumInsights() {
   }, []);
 
   /* ===============================
-      SCROLL LOGIC (Manual + Auto)
+      SCROLL LOGIC
   ================================ */
   const checkScroll = () => {
     const el = scrollContainerRef.current;
@@ -575,9 +552,6 @@ export default function PetroleumInsights() {
     return () => window.removeEventListener("resize", checkScroll);
   }, []);
 
-  /* ===============================
-      FEATURES DATA
-  ================================ */
   const features = [
     { title: "WTI & Brent Tracking",  desc: "Monitor global crude oil benchmarks in real-time." },
     { title: "Refinery Margin",        desc: "Track GRM changes and refining profitability instantly." },
@@ -587,9 +561,6 @@ export default function PetroleumInsights() {
     { title: "Institutional Flow",     desc: "Follow capital rotation in energy sector." },
   ];
 
-  /* ===============================
-      SHARED BLOCKS
-  ================================ */
   const windowChrome = (
     <div className="bg-[#0f172a] px-4 py-3 flex items-center border-b border-slate-700/50">
       <div className="flex gap-2">
@@ -709,7 +680,7 @@ export default function PetroleumInsights() {
           {featuresSection}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <button
-              onClick={() => { setEnteredTool(true); sessionStorage.setItem("petroleumToolEntered", "true"); }}
+              onClick={() => { setEnteredTool(true); }} 
               className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
             >
               <span className="mr-2">Start Using Tool</span>
@@ -727,19 +698,10 @@ export default function PetroleumInsights() {
       CASE 3 : FULL PRODUCTION PETROLEUM DASHBOARD
   =========================================================== */
   if (isMember && enteredTool) {
-
-    const metrics = [
-      { title: "WTI CRUDE",   value: 78.45, change: 1.2  },
-      { title: "BRENT CRUDE", value: 82.10, change: 0.8  },
-      { title: "NATURAL GAS", value: 2.45,  change: -0.5 },
-      { title: "USD/THB",     value: 35.80, change: 0.1  },
-    ];
-
     const sharedChartProps = { globalHoverIndex, setGlobalHoverIndex, chartRefs, symbolProp: symbol, oilTypeProp: oilType };
 
     return (
       <div className="w-full min-h-screen bg-[#0c111b] text-white px-6 py-6">
-
         <style>{`
           @keyframes symbolBounce {
             0%   { transform: scale(1); }
@@ -748,23 +710,15 @@ export default function PetroleumInsights() {
             70%  { transform: scale(1.02); }
             100% { transform: scale(1); }
           }
-          @keyframes shimmer {
-            0%   { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
           .symbol-bounce { animation: symbolBounce 1.8s ease-in-out infinite; }
           .hide-scrollbar::-webkit-scrollbar { display: none; }
         `}</style>
 
         <div className="max-w-[1600px] mx-auto">
 
-          {/* TOP CONTROL BAR — unchanged */}
+          {/* TOP CONTROL BAR */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-
-              <div onClick={() => setDarkMode(!darkMode)} className="w-10 h-5 bg-slate-700 rounded-full relative cursor-pointer">
-                <div className={`w-4 h-4 bg-cyan-400 rounded-full absolute top-0.5 transition-all ${darkMode ? "left-0.5" : "left-5"}`} />
-              </div>
 
               <div className="relative w-56">
                 <div className={`relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center ${!symbol && !symbolQuery ? "symbol-bounce" : ""}`}>
@@ -783,7 +737,7 @@ export default function PetroleumInsights() {
                   </div>
                 </div>
                 <label className={`absolute left-4 px-2 transition-all duration-200 pointer-events-none ${symbol || symbolQuery || showSymbolDropdown ? "-top-2 text-xs bg-[#0c111b]" : "top-1/2 -translate-y-1/2 text-sm"}`}>
-                  Symbol*
+                  Type a Symbol...
                 </label>
                 {showSymbolDropdown && (
                   <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50">
@@ -828,83 +782,41 @@ export default function PetroleumInsights() {
             </div>
           </div>
 
-          {/* METRIC STRIP — unchanged */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {metrics.map(m => (
-              <div key={m.title} className="bg-[#111827] border border-slate-700 px-4 py-3 rounded-md">
-                <p className="text-xs text-slate-400">{m.title}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <p className="text-sm font-semibold">{m.value}</p>
-                  <p className={`text-xs ${m.change >= 0 ? "text-green-400" : "text-red-400"}`}>
-                    {m.change >= 0 ? "+" : ""}{m.change}%
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* MAIN GRID — Shows Skeletons if inputs are missing */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* MAIN GRID — 3 states per cell */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* TOP-LEFT: Last Price ขึ้นทันทีที่มี symbol */}
+            {/* TOP-LEFT */}
             {symbol
-              ? <ClosePriceBig globalHoverIndex={globalHoverIndex} symbolProp={symbol} oilTypeProp={oilType} />
+              ? <ClosePriceBig globalHoverIndex={globalHoverIndex} symbolProp={symbol} oilTypeProp={oilType || "GASOHOL95 E10"} />
               : <SkeletonBig />
             }
 
-            {/* EX-REFIN — รอ oil type */}
+            {/* EX-REFIN */}
             {(symbol && oilType)
               ? <PremiumChart title="EX-REFIN" dataKey="ExRefin" isStep={false} color="#22c55e" chartId="exrefin" {...sharedChartProps} />
               : <div className="bg-[#111827] border border-slate-700 rounded-2xl p-5">
                   <div className="h-2 rounded-full bg-slate-800 w-24 mb-4" />
-                  <div className="relative w-full h-[200px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0} /></div>
+                  <div className="relative w-full h-[220px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0} /></div>
                 </div>
             }
 
-            {/* Marketing Margin — รอ oil type */}
+            {/* Marketing Margin */}
             {(symbol && oilType)
               ? <PremiumChart title="Marketing Margin" dataKey="MktMargin" isStep={false} color="#22c55e" chartId="mktmargin" {...sharedChartProps} />
               : <div className="bg-[#111827] border border-slate-700 rounded-2xl p-5">
                   <div className="h-2 rounded-full bg-slate-800 w-24 mb-4" />
-                  <div className="relative w-full h-[200px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0.15} /></div>
+                  <div className="relative w-full h-[220px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0.15} /></div>
                 </div>
             }
 
-            {/* Oil Fund — รอ oil type */}
+            {/* Oil Fund */}
             {(symbol && oilType)
               ? <PremiumChart title="Oil Fund" dataKey="OilFund" isStep={true} color="#22c55e" chartId="oilfund" {...sharedChartProps} />
               : <div className="bg-[#111827] border border-slate-700 rounded-2xl p-5">
                   <div className="h-2 rounded-full bg-slate-800 w-24 mb-4" />
-                  <div className="relative w-full h-[200px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0.3} /></div>
+                  <div className="relative w-full h-[220px] bg-[#0f172a] rounded-xl overflow-hidden"><WaveSkeleton delay={0.3} /></div>
                 </div>
             }
-
-            {/* Prompt — แสดงเฉพาะเมื่อยังเลือกไม่ครบ */}
-            {(!symbol || !oilType) && (
-              <div className="md:col-span-2 flex flex-col items-center justify-center gap-3 py-4">
-                <div className="flex items-center gap-6 text-sm">
-                  <span className={`flex items-center gap-2 ${symbol ? "text-cyan-400" : "text-slate-500"}`}>
-                    {symbol
-                      ? <><span className="text-green-400">✓</span> Symbol: <strong>{symbol}</strong></>
-                      : <><span className="text-slate-600">○</span> เลือก <strong className="text-cyan-400/70">Symbol</strong></>
-                    }
-                  </span>
-                  <span className="text-slate-700">|</span>
-                  <span className={`flex items-center gap-2 ${oilType ? "text-cyan-400" : "text-slate-500"}`}>
-                    {oilType
-                      ? <><span className="text-green-400">✓</span> Oil type: <strong>{oilType}</strong></>
-                      : <><span className="text-slate-600">○</span> เลือก <strong className="text-cyan-400/70">Oil type</strong></>
-                    }
-                  </span>
-                </div>
-                <div className="flex gap-1 mt-1">
-                  {[0, 0.2, 0.4].map((d, i) => (
-                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-500/50"
-                      style={{ animation: "symbolBounce 1.2s ease-in-out infinite", animationDelay: `${d}s` }} />
-                  ))}
-                </div>
-              </div>
-            )}
 
           </div>
         </div>

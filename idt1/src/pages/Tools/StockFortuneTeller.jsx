@@ -353,8 +353,8 @@ function ChartCard({ title, type, onChange, chartId, globalHoverIndex, setGlobal
 // ============================================================
 function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol }) {
   const scrollRef = useRef(null);
-  const [isDragging,     setIsDragging]     = useState(false);
-  const [dragStartX,     setDragStartX]     = useState(0);
+  const [isDragging,      setIsDragging]      = useState(false);
+  const [dragStartX,      setDragStartX]      = useState(0);
   const [dragScrollLeft, setDragScrollLeft] = useState(0);
 
   const currentData = useMemo(() => generateMockData(selectedSymbol), [selectedSymbol]);
@@ -648,8 +648,7 @@ export default function StockFortuneTeller() {
         const user = JSON.parse(userProfile);
         if (user.unlockedItems && user.unlockedItems.includes("fortune")) {
           setIsMember(true);
-          const hasEntered = sessionStorage.getItem("fortuneToolEntered");
-          if (hasEntered === "true") setEnteredTool(true);
+          // เอา sessionStorage.getItem("fortuneToolEntered") ออก เพื่อให้โชว์หน้า Preview เสมอ
         }
       }
     } catch (error) {
@@ -790,7 +789,7 @@ export default function StockFortuneTeller() {
           </div>
           {featuresSection}
           <button
-            onClick={() => { setEnteredTool(true); sessionStorage.setItem("fortuneToolEntered", "true"); }}
+            onClick={() => { setEnteredTool(true); }} // เอา sessionStorage.setItem ออก
             className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
           >
             <span className="mr-2">Start Using Tool</span>
@@ -863,33 +862,10 @@ export default function StockFortuneTeller() {
           </div>
         </div>
 
-        {/* STAT CARDS — reactive กับ selectedSymbol */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            label="LAST PRICE"
-            value={selectedSymbol ? `${lastPrice.toFixed(2)} (${priceUp ? "+" : ""}${pricePct}%)` : "—"}
-            color={selectedSymbol ? (priceUp ? "text-green-400" : "text-red-400") : "text-slate-500"}
-          />
-          <StatCard
-            label="VOLUME"
-            value={selectedSymbol ? `${mockData._volume.toFixed(1)}M` : "—"}
-            color={selectedSymbol ? "text-yellow-400" : "text-slate-500"}
-          />
-          <StatCard
-            label="HIGH / LOW"
-            value={selectedSymbol ? `${mockData._high} / ${mockData._low}` : "—"}
-            color={selectedSymbol ? "text-white" : "text-slate-500"}
-          />
-          <StatCard
-            label="MARKET STATUS"
-            value="● OPEN"
-            color="text-green-400"
-          />
-        </div>
 
         {/* CHART GRID หรือ Skeleton */}
         {selectedSymbol ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(filters).map(([key, value]) => (
               <ChartCard
                 key={key}
@@ -905,7 +881,7 @@ export default function StockFortuneTeller() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(filters).map(([key, value], cardIdx) => (
               <div key={key} className="bg-[#111827] rounded-xl border border-slate-700/60 p-4 h-[280px]">
                 <div className="mb-3 flex justify-between items-center">
