@@ -5,6 +5,10 @@ import { useNavigate } from "react-router-dom";
 import TickMatchDashboard from "./components/TickMatchDashboard.jsx";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Style ซ่อน Scrollbar (เหมือนต้นแบบ DR)
 const scrollbarHideStyle = {
@@ -39,17 +43,29 @@ const mockDatabase = {
       { time: "09:58.472", last: "224.00", vol: "1,000", type: "B", sum: "40,140,500" },
     ],
     flips: [
-      { id: 1, time: "15:42.905", from: "822,100", to: "-34,882,900" },
-      { id: 2, time: "15:42.905", from: "18,480,200", to: "-17,204,800" },
-      { id: 3, time: "16:36.001", from: "-175,452,500", to: "53,878,700" },
-      { id: 4, time: "16:36.001", from: "-157,794,400", to: "71,536,800" },
+      { id: 1, time: "10:22.787", from: "-51,044", to: "58,160" },
+      { id: 2, time: "10:35.724", from: "4,819", to: "-18,382" },
+      { id: 3, time: "10:55.770", from: "17,307", to: "-99,893" },
+      { id: 4, time: "11:02.759", from: "-97,549", to: "58,061" },
+      { id: 5, time: "14:05.012", from: "-1,998", to: "3,777" },
     ],
     charts: [
-      { price: "225.00", buy: 35, sell: 55 }, { price: "224.00", buy: 50, sell: 15 },
-      { price: "226.00", buy: 55, sell: 20 }, { price: "227.00", buy: 15, sell: 10 },
-      { price: "228.00", buy: 40, sell: 40 }, { price: "229.00", buy: 5, sell: 2 },
-      { price: "223.00", buy: 15, sell: 20 }, { price: "222.00", buy: 5, sell: 5 },
-      { price: "221.00", buy: 0, sell: 2 },
+      { price: "221.50", buy: 8, sell: 12 },
+      { price: "222.00", buy: 15, sell: 20 },
+      { price: "222.50", buy: 22, sell: 18 },
+      { price: "223.00", buy: 15, sell: 20 },
+      { price: "223.50", buy: 30, sell: 25 },
+      { price: "224.00", buy: 50, sell: 15 },
+      { price: "224.50", buy: 45, sell: 35 },
+      { price: "225.00", buy: 35, sell: 55 },
+      { price: "225.50", buy: 28, sell: 40 },
+      { price: "226.00", buy: 55, sell: 20 },
+      { price: "226.50", buy: 20, sell: 30 },
+      { price: "227.00", buy: 15, sell: 10 },
+      { price: "227.50", buy: 25, sell: 15 },
+      { price: "228.00", buy: 40, sell: 40 },
+      { price: "228.50", buy: 18, sell: 22 },
+      { price: "229.00", buy: 5, sell: 2 },
     ]
   },
   "NVDA": {
@@ -205,6 +221,8 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
   const [hasSearched, setHasSearched] = useState(false);
   const [isSynced, setIsSynced] = useState(true);
+  const [isFlipOpen, setIsFlipOpen] = useState(true);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
   const [symbol, setSymbol] = useState(defaultSymbol);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
@@ -262,13 +280,15 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
   const data = mockDatabase[activeSymbol?.toUpperCase()] || mockDatabase[""];
 
+  const isPositiveValue = (val) => !val.trim().startsWith('-');
+
   const totalBuy = parseInt(data.sumBuy.replace(/,/g, "")) || 0;
   const totalSell = parseInt(data.sumSell.replace(/,/g, "")) || 0;
   const total = totalBuy + totalSell;
   const buyPercent = total === 0 ? 50 : (totalBuy / total) * 100;
 
     return (
-      <div className="flex flex-col h-full bg-[#111827] border border-slate-700 rounded-lg p-3 shadow-lg overflow-y-auto hide-scrollbar relative" style={scrollbarHideStyle}>
+      <div className="flex flex-col h-full bg-[#111827] border border-slate-700 rounded-lg p-3 shadow-lg overflow-hidden relative" style={scrollbarHideStyle}>
         
         {isSyncing && (
             <div className="absolute inset-0 bg-[#111827]/60 backdrop-blur-[1px] z-50 flex items-center justify-center rounded-lg">
@@ -436,7 +456,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
         </div>
 
         {/* --- Tick Table --- */}
-        <div className="rounded overflow-hidden border border-slate-800/50 bg-[#0B1221] shrink-0 min-h-[150px] mb-4">
+        <div className="rounded overflow-hidden border border-slate-800/50 bg-[#0B1221] shrink-0 h-[100px] mb-2">
            <table className="w-full text-right border-collapse">
              <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium sticky top-0 z-10 shadow-sm">
                <tr>
@@ -448,7 +468,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                </tr>
              </thead>
              <tbody className="text-xs font-mono text-slate-300">
-                {data.ticks.map((row, idx) => (
+                {data.ticks.slice(0, 5).map((row, idx) => (
                   <tr key={idx} className="border-b border-slate-800/30 hover:bg-slate-800/50 transition-colors">
                     <td className="p-2 text-center text-slate-400">{row.time}</td>
                     <td className="p-2 text-yellow-500">{row.last}</td>
@@ -468,55 +488,142 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
         {/* --- Extra Sections (Flip & Charts) จะโชว์เมื่อมีการค้นหาข้อมูลแล้วเท่านั้น --- */}
         {hasSearched && (
           <>
-            {/* ===== Flip Section Skeleton ===== */}
-            <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-4 overflow-hidden shrink-0">
+            {/* ===== Flip Section ===== */}
+            <div className="bg-[#0B1221] border border-slate-800/50 rounded mb-2 overflow-hidden shrink-0">
 
-              <div className="bg-[#1f2937] p-2 flex justify-between items-center">
+              <div
+                className="bg-[#1f2937] p-2 flex justify-between items-center cursor-pointer"
+                onClick={() => setIsFlipOpen(!isFlipOpen)}
+              >
                 <span className="text-xs font-bold text-white">
-                  Total Flip Count: 0
+                  Total Flip Count: {data.flips.length}
                 </span>
-                <div className="flex gap-3 text-[10px]">
-                  <span className="flex items-center gap-1 text-red-400">
-                    <div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0
-                  </span>
-                  <span className="flex items-center gap-1 text-green-400">
-                    <div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-3 text-[10px]">
+                    <span className="flex items-center gap-1 text-red-400">
+                      <div className="w-3 h-1.5 bg-red-500"></div> Net Vol &lt; 0
+                    </span>
+                    <span className="flex items-center gap-1 text-green-400">
+                      <div className="w-3 h-1.5 bg-green-500"></div> Net Vol &gt; 0
+                    </span>
+                  </div>
+                  <ExpandMoreIcon
+                    sx={{
+                      fontSize: 18,
+                      color: 'white',
+                      transition: 'transform 0.2s',
+                      transform: isFlipOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
                 </div>
               </div>
 
-              {/* Timeline Bar Placeholder */}
-              <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
-                <div className="h-2 w-full bg-slate-800 rounded animate-pulse"></div>
+              {isFlipOpen && (
+                <>
+                  {/* Timeline Bar */}
+                  <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
+                    <div className="h-2 w-full rounded overflow-hidden flex gap-px">
+                      {data.flips.length > 0 ? data.flips.map((flip, idx) => {
+                        const isPositive = isPositiveValue(flip.to);
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex-1 rounded-sm ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}
+                          />
+                        );
+                      }) : (
+                        <div className="h-2 w-full bg-slate-800 rounded animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Flip Table */}
+                  <table className="w-full text-center border-collapse">
+                    <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
+                      <tr>
+                        <th className="p-1.5">ครั้งที่</th>
+                        <th className="p-1.5">Time</th>
+                        <th className="p-1.5">From Acc. Vol</th>
+                        <th className="p-1.5">To Acc. Vol</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.flips.length > 0 ? data.flips.map((flip) => {
+                        const toPositive = isPositiveValue(flip.to);
+                        const fromPositive = isPositiveValue(flip.from);
+                        return (
+                          <tr key={flip.id} className="border-b border-slate-800/30 hover:bg-slate-800/50 transition-colors">
+                            <td className="p-1.5 text-xs text-slate-400">{flip.id}</td>
+                            <td className="p-1.5 text-xs text-slate-300">{flip.time}</td>
+                            <td className={`p-1.5 text-xs ${fromPositive ? 'text-green-400' : 'text-red-400'}`}>{flip.from}</td>
+                            <td className={`p-1.5 text-xs ${toPositive ? 'text-green-400' : 'text-red-400'}`}>{flip.to}</td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan="4" className="p-6 text-slate-500 text-xs">No Flip Data</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
+
+            {/* ===== Chart Section ===== */}
+            <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 shrink-0">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-white">Price Distribution</span>
+                <button
+                  onClick={() => setIsChartModalOpen(true)}
+                  className="p-1 hover:bg-slate-700 rounded transition"
+                >
+                  <SearchIcon sx={{ fontSize: 16, color: 'white' }} />
+                </button>
               </div>
-
-              {/* Empty Table */}
-              <table className="w-full text-center border-collapse">
-                <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium border-t border-slate-700/50">
-                  <tr>
-                    <th className="p-1.5">ครั้งที่</th>
-                    <th className="p-1.5">Time</th>
-                    <th className="p-1.5">From Acc. Vol</th>
-                    <th className="p-1.5">To Acc. Vol</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan="4" className="p-6 text-slate-500 text-xs">
-                      No Flip Data
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="h-[120px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.charts} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="price" tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', fontSize: '10px' }} />
+                    <Bar dataKey="buy" fill="#22c55e" name="Buy" />
+                    <Bar dataKey="sell" fill="#ef4444" name="Sell" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
-            {/* ===== Chart Skeleton ===== */}
-            <div className="bg-[#0B1221] border border-slate-800/50 rounded p-3 h-[200px] flex flex-col justify-center items-center">
-              <div className="w-full h-24 bg-slate-800 rounded animate-pulse mb-4"></div>
-              <span className="text-xs text-slate-500">
-                Chart will appear here
-              </span>
-            </div>
+            {/* Chart Modal */}
+            {isChartModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                <div className="bg-[#0B1221] border border-slate-700 rounded-xl p-4 w-full max-w-3xl mx-4 shadow-2xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-bold text-white">Price Distribution - {activeSymbol}</span>
+                    <button
+                      onClick={() => setIsChartModalOpen(false)}
+                      className="p-1 hover:bg-slate-700 rounded transition"
+                    >
+                      <CloseIcon sx={{ fontSize: 20, color: 'white' }} />
+                    </button>
+                  </div>
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.charts} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                        <XAxis dataKey="price" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '12px' }} />
+                        <Bar dataKey="buy" fill="#22c55e" name="Buy" />
+                        <Bar dataKey="sell" fill="#ef4444" name="Sell" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
