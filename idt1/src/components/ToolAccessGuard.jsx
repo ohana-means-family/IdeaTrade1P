@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // 🟢 1. เพิ่ม useEffect เข้ามาตรงนี้
 import { useSubscription } from '../context/SubscriptionContext';
 import WarningPopup from './WarningPopup';
 import ExpiredPopup from './ExpiredPopup';
 
 const ToolAccessGuard = ({ toolId, toolName, children }) => {
-  // 🟢 1. ดึง isFreeAccess เพิ่มเข้ามาจาก Context
+  // ดึง isFreeAccess เพิ่มเข้ามาจาก Context
   const { accessData, loading, isFreeAccess } = useSubscription();
   const [showWarning, setShowWarning] = useState(true);
+
+  // 🌟 2. จุดสำคัญที่เพิ่มเข้ามา: สั่งให้รีเซ็ต Popup เตือนทุกครั้งที่เปลี่ยนหน้า (เปลี่ยน toolId)
+  useEffect(() => {
+    setShowWarning(true);
+  }, [toolId]);
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center text-white">Loading data...</div>;
   }
 
-  // 🌟 2. จุดสำคัญ: ถ้าเป็นโหมด Free Access (ยังไม่ได้ล็อกอิน) ปล่อยผ่านให้ดูเนื้อหาได้เลย!
+  // จุดสำคัญ: ถ้าเป็นโหมด Free Access (ยังไม่ได้ล็อกอิน) ปล่อยผ่านให้ดูเนื้อหาได้เลย!
   if (isFreeAccess) {
     return <>{children}</>;
   }
