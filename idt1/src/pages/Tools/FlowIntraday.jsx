@@ -47,13 +47,11 @@ function hashSymbol(sym) {
   return sym.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1) * 97, 7919);
 }
 
-// getProfile — lightweight, only used for ▲▼ badge in dropdown
 function getProfile(symbol) {
   const h = hashSymbol(symbol);
   return { trend: ((h % 200) - 100) / 200 };
 }
 
-// Pure random-walk per symbol — no trend/shape presets
 function generateFlowSeries(symbol, points = 80) {
   if (!symbol) return null;
 
@@ -62,23 +60,20 @@ function generateFlowSeries(symbol, points = 80) {
   const rngS  = createRng(seed ^ 0xc0ffee42);
   const rngN  = createRng(seed ^ 0xabcd1234);
 
-  // Each symbol gets its own scale magnitude (200–2000)
   const scale    = 200 + (seed % 1800);
-  const spikePct = 0.08 + (seed % 20) / 100;   // 8–28% chance of spike
+  const spikePct = 0.08 + (seed % 20) / 100;
 
   const buyFlow = [], sellFlow = [], netFlow = [];
   let buyVal  =  (rngB() * 0.5 + 0.2) * scale;
   let sellVal = -(rngS() * 0.5 + 0.2) * scale;
 
   for (let i = 0; i < points; i++) {
-    // Random walk step
     buyVal  += (rngB() - 0.48) * scale * 0.30;
     sellVal += (rngS() - 0.52) * scale * 0.30;
 
     buyVal  = Math.max(0, buyVal);
     sellVal = Math.min(0, sellVal);
 
-    // Occasional spikes
     if (rngB() < spikePct) buyVal  += rngB() * scale * 2.0;
     if (rngS() < spikePct) sellVal -= rngS() * scale * 1.8;
 
@@ -109,7 +104,6 @@ function makeNY(height, paddingTop, paddingBottom, { max, min }) {
   return (v) => height - paddingBottom - ((v - min) / (max - min)) * (height - paddingTop - paddingBottom);
 }
 
-// Smooth polyline
 function buildLinePath(dataset, ny, paddingLeft, pointGap) {
   if (!dataset || !dataset.length) return "";
   return dataset.map((v, i) => `${i === 0 ? "M" : "L"} ${paddingLeft + i * pointGap},${ny(v)}`).join(" ");
@@ -141,7 +135,6 @@ function SymbolInput({ value, onChange }) {
   const committed = useRef(value || "");
   const ref = useRef(null);
 
-  // Only sync inward when parent explicitly clears (e.g. "Clear symbol")
   useEffect(() => {
     if (value === "" && committed.current !== "") {
       setQuery("");
@@ -178,7 +171,6 @@ function SymbolInput({ value, onChange }) {
     }
   };
 
-  // Close + revert on outside click
   useEffect(() => {
     const fn = (e) => {
       if (!ref.current?.contains(e.target)) {
@@ -195,7 +187,6 @@ function SymbolInput({ value, onChange }) {
       <input
         value={query}
         onChange={(e) => {
-          // Only update local display — do NOT call onChange yet
           setQuery(e.target.value.toUpperCase());
           setOpen(true);
           setHiIdx(-1);
@@ -217,7 +208,6 @@ function SymbolInput({ value, onChange }) {
 
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-48 bg-[#0d1526] border border-slate-600/60 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.8)] z-[200] overflow-hidden">
-          {/* Header */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-700/50">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -227,7 +217,6 @@ function SymbolInput({ value, onChange }) {
             </span>
           </div>
 
-          {/* List */}
           <div className="max-h-52 overflow-y-auto" style={scrollbarHideStyle}>
             {filtered.length === 0 ? (
               <div className="px-3 py-3 text-slate-600 text-[10px] text-center">
@@ -247,14 +236,12 @@ function SymbolInput({ value, onChange }) {
                     <span className={`text-[12px] font-bold tracking-wider ${isHi ? "text-white" : "text-slate-300"}`}>
                       {sym}
                     </span>
-
                   </div>
                 );
               })
             )}
           </div>
 
-          {/* Clear */}
           {value && (
             <div
               onMouseDown={() => commit("")}
@@ -268,8 +255,6 @@ function SymbolInput({ value, onChange }) {
     </div>
   );
 }
-
-
 
 // ─── INTERACTIVE GRID CHART ──────────────────────────────────
 function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverIndex, setGlobalHoverIndex, chartRefs }) {
@@ -311,44 +296,36 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
   const height = measuredHeight;
   const { paddingLeft, paddingRight, paddingTop, paddingBottom, pointGap, minWidth } = CHART_CONFIG;
   const PL = 4, PR = 52, PT = paddingTop, PB = paddingBottom;
-  const LEFT_W = 52; // fixed left axis panel width
+  const LEFT_W = 52;
   const chartWidth = Math.max(minWidth, PL + (netFlow.length - 1) * pointGap);
 
-  // Left axis: flow (buy/sell/net)
   const flowScale = calcYScaleFlow(series);
   const nyFlow    = makeNY(height, PT, PB, flowScale);
 
-  // Right axis: price
   const priceScale = calcYScalePrice(prices);
   const nyPrice    = makeNY(height, PT, PB, priceScale);
 
-  const buyPath  = buildLinePath(buyFlow,  nyFlow,  PL, pointGap);
-  const sellPath = buildLinePath(sellFlow, nyFlow,  PL, pointGap);
-  const netPath  = buildLinePath(netFlow,  nyFlow,  PL, pointGap);
-  const pricePath = buildLinePath(prices,  nyPrice, PL, pointGap);
+  const buyPath   = buildLinePath(buyFlow,  nyFlow,  PL, pointGap);
+  const sellPath  = buildLinePath(sellFlow, nyFlow,  PL, pointGap);
+  const netPath   = buildLinePath(netFlow,  nyFlow,  PL, pointGap);
+  const pricePath = buildLinePath(prices,   nyPrice, PL, pointGap);
 
-  // Dashed horizontal reference = avg of netFlow
   const avgNet  = netFlow.reduce((a, v) => a + v, 0) / netFlow.length;
   const refY    = nyFlow(avgNet);
-
   const zeroY   = nyFlow(0);
   const lastIdx = netFlow.length - 1;
 
-  // Left tag: net value (green if positive, red if negative)
   const lastNet   = netFlow[lastIdx];
   const netColor  = lastNet >= 0 ? "#22c55e" : "#ef4444";
   const lastNetY  = nyFlow(lastNet);
 
-  // Right tag: price (white box)
   const lastPrice  = prices[lastIdx];
   const lastPriceY = nyPrice(lastPrice);
 
-  // Left Y-axis ticks (flow)
   const flowTicks = [0,1,2,3,4].map((i) => {
     const v = flowScale.max - i * (flowScale.max - flowScale.min) / 4;
     return { v, y: nyFlow(v) };
   });
-  // Right Y-axis ticks (price)
   const priceTicks = [0,1,2,3,4].map((i) => {
     const v = priceScale.max - i * (priceScale.max - priceScale.min) / 4;
     return { v, y: nyPrice(v) };
@@ -384,7 +361,7 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
   return (
     <div ref={containerRef} className="relative w-full h-full bg-[#141b2d] overflow-hidden flex">
 
-      {/* ── LEFT AXIS PANEL (fixed, not scrollable) ── */}
+      {/* ── LEFT AXIS PANEL ── */}
       <div className="relative flex-shrink-0 bg-[#141b2d] z-10 border-r border-slate-700/30" style={{ width: LEFT_W }}>
         <svg width={LEFT_W} height={height} className="overflow-visible pointer-events-none">
           {flowTicks.map(({ v, y }, i) => (
@@ -393,7 +370,6 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
               {formatYLabel(v)}
             </text>
           ))}
-          {/* Net value tag — coloured pill on left */}
           <g transform={`translate(2, ${lastNetY})`}>
             <rect x="0" y="-8" width={LEFT_W - 4} height="16" fill={netColor} rx="3" />
             <text x={(LEFT_W - 4) / 2} y="0" fill="#fff" fontSize="9" textAnchor="middle"
@@ -418,21 +394,17 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
         >
           <svg width={chartWidth} height={height} className="overflow-visible pointer-events-none">
 
-            {/* Horizontal grid lines */}
             {flowTicks.map(({ y }, i) => (
               <line key={i} x1={0} y1={y} x2={chartWidth} y2={y} stroke="#1e2d45" strokeWidth="1" />
             ))}
 
-            {/* Zero line */}
             {zeroY >= PT && zeroY <= height - PB && (
               <line x1={0} y1={zeroY} x2={chartWidth} y2={zeroY} stroke="#334155" strokeWidth="1" />
             )}
 
-            {/* Dashed reference line */}
             <line x1={0} y1={refY} x2={chartWidth} y2={refY}
               stroke="#64748b" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
 
-            {/* Time labels */}
             {netFlow.map((_, i) => {
               if (i % 6 !== 0) return null;
               return (
@@ -443,20 +415,15 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
               );
             })}
 
-            {/* sell — red */}
             <path d={sellPath} fill="none" stroke="#ef4444" strokeWidth="1.5"
               strokeLinejoin="round" strokeLinecap="round" />
-            {/* buy — green */}
             <path d={buyPath} fill="none" stroke="#22c55e" strokeWidth="1.5"
               strokeLinejoin="round" strokeLinecap="round" />
-            {/* net — white bold */}
             <path d={netPath} fill="none" stroke="#ffffff" strokeWidth="2"
               strokeLinejoin="round" strokeLinecap="round" />
-            {/* price — grey */}
             <path d={pricePath} fill="none" stroke="#94a3b8" strokeWidth="1.5"
               strokeLinejoin="round" strokeLinecap="round" opacity="0.7" />
 
-            {/* Hover crosshair */}
             {isHovering && (
               <g>
                 <line x1={hoverX} y1={PT} x2={hoverX} y2={height - PB}
@@ -470,11 +437,9 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
               </g>
             )}
           </svg>
-
-
         </div>
 
-        {/* RIGHT: Price axis + price tag (fixed inside chart area) */}
+        {/* RIGHT: Price axis + price tag */}
         <div className="absolute right-0 top-0 w-[52px] h-full pointer-events-none bg-[#141b2d] z-10 border-l border-slate-700/40">
           <svg className="w-full h-full absolute inset-0 overflow-visible">
             {priceTicks.map(({ v, y }, i) => (
@@ -497,6 +462,260 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
   );
 }
 
+// ─── FULLSCREEN SYMBOL INPUT ─────────────────────────────────
+function FullscreenSymbolInput({ value, onChange }) {
+  const [query, setQuery] = useState(value || "");
+  const [open,  setOpen]  = useState(false);
+  const [hiIdx, setHiIdx] = useState(-1);
+  const committed = useRef(value || "");
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (value === "" && committed.current !== "") { setQuery(""); committed.current = ""; }
+  }, [value]);
+
+  const filtered = useMemo(() => {
+    if (!query) return STOCK_LIST.slice(0, 10);
+    const q = query.toUpperCase();
+    const starts   = STOCK_LIST.filter((s) => s.startsWith(q));
+    const contains = STOCK_LIST.filter((s) => !s.startsWith(q) && s.includes(q));
+    return [...starts, ...contains].slice(0, 9);
+  }, [query]);
+
+  const commit = useCallback((sym) => {
+    const v = sym.toUpperCase();
+    setQuery(v); committed.current = v; onChange(v); setOpen(false); setHiIdx(-1);
+  }, [onChange]);
+
+  const handleKey = (e) => {
+    if (e.key === "Escape")    { setOpen(false); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setHiIdx((h) => Math.min(h + 1, filtered.length - 1)); return; }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setHiIdx((h) => Math.max(h - 1, -1)); return; }
+    if (e.key === "Tab")       { if (filtered.length > 0) { e.preventDefault(); commit(filtered[0]); } return; }
+    if (e.key === "Enter")     { if (hiIdx >= 0 && filtered[hiIdx]) commit(filtered[hiIdx]); else if (query.trim()) commit(query.trim()); }
+  };
+
+  useEffect(() => {
+    const fn = (e) => { if (!ref.current?.contains(e.target)) { setOpen(false); setQuery(committed.current); } };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative flex items-center">
+      <div className={`flex items-center gap-2 bg-[#1a2235] border rounded-lg px-3 py-1.5 w-56 transition-all ${open ? "border-cyan-500/60" : "border-slate-700 hover:border-slate-500"}`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" className="flex-shrink-0">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value.toUpperCase()); setOpen(true); setHiIdx(-1); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKey}
+          placeholder="พิมพ์ชื่อหุ้น..."
+          className={`flex-1 bg-transparent text-sm outline-none placeholder-slate-600 ${value && !open ? "font-bold text-white" : "text-white"}`}
+        />
+        {query && (
+          <button onMouseDown={() => commit("")} className="text-slate-600 hover:text-slate-300 text-xs flex-shrink-0">✕</button>
+        )}
+      </div>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-2 w-56 bg-[#0d1526] border border-slate-600/60 rounded-xl shadow-2xl z-[200] overflow-hidden">
+          <div className="max-h-64 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3 text-slate-600 text-[11px] text-center">ไม่พบ — กด Enter เพื่อใช้ "{query}"</div>
+            ) : filtered.map((sym, idx) => {
+              const isHi = idx === hiIdx;
+              return (
+                <div key={sym} onMouseDown={() => commit(sym)} onMouseEnter={() => setHiIdx(idx)}
+                  className={`px-4 py-2.5 cursor-pointer text-sm font-bold tracking-wider transition-all
+                    ${isHi ? "bg-cyan-500/15 border-l-2 border-cyan-400 text-white" : "border-l-2 border-transparent text-slate-300 hover:bg-slate-800/40"}`}>
+                  {sym}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FULLSCREEN CHART ─────────────────────────────────────────
+function FullscreenChart({ symbol, chartId, chartRefs }) {
+  const series = useMemo(() => generateFlowSeries(symbol), [symbol]);
+  const containerRef = useRef(null);
+  const scrollRef    = useRef(null);
+  const [measuredHeight, setMeasuredHeight] = useState(500);
+  const [hoverIdx,       setHoverIdx]       = useState(null);
+  const [isDragging,     setIsDragging]     = useState(false);
+  const [dragStartX,     setDragStartX]     = useState(0);
+  const [dragScrollLeft, setDragScrollLeft] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => { if (e.contentRect.height > 0) setMeasuredHeight(e.contentRect.height); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    chartRefs.current[chartId] = scrollRef.current;
+    scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    return () => { delete chartRefs.current[chartId]; };
+  }, [chartId, chartRefs, series]);
+
+  if (!series) return (
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center text-slate-600">เลือกหุ้นด้านบน</div>
+  );
+
+  const { buyFlow, sellFlow, netFlow, prices } = series;
+  const height = measuredHeight;
+  const PL = 60, PR = 16, PT = 20, PB = 30;
+  const pointGap = 35;
+  const chartWidth = Math.max(800, PL + PR + (netFlow.length - 1) * pointGap);
+
+  const flowScale = calcYScaleFlow(series);
+  const nyFlow    = makeNY(height, PT, PB, flowScale);
+
+  const buyPath  = buildLinePath(buyFlow,  nyFlow, PL, pointGap);
+  const sellPath = buildLinePath(sellFlow, nyFlow, PL, pointGap);
+  const netPath  = buildLinePath(netFlow,  nyFlow, PL, pointGap);
+
+  const avgNet   = netFlow.reduce((a, v) => a + v, 0) / netFlow.length;
+  const refY     = nyFlow(avgNet);
+  const zeroY    = nyFlow(0);
+  const lastIdx  = netFlow.length - 1;
+  const lastNet  = netFlow[lastIdx];
+  const netColor = lastNet >= 0 ? "#22c55e" : "#ef4444";
+  const lastNetY = nyFlow(lastNet);
+
+  const flowTicks = [0,1,2,3,4,5,6].map((i) => {
+    const v = flowScale.max - i * (flowScale.max - flowScale.min) / 6;
+    return { v, y: nyFlow(v) };
+  });
+
+  const isHovering = hoverIdx !== null && !isDragging && hoverIdx < netFlow.length;
+  const hoverX     = isHovering ? PL + hoverIdx * pointGap : null;
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      e.preventDefault();
+      scrollRef.current.scrollLeft = dragScrollLeft - (e.pageX - scrollRef.current.offsetLeft - dragStartX) * 1.5;
+      setHoverIdx(null);
+      return;
+    }
+    const mouseX = e.clientX - scrollRef.current.getBoundingClientRect().left + scrollRef.current.scrollLeft;
+    setHoverIdx(Math.max(0, Math.min(Math.round((mouseX - PL) / pointGap), netFlow.length - 1)));
+  };
+
+  return (
+    <div ref={containerRef} className="relative w-full h-full bg-[#0d1117] overflow-hidden flex">
+      {/* Left axis */}
+      <div className="relative flex-shrink-0 bg-[#0d1117] z-10" style={{ width: PL }}>
+        <svg width={PL} height={height} className="overflow-visible pointer-events-none">
+          {flowTicks.map(({ v, y }, i) => (
+            <text key={i} x={PL - 8} y={y} fill="#4a5568" fontSize="11"
+              textAnchor="end" dominantBaseline="central">
+              {formatYLabel(v)}
+            </text>
+          ))}
+          <g transform={`translate(2, ${lastNetY})`}>
+            <rect x="0" y="-9" width={PL - 4} height="18" fill={netColor} rx="4" />
+            <text x={(PL - 4) / 2} y="0" fill="#fff" fontSize="10" textAnchor="middle"
+              dominantBaseline="central" fontWeight="bold">
+              {formatYLabel(lastNet)}
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      {/* Scrollable chart */}
+      <div className="relative flex-1 min-w-0">
+        <div
+          ref={scrollRef}
+          className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${isDragging ? "cursor-grabbing" : "cursor-crosshair"}`}
+          style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+          onMouseDown={(e) => { setIsDragging(true); setDragStartX(e.pageX - scrollRef.current.offsetLeft); setDragScrollLeft(scrollRef.current.scrollLeft); setHoverIdx(null); }}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseLeave={() => { setIsDragging(false); setHoverIdx(null); }}
+          onMouseMove={handleMouseMove}
+        >
+          <svg width={chartWidth} height={height} className="overflow-visible pointer-events-none">
+            {flowTicks.map(({ y }, i) => (
+              <line key={i} x1={0} y1={y} x2={chartWidth} y2={y} stroke="#1a2535" strokeWidth="1" />
+            ))}
+            {zeroY >= PT && zeroY <= height - PB && (
+              <line x1={0} y1={zeroY} x2={chartWidth} y2={zeroY} stroke="#334155" strokeWidth="1" />
+            )}
+            <line x1={0} y1={refY} x2={chartWidth} y2={refY}
+              stroke="#22c55e" strokeWidth="1" strokeDasharray="6 4" opacity="0.5" />
+            {netFlow.map((_, i) => {
+              if (i % 4 !== 0) return null;
+              return (
+                <text key={i} x={PL + i * pointGap} y={height - PB + 16}
+                  fill="#374151" fontSize="10" textAnchor="middle">
+                  {LABELS[i % LABELS.length]}
+                </text>
+              );
+            })}
+            <path d={sellPath} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <path d={buyPath}  fill="none" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <path d={netPath}  fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            {!isHovering && (
+              <circle cx={PL + lastIdx * pointGap} cy={nyFlow(lastNet)} r="5" fill="#ffffff" stroke="#0d1117" strokeWidth="2" />
+            )}
+            {isHovering && (
+              <g>
+                <line x1={hoverX} y1={PT} x2={hoverX} y2={height - PB} stroke="#374151" strokeWidth="1" strokeDasharray="4 3" />
+                <circle cx={hoverX} cy={nyFlow(netFlow[hoverIdx])}  r="5" fill="#ffffff" stroke="#0d1117" strokeWidth="2" />
+                <circle cx={hoverX} cy={nyFlow(buyFlow[hoverIdx])}  r="4" fill="#22c55e" stroke="#0d1117" strokeWidth="2" />
+                <circle cx={hoverX} cy={nyFlow(sellFlow[hoverIdx])} r="4" fill="#ef4444" stroke="#0d1117" strokeWidth="2" />
+              </g>
+            )}
+          </svg>
+
+          {/* Tooltip */}
+          {isHovering && (
+            <div
+              className="absolute z-50 pointer-events-none"
+              style={{
+                left: hoverX,
+                top: "30%",
+                transform: hoverIdx > netFlow.length - 10 ? "translateX(calc(-100% - 12px))" : "translateX(12px)",
+              }}
+            >
+              <div className="bg-[#111827] border border-slate-700 rounded-xl p-3 shadow-2xl min-w-[140px]">
+                <div className="text-white text-xs font-bold mb-2 border-b border-slate-700 pb-1.5">
+                  {LABELS[hoverIdx % LABELS.length]}
+                </div>
+                <div className="flex items-center gap-2 text-xs mb-1">
+                  <span className="w-3 h-3 rounded-sm bg-white flex-shrink-0" />
+                  <span className="text-slate-400">Price:</span>
+                  <span className="text-white font-bold ml-auto">{prices[hoverIdx]?.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs mb-1">
+                  <span className="w-3 h-3 rounded-sm bg-red-500 flex-shrink-0" />
+                  <span className="text-slate-400">Flow:</span>
+                  <span className="text-white font-bold ml-auto">{formatYLabel(netFlow[hoverIdx])}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-sm bg-green-500 flex-shrink-0" />
+                  <span className="text-slate-400">Limit:</span>
+                  <span className="text-white font-bold ml-auto">{formatYLabel(buyFlow[hoverIdx])}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────
 export default function FlowIntraday() {
   const navigate = useNavigate();
@@ -506,9 +725,9 @@ export default function FlowIntraday() {
   const [isMember,    setIsMember]    = useState(false);
   const [enteredTool, setEnteredTool] = useState(false);
 
-  const [layout,       setLayout]       = useState("12");
-  const [symbols,      setSymbols]      = useState(Array(12).fill(""));
-  const [refreshKeys,  setRefreshKeys]  = useState(Array(12).fill(0));
+  const [layout,          setLayout]          = useState("12");
+  const [symbols,         setSymbols]         = useState(Array(12).fill(""));
+  const [refreshKeys,     setRefreshKeys]     = useState(Array(12).fill(0));
   const [fullscreenIndex, setFullscreenIndex] = useState(null);
 
   const [showLeft,  setShowLeft]  = useState(false);
@@ -525,7 +744,6 @@ export default function FlowIntraday() {
   const [newListName,     setNewListName]      = useState("");
   const [activeWatchlist, setActiveWatchlist]  = useState(null);
 
-
   const selectedSymbols = useMemo(
     () => [...new Set(symbols.filter((s) => s.trim() !== ""))],
     [symbols]
@@ -534,13 +752,14 @@ export default function FlowIntraday() {
   const boxCount = parseInt(layout);
   const boxes = Array.from({ length: boxCount });
 
-  const handleRefresh = (index) => {
-    const targetRef = chartRefs.current[`grid-chart-${index}`];
+  const handleRefresh = (index, isFullscreen = false) => {
+    const key = isFullscreen ? "fullscreen-chart" : `grid-chart-${index}`;
+    const targetRef = chartRefs.current[key];
     if (targetRef) targetRef.scrollTo({ left: targetRef.scrollWidth, behavior: "smooth" });
   };
 
   const handleOpenAddModal = useCallback(() => {
-    if (selectedSymbols.length === 0) { return; }
+    if (selectedSymbols.length === 0) return;
     setNewListName("");
     setShowAddModal(true);
   }, [selectedSymbols]);
@@ -552,28 +771,20 @@ export default function FlowIntraday() {
   }, [newListName, watchlists.length, selectedSymbols]);
 
   const handleDeleteWatchlist = useCallback((id) => {
-    setWatchlists((prev) => {
-      const f = prev.find((w) => w.id === id);
-      return prev.filter((w) => w.id !== id);
-    });
+    setWatchlists((prev) => prev.filter((w) => w.id !== id));
     setActiveWatchlist((prev) => prev === id ? null : prev);
   }, []);
 
   useEffect(() => {
-    if (isFreeAccess) {
-      setIsMember(true);
-      return;
-    }
+    if (isFreeAccess) { setIsMember(true); return; }
     const toolId = "flow";
     if (accessData && accessData[toolId]) {
       const expireTimestamp = accessData[toolId];
       let expireDate;
       try {
-        if (typeof expireTimestamp.toDate === "function") {
-          expireDate = expireTimestamp.toDate();
-        } else {
-          expireDate = new Date(expireTimestamp);
-        }
+        expireDate = typeof expireTimestamp.toDate === "function"
+          ? expireTimestamp.toDate()
+          : new Date(expireTimestamp);
       } catch (e) {
         expireDate = new Date(0);
       }
@@ -663,7 +874,9 @@ export default function FlowIntraday() {
             <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
               <div className="bg-[#0f172a] px-4 py-3 flex items-center border-b border-slate-700/50">
                 <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
                 </div>
               </div>
               <div className="aspect-[16/9] w-full bg-[#0B1221] relative overflow-hidden">
@@ -831,14 +1044,10 @@ export default function FlowIntraday() {
             <div key={index} className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition flex flex-col min-h-0">
               {/* Card header */}
               <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 flex-shrink-0">
-
-                {/* Symbol input (left side) */}
                 <SymbolInput
                   value={symbols[index]}
                   onChange={(v) => handleSymbolChange(index, v)}
                 />
-
-                {/* Controls (right side) */}
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <select className="bg-[#1f2937] px-2 py-0.5 rounded text-xs outline-none cursor-pointer">
                     <option>Flow</option><option>Price</option>
@@ -869,16 +1078,34 @@ export default function FlowIntraday() {
 
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* ── Fullscreen Modal (UI จากไฟล์ 4) ── */}
       {fullscreenIndex !== null && symbols[fullscreenIndex] && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col">
-          <div className="flex justify-between items-center px-6 py-4 border-b border-slate-700 bg-[#0f172a] flex-shrink-0">
-            <h2 className="text-xl font-bold text-white uppercase tracking-wider">
-              {symbols[fullscreenIndex]} <span className="text-slate-400 font-normal text-sm ml-2">Fullscreen View</span>
+        <div className="fixed inset-0 bg-[#0d1117] z-50 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0">
+            <button
+              onClick={() => setFullscreenIndex(null)}
+              className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all flex-shrink-0"
+            >
+              ← กลับ/ปิด
+            </button>
+            <button
+              onClick={() => handleRefresh(fullscreenIndex, true)}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-400 text-white transition-all flex-shrink-0"
+            >
+              🔄
+            </button>
+            <FullscreenSymbolInput
+              value={symbols[fullscreenIndex]}
+              onChange={(v) => handleSymbolChange(fullscreenIndex, v)}
+            />
+            <h2 className="flex-1 text-center text-lg font-bold text-white tracking-widest uppercase">
+              {symbols[fullscreenIndex]}
             </h2>
-            <button onClick={() => setFullscreenIndex(null)} className="text-slate-400 hover:text-white text-2xl transition">✕</button>
           </div>
-          <div className="flex-1 p-6 bg-[#0b1220] min-h-0">
+
+          {/* Chart — ใช้ InteractiveGridChart เดียวกับด้านนอก */}
+          <div className="flex-1 min-h-0 bg-[#0d1117]">
             <InteractiveGridChart
               symbol={symbols[fullscreenIndex]}
               chartId="fullscreen-chart"
