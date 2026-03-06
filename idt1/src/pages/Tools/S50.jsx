@@ -472,7 +472,7 @@ const dashboardPreviewJSX = (
           <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
         </div>
       </div>
-      <ScaledDashboardPreview dashboardWidth={900} dashboardHeight={600} />
+      <ScaledDashboardPreview dashboardWidth={1200} dashboardHeight={700} />
     </div>
   </div>
 );
@@ -586,11 +586,9 @@ const dashboardPreviewJSX = (
     CASE 3 : FULL DASHBOARD (Member + Entered)
   ========================================================== */
   return (
-    <div className="w-full min-h-screen bg-[#0b111a] text-white px-6 py-6">
-      <div className="max-w-[1600px] mx-auto">
-
-        {/* ================= CHART GRID ================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="w-full h-screen overflow-hidden bg-[#0b111a] text-white px-6 py-6 flex flex-col">
+  <div className="max-w-[1600px] w-full mx-auto flex-1 min-h-0 overflow-y-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard 
             title="1. Last (SET50 Daily)" 
             timeframe={timeframe} 
