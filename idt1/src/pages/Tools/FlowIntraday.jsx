@@ -52,7 +52,16 @@ function getProfile(symbol) {
   return { trend: ((h % 200) - 100) / 200 };
 }
 
-function generateFlowSeries(symbol, points = 80) {
+// Intraday volume curve: open spike, lunch dip, close spike
+function intradayVolumeCurve(i, total) {
+  const pct   = i / (total - 1);
+  const open  = Math.exp(-Math.pow((pct - 0.05) / 0.06, 2));
+  const lunch = 1 - 0.55 * Math.exp(-Math.pow((pct - 0.50) / 0.07, 2));
+  const close = Math.exp(-Math.pow((pct - 0.94) / 0.05, 2));
+  return (0.35 + open * 0.9 + close * 0.8) * lunch;
+}
+
+function generateFlowSeries(symbol, points = 78) {
   if (!symbol) return null;
 
   const seed  = hashSymbol(symbol);
@@ -68,14 +77,16 @@ function generateFlowSeries(symbol, points = 80) {
   let sellVal = -(rngS() * 0.5 + 0.2) * scale;
 
   for (let i = 0; i < points; i++) {
-    buyVal  += (rngB() - 0.48) * scale * 0.30;
-    sellVal += (rngS() - 0.52) * scale * 0.30;
+    const volMult = intradayVolumeCurve(i, points);
+
+    buyVal  += (rngB() - 0.48) * scale * 0.30 * volMult;
+    sellVal += (rngS() - 0.52) * scale * 0.30 * volMult;
 
     buyVal  = Math.max(0, buyVal);
     sellVal = Math.min(0, sellVal);
 
-    if (rngB() < spikePct) buyVal  += rngB() * scale * 2.0;
-    if (rngS() < spikePct) sellVal -= rngS() * scale * 1.8;
+    if (rngB() < spikePct * volMult) buyVal  += rngB() * scale * 2.0;
+    if (rngS() < spikePct * volMult) sellVal -= rngS() * scale * 1.8;
 
     const net = buyVal + sellVal + (rngN() - 0.5) * scale * 0.2;
 
@@ -83,6 +94,7 @@ function generateFlowSeries(symbol, points = 80) {
     sellFlow.push(Math.round(sellVal));
     netFlow.push(Math.round(net));
   }
+
   const prices = generatePriceSeries(netFlow, seed);
   return { buyFlow, sellFlow, netFlow, prices };
 }
@@ -117,12 +129,16 @@ function formatYLabel(v) {
 }
 
 function generatePriceSeries(netFlow, seed) {
-  const rng  = createRng(seed ^ 0x99887766);
-  const base = 1 + (seed % 999);
-  const step = base * 0.0015;
-  let price  = base;
-  return netFlow.map(() => {
-    price += (rng() - 0.5) * step * 2;
+  const rng    = createRng(seed ^ 0x99887766);
+  const base   = 10 + (seed % 490);
+  const volPct = 0.0008 + (seed % 30) / 100000;
+  let price    = base;
+  let momentum = 0;
+  return netFlow.map((net, i) => {
+    const netSignal = i > 0 ? (net - netFlow[i - 1]) / (Math.abs(netFlow[i - 1]) || 1) : 0;
+    momentum = momentum * 0.7 + netSignal * 0.0003;
+    price += momentum * base + (rng() - 0.495) * base * volPct;
+    price  = Math.max(base * 0.7, price);
     return parseFloat(price.toFixed(2));
   });
 }
