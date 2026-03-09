@@ -740,39 +740,48 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
         {hasSearched && (
           <div className="bg-[#0B1221] border border-slate-800/50 rounded overflow-hidden">
             
+            {/* ✅ แก้ไขส่วน Header ให้เหมือนรูป */}
             <div 
               onClick={() => setIsFlipOpen(!isFlipOpen)}
-              className="bg-[#1f2937] p-2 flex justify-between items-center cursor-pointer hover:bg-[#252d3d] transition"
+              className="bg-[#374151] p-3 flex justify-between items-center cursor-pointer hover:bg-[#414b5c] transition"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-white">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-white">
                   Total Flip Count: {data.flips.length}
                 </span>
-                <div className="flex gap-3 text-[10px]">
-                  <span className="flex items-center gap-1 text-red-400">
-                    <div className="w-3 h-1.5 bg-red-500"></div> Net Vol {'<'} 0
-                  </span>
-                  <span className="flex items-center gap-1 text-green-400">
-                    <div className="w-3 h-1.5 bg-green-500"></div> Net Vol {'>'} 0
-                  </span>
+                
+                {/* Legend ตามรูป */}
+                <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-3 bg-red-500 rounded-sm"></div>
+                    <span className="text-slate-300">Net Vol {'<'} 0</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-3 bg-green-500 rounded-sm"></div>
+                    <span className="text-slate-300">Net Vol {'>'} 0</span>
+                  </div>
                 </div>
               </div>
               
+              {/* Chevron Icon */}
               <ExpandMoreIcon 
                 sx={{
                   fontSize: 20,
                   transition: 'transform 0.3s ease',
                   transform: isFlipOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                  color: '#94a3b8'
+                  color: '#e2e8f0'
                 }}
               />
             </div>
 
             {isFlipOpen && (
               <>
-                {/* Timeline Bar */}
-                <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
-                  <div className="relative w-full h-2 bg-slate-700 rounded-full">
+              {/* Timeline Bar */}
+              <div className="p-3 border-b border-slate-700/50 bg-[#111827]">
+                <div className="relative w-full">
+                  {/* แถบ timeline */}
+                  <div className="relative w-full h-2 bg-slate-700 rounded-full mb-6">
+                    {/* ✅ Flip Markers */}
                     {data.flips.map((flip, idx) => {
                       const position = data.flips.length > 1 
                         ? (idx / (data.flips.length - 1)) * 100 
@@ -782,19 +791,22 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                       return (
                         <div 
                           key={idx}
-                          className="absolute -translate-y-1 group/marker"
+                          className="absolute top-0 group/marker"
                           style={{ left: `${position}%` }}
                         >
-                          <div className={`w-4 h-4 rounded-full border-2 border-white shadow-lg transition-transform hover:scale-125 cursor-pointer ${
+                          {/* แถบแนวตั้ง */}
+                          <div className={`w-1 h-2 transition-all hover:h-3 hover:-translate-y-0.5 cursor-pointer ${
                             isNegative ? 'bg-red-500' : 'bg-green-500'
                           }`} />
                           
-                          {/* Tooltip on Hover */}
-                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
-                            <div className="bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-lg">
-                              <div>#{flip.id} - {flip.time}</div>
-                              <div className={isNegative ? 'text-red-400' : 'text-green-400'}>
-                                {flip.from} → {flip.to}
+                          {/* Tooltip on Hover - แสดงรายละเอียดเต็ม */}
+                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+                            <div className="bg-slate-900 border border-slate-700 text-white text-[10px] px-3 py-2 rounded shadow-xl">
+                              <div className="font-bold mb-1">ครั้งที่ {flip.id}</div>
+                              <div className="text-slate-400">Time: {flip.time}</div>
+                              <div className="mt-1 pt-1 border-t border-slate-700">
+                                <div>From: <span className={flip.from.includes('-') ? 'text-red-400' : 'text-green-400'}>{flip.from}</span></div>
+                                <div>To: <span className={flip.to.includes('-') ? 'text-red-400' : 'text-green-400'}>{flip.to}</span></div>
                               </div>
                             </div>
                           </div>
@@ -802,7 +814,18 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                       );
                     })}
                   </div>
+                  
+                  {/* ✅ เวลาแสดงด้านล่างแถบ timeline */}
+                  <div className="flex justify-between text-[9px] text-slate-400 -mt-2">
+                    <span>10:12</span>
+                    <span>10:42</span>
+                    <span>12:20</span>
+                    <span>14:00</span>
+                    <span>14:30</span>
+                    <span>15:01</span>
+                  </div>
                 </div>
+              </div>
 
                 {/* Flip Table - Scrollable */}
                 <div className="overflow-y-auto max-h-[180px]" style={scrollbarHideStyle}>
