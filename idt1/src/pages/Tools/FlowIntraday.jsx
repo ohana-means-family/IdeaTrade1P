@@ -1103,7 +1103,7 @@ export default function FlowIntraday() {
               onClick={() => setFullscreenIndex(null)}
               className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all flex-shrink-0"
             >
-              ← กลับ/ปิด
+              ← Back
             </button>
             <button
               onClick={() => handleRefresh(fullscreenIndex, true)}

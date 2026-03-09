@@ -1,5 +1,5 @@
 // src/pages/tools/TickMatch.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
 
@@ -164,6 +164,144 @@ const mockDatabase = {
 },
 };
 
+// ─── FULLSCREEN SYMBOL INPUT ─────────────────────────────────
+function FullscreenSymbolInput({ value, onChange }) {
+  const [query, setQuery] = useState(value || "");
+  const [open,  setOpen]  = useState(false);
+  const [hiIdx, setHiIdx] = useState(-1);
+  const committed = useRef(value || "");
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (value === "" && committed.current !== "") { 
+      setQuery(""); 
+      committed.current = ""; 
+    }
+  }, [value]);
+
+  const STOCK_LIST = [
+    "PTT","TOP","DELTA","AOT","ADVANC","SCB","KBANK","BBL","KTB","BAY",
+    "CPALL","CPN","CRC","HMPRO","BJC","IVL","SCC","SCCC","TISCO","KKP",
+    "1DIV","NVDA","TSLA"
+  ];
+
+  const filtered = useMemo(() => {
+    if (!query) return STOCK_LIST.slice(0, 10);
+    const q = query.toUpperCase();
+    const starts   = STOCK_LIST.filter((s) => s.startsWith(q));
+    const contains = STOCK_LIST.filter((s) => !s.startsWith(q) && s.includes(q));
+    return [...starts, ...contains].slice(0, 9);
+  }, [query]);
+
+  const commit = useCallback((sym) => {
+    const v = sym.toUpperCase();
+    setQuery(v); 
+    committed.current = v; 
+    onChange(v); 
+    setOpen(false); 
+    setHiIdx(-1);
+  }, [onChange]);
+
+  const handleKey = (e) => {
+    if (e.key === "Escape") { setOpen(false); return; }
+    if (e.key === "ArrowDown") { 
+      e.preventDefault(); 
+      setOpen(true); 
+      setHiIdx((h) => Math.min(h + 1, filtered.length - 1)); 
+      return; 
+    }
+    if (e.key === "ArrowUp") { 
+      e.preventDefault(); 
+      setHiIdx((h) => Math.max(h - 1, -1)); 
+      return; 
+    }
+    if (e.key === "Tab") { 
+      if (filtered.length > 0) { 
+        e.preventDefault(); 
+        commit(filtered[0]); 
+      } 
+      return; 
+    }
+    if (e.key === "Enter") { 
+      if (hiIdx >= 0 && filtered[hiIdx]) commit(filtered[hiIdx]); 
+      else if (query.trim()) commit(query.trim()); 
+    }
+  };
+
+  useEffect(() => {
+    const fn = (e) => { 
+      if (!ref.current?.contains(e.target)) { 
+        setOpen(false); 
+        setQuery(committed.current); 
+      } 
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative flex items-center">
+      <div className={`flex items-center gap-2 bg-[#1a2235] border rounded-lg px-3 py-1.5 w-56 transition-all ${
+        open ? "border-cyan-500/60" : "border-slate-700 hover:border-slate-500"
+      }`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" className="flex-shrink-0">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          value={query}
+          onChange={(e) => { 
+            setQuery(e.target.value.toUpperCase()); 
+            setOpen(true); 
+            setHiIdx(-1); 
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKey}
+          placeholder="พิมพ์ชื่อหุ้น..."
+          className={`flex-1 bg-transparent text-sm outline-none placeholder-slate-600 ${
+            value && !open ? "font-bold text-white" : "text-white"
+          }`}
+        />
+        {query && (
+          <button 
+            onMouseDown={() => commit("")} 
+            className="text-slate-600 hover:text-slate-300 text-xs flex-shrink-0"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-2 w-56 bg-[#0d1526] border border-slate-600/60 rounded-xl shadow-2xl z-[200] overflow-hidden">
+          <div className="max-h-64 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3 text-slate-600 text-[11px] text-center">
+                ไม่พบ — กด Enter เพื่อใช้ "{query}"
+              </div>
+            ) : filtered.map((sym, idx) => {
+              const isHi = idx === hiIdx;
+              return (
+                <div 
+                  key={sym} 
+                  onMouseDown={() => commit(sym)} 
+                  onMouseEnter={() => setHiIdx(idx)}
+                  className={`px-4 py-2.5 cursor-pointer text-sm font-bold tracking-wider transition-all ${
+                    isHi 
+                      ? "bg-cyan-500/15 border-l-2 border-cyan-400 text-white" 
+                      : "border-l-2 border-transparent text-slate-300 hover:bg-slate-800/40"
+                  }`}
+                >
+                  {sym}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TickMatch() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
@@ -190,7 +328,7 @@ export default function TickMatch() {
       return;
     }
 
-    // 2. ⚠️ แก้คำว่า 'ชื่อแพ็กเกจ' ตรงนี้ ให้ตรงกับเครื่องมือของหน้านั้นๆ (เช่น 'gold')
+    // 2. ⚠️ แก้คำว่า 'ชื่อแพ็กเกจ' ตรงนี้ ให้ตรงกับเครื่องมือของหน้านั้นๆ
     const toolId = 'tickmatch'; 
 
     // 3. เช็คสิทธิ์จาก Firebase
@@ -249,7 +387,7 @@ export default function TickMatch() {
       
       setTimeout(checkScroll, 300);
       
-      // ปล่อยให้ Auto ทำงานต่อหลังจากกดปุ่มไปสักพัก (500ms)
+      // ปล่อยให้ Auto ทำงานต่���หลังจากกดปุ่มไปสักพัก (500ms)
       setTimeout(() => { isPaused.current = false }, 500);
     }
   };
@@ -334,6 +472,17 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
     setFilteredSymbols(filtered);
   }, [symbol, symbolHistory]);
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape" && isChartModalOpen) {
+        setIsChartModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isChartModalOpen]);
+
   // 3️⃣ Functions
   const handleSearch = () => {
     if (!symbol.trim()) return;
@@ -416,7 +565,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               onBlur={() => setTimeout(() => setShowSymbolDropdown(false), 150)}
               className="peer w-full bg-[#111827] border border-slate-600 rounded-md px-3 py-2 text-white text-xs uppercase outline-none"
             />
-            <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:text-[10px] peer-focus:-top-2 -top-2">
+            <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:-top-2 peer-focus:text-[10px] -top-2">
               Symbol*
             </label>
 
@@ -448,7 +597,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               onChange={(e) => setDate(e.target.value)}
               className="peer w-full bg-[#0B1221] border border-slate-600 rounded-md px-3 py-2 text-white text-xs outline-none [&::-webkit-calendar-picker-indicator]:invert"
             />
-            <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:text-[10px] peer-focus:-top-2 -top-2">
+            <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:-top-2 peer-focus:text-[10px] -top-2">
               Date
             </label>
           </div>
@@ -741,24 +890,56 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
         )}
       </div>
 
-      {/* ✨ Chart Modal (เหมือนเดิม) */}
+      {/* ✨ Chart Modal - Fullscreen Design แบบใหม่ */}
       {isChartModalOpen && (
-        <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4 rounded-lg">
-          <div className="bg-[#0B1221] border border-slate-700 rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-[#0d1117] z-[999] flex flex-col">
+          
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0">
+            <button
+              onClick={() => setIsChartModalOpen(false)}
+              className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all flex-shrink-0"
+            >
+              ← Back
+            </button>
             
-            {/* Modal Header */}
-            <div className="bg-[#1f2937] p-3 flex justify-between items-center border-b border-slate-700">
-              <span className="text-sm font-bold text-white">Price-Based Distribution Chart</span>
-              <button
-                onClick={() => setIsChartModalOpen(false)}
-                className="p-1 hover:bg-slate-700 rounded transition text-slate-300"
-              >
-                <CloseIcon sx={{ fontSize: 20 }} />
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                // Refresh logic if needed
+                setIsSyncing(true);
+                setTimeout(() => setIsSyncing(false), 500);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-400 text-white transition-all flex-shrink-0"
+              title="รีเฟรชข้อมูล"
+            >
+              🔄
+            </button>
+            
+            <FullscreenSymbolInput
+              value={activeSymbol}
+              onChange={(v) => {
+                setSymbol(v);
+                if (v.trim()) {
+                  setActiveSymbol(v.toUpperCase());
+                  setHasSearched(true);
+                  const updated = [
+                    v.toUpperCase(),
+                    ...symbolHistory.filter((s) => s !== v.toUpperCase())
+                  ].slice(0, 10);
+                  setSymbolHistory(updated);
+                  localStorage.setItem("tickmatch_symbol_history", JSON.stringify(updated));
+                }
+              }}
+            />
+            
+            <h2 className="flex-1 text-center text-lg font-bold text-white tracking-widest uppercase">
+              {activeSymbol || "PRICE DISTRIBUTION"}
+            </h2>
+          </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 flex items-center justify-center bg-[#111827] p-4">
+          {/* Chart Content */}
+          <div className="flex-1 min-h-0 bg-[#0d1117] flex items-center justify-center p-6">
+            <div className="w-full h-full bg-[#111827] border border-slate-700 rounded-xl p-6">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.charts}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -775,10 +956,13 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                     contentStyle={{ 
                       backgroundColor: '#1f2937', 
                       border: '1px solid #374151',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      fontSize: '12px'
                     }}
                   />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px' }}
+                  />
                   <Bar dataKey="buy" fill="#10b981" name="Buy Volume" />
                   <Bar dataKey="sell" fill="#ef4444" name="Sell Volume" />
                 </BarChart>
@@ -846,7 +1030,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -869,7 +1053,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -941,7 +1125,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -964,7 +1148,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -978,7 +1162,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                 setEnteredTool(true);
                 localStorage.setItem("tickToolEntered", "true"); // จำสถานะของ TickMatch
               }}
-              className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
+              className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300"
             >
               <span className="mr-2">Start Using Tool</span>
               <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
