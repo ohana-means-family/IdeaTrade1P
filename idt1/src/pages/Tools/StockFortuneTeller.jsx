@@ -1036,7 +1036,54 @@ export default function StockFortuneTeller() {
           </div>
         </div>
 
-        {/* CHART GRID หรือ Skeleton */}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {[
+            {
+              label: "Last Price",
+              value: selectedSymbol && mockData ? mockData._lastPrice.toFixed(2) : "—",
+              sub: selectedSymbol && mockData
+                ? (mockData._lastPrice >= mockData._prevPrice ? "▲" : "▼") +
+                  " " + Math.abs(mockData._lastPrice - mockData._prevPrice).toFixed(2) +
+                  (mockData._prevPrice !== 0
+                    ? " (" + (((mockData._lastPrice - mockData._prevPrice) / mockData._prevPrice) * 100).toFixed(2) + "%)"
+                    : "")
+                : "Please select symbol",
+              subColor: selectedSymbol && mockData
+                ? mockData._lastPrice >= mockData._prevPrice ? "text-green-400" : "text-red-400"
+                : "text-slate-600",
+            },
+            {
+              label: "Volume",
+              value: selectedSymbol && mockData ? mockData._volume.toFixed(1) + "M" : "—",
+              sub: "shares",
+              subColor: "text-slate-500",
+            },
+            {
+              label: "High / Low",
+              value: selectedSymbol && mockData ? mockData._high + " / " + mockData._low : "— / —",
+              sub: "Today's range",
+              subColor: "text-slate-500",
+            },
+            {
+              label: "Market Status",
+              value: selectedSymbol ? (() => {
+                const h = new Date().getHours();
+                return h >= 10 && h < 17 ? "Open" : "Closed";
+              })() : "—",
+              sub: selectedSymbol ? "SET Exchange" : "—",
+              subColor: "text-slate-500",
+            },
+          ].map((card, i) => (
+            <div key={i} className="bg-[#111827] rounded-xl border border-slate-700/60 p-4">
+              <div className="text-xs text-slate-500 mb-1">{card.label}</div>
+              <div className="text-lg font-bold text-white">{card.value}</div>
+              <div className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CHART GRID */}
         {selectedSymbol ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(filters).map(([key, value]) => (
@@ -1055,7 +1102,7 @@ export default function StockFortuneTeller() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(filters).map(([key, value], cardIdx) => (
+            {Object.entries(filters).map(([key, value]) => (
               <div key={key} className="bg-[#111827] rounded-xl border border-slate-700/60 p-4 h-[280px]">
                 <div className="mb-3 flex justify-between items-center">
                   <select
@@ -1072,7 +1119,15 @@ export default function StockFortuneTeller() {
                   </select>
                   <span className="text-xs text-slate-400">{key}</span>
                 </div>
-                <WaveSkeleton delay={cardIdx * 0.2} />
+                <div className="w-full h-[210px] bg-[#0f172a] rounded-lg relative flex items-center justify-center overflow-hidden">
+                  <canvas className="w-full h-full opacity-0" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                    <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    <p className="text-slate-600 text-sm">Please select symbol</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
