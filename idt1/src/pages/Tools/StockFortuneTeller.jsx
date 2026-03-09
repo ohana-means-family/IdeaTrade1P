@@ -398,6 +398,13 @@ function ChartCard({ title, type, onChange, chartId, globalHoverIndex, setGlobal
         <span className="text-xs text-slate-400">{title}</span>
       </div>
       <div className="w-full h-[210px] bg-[#0f172a] rounded-lg p-4 relative overflow-hidden">
+        {!selectedSymbol && (
+          <div
+            className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none text-white text-[17px] font-medium"
+          >
+            Please select symbol
+          </div>
+        )}
         <ChartRenderer
           type={type}
           chartId={chartId}
