@@ -316,6 +316,119 @@ function DynamicChart({ title, height = 240, color, gradientId, seed, points = 7
   );
 }
 
+function ChartSkeleton({ title, height = 240 }) {
+  return (
+    <div className="bg-[#111827] border border-slate-700 rounded-xl flex flex-col overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between bg-[#0f172a] shrink-0">
+        <p className="text-sm text-slate-300 font-bold uppercase tracking-wide">{title}</p>
+        <div className="flex items-center gap-3">
+          <div className="h-5 w-14 rounded bg-slate-700 animate-pulse" />
+          <div className="h-5 w-24 rounded bg-slate-700 animate-pulse" />
+        </div>
+      </div>
+
+      <div
+        className="relative w-full flex-1 bg-[#0f172a] overflow-hidden"
+        style={{ height: height - 60 }}
+      >
+        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+          {[...Array(5)].map((_, i) => {
+            const y = 15 + (i * ((height - 60) - 15 - 25)) / 4;
+            return (
+              <line
+                key={i}
+                x1="0"
+                y1={y}
+                x2="100%"
+                y2={y}
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+            );
+          })}
+        </svg>
+
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.08) 40%, rgba(125,211,252,0.18) 50%, rgba(56,189,248,0.08) 60%, transparent 100%)",
+              animation: "shimmer 1.8s ease-in-out infinite",
+            }}
+          />
+        </div>
+
+        <style>{`
+          @keyframes shimmer {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+function EmptyChartCard({ title, height = 240, message = "Please select symbol" }) {
+  const bodyHeight = height - 60;
+
+  return (
+    <div
+      className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden"
+      style={{ height }}
+    >
+      <div className="h-[60px] px-5 py-4 border-b border-slate-700/50 flex items-center justify-between bg-[#0f172a]">
+        <p className="text-sm text-slate-300 font-bold uppercase tracking-wide">{title}</p>
+      </div>
+
+      <div
+        className="relative w-full bg-[#0f172a]"
+        style={{ height: bodyHeight }}
+      >
+        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+          {[...Array(5)].map((_, i) => {
+            const y = 15 + (i * (bodyHeight - 15 - 25)) / 4;
+            return (
+              <line
+                key={i}
+                x1="0"
+                y1={y}
+                x2="100%"
+                y2={y}
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+            );
+          })}
+
+          <line
+            x1="0"
+            y1={bodyHeight - 25}
+            x2="100%"
+            y2={bodyHeight - 25}
+            stroke="#334155"
+            strokeWidth="1.5"
+          />
+        </svg>
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white text-lg font-semibold text-center px-4">
+            {message}
+          </span>
+        </div>
+
+        <div
+          className="absolute inset-y-0 left-0 right-[55px] bg-gradient-to-t from-[#0f172a]/90 via-transparent to-transparent pointer-events-none"
+          style={{ top: "75%" }}
+        />
+
+        <div className="absolute right-0 top-0 w-[55px] h-full bg-[#0f172a] border-l border-slate-800/50" />
+      </div>
+    </div>
+  );
+}
+
 /* ==========================================================
    MAIN COMPONENT
 ========================================================== */
@@ -331,6 +444,7 @@ export default function RubberThai() {
   const [symbolQuery, setSymbolQuery] = useState("");
   const [symbol, setSymbol] = useState("");
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   const [globalHoverIndex, setGlobalHoverIndex] = useState(null);
   const chartRefs = useRef({});
@@ -631,7 +745,28 @@ const { accessData, isFreeAccess } = useSubscription();
               />
               <div className="flex items-center gap-2">
                 {(symbol || symbolQuery) && (
-                  <button onClick={() => { setSymbol(""); setSymbolQuery(""); }} className="text-slate-400 hover:text-white text-xs ml-2">✕</button>
+                  <button
+                    onClick={() => {
+                      if (refreshing) return;
+
+                      setShowSymbolDropdown(false);
+                      setGlobalHoverIndex(null);
+                      setRefreshing(true);
+
+                      setTimeout(() => {
+                        setSymbol("");
+                        setSymbolQuery("");
+                        setRefreshing(false);
+                      }, 700);
+                    }}
+                    className={`text-xs ml-2 ${
+                      refreshing
+                        ? "text-slate-600 cursor-not-allowed"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    ✕
+                  </button>
                 )}
                 <span onClick={() => setShowSymbolDropdown(!showSymbolDropdown)} className="text-slate-400 text-xs ml-2 cursor-pointer">▾</span>
               </div>
@@ -643,8 +778,24 @@ const { accessData, isFreeAccess } = useSubscription();
                   filteredSymbols.map((item, index) => (
                     <div
                       key={index}
-                      onClick={() => { setSymbol(item); setSymbolQuery(item); setShowSymbolDropdown(false); }}
-                      className="px-4 py-2 text-sm text-slate-300 hover:bg-cyan-500 hover:text-white cursor-pointer"
+                      onClick={() => {
+                      if (refreshing) return;
+
+                      setSymbolQuery(item);
+                      setShowSymbolDropdown(false);
+                      setRefreshing(true);
+                      setGlobalHoverIndex(null);
+
+                      setTimeout(() => {
+                        setSymbol(item);
+                        setRefreshing(false);
+                      }, 700);
+                    }}
+                      className={`px-4 py-2 text-sm transition ${
+                      refreshing
+                        ? "text-slate-500 cursor-not-allowed"
+                        : "text-slate-300 hover:bg-cyan-500 hover:text-white cursor-pointer"
+                    }`}
                     >
                       {item}
                     </div>
@@ -658,41 +809,62 @@ const { accessData, isFreeAccess } = useSubscription();
         </div>
 
         {/* ================= DYNAMIC CHARTS ================= */}
-        <div className="flex-1 grid grid-cols-1 gap-6 min-h-0" ref={chartContainerRef}>
-          {/* TOP LARGE CHART */}
-          <DynamicChart
-            chartId="chart-close"
-            key={`top-${symbol}`}
-            title={`CLOSE (${symbol || "24CS"})`}
-            height={chartHeight} 
-            color="#22c55e"
-            gradientId="greenArea"
-            seed={chartSeed + 1}
-            points={300}  // <--- เพิ่มข้อมูลเป็น 300 จุด จะได้ลากดูย้อนหลังได้ไกลขึ้น
-            globalHoverIndex={globalHoverIndex}
-            setGlobalHoverIndex={setGlobalHoverIndex}
-            chartRefs={chartRefs}
-            pointGap={pointGap}     // ส่ง State Zoom ลงไป
-            handleZoom={handleZoom} // ส่ง Function Zoom ลงไป
-          />
+       <div className="flex-1 grid grid-cols-1 gap-6 min-h-0" ref={chartContainerRef}>
+        {refreshing ? (
+          <>
+            <ChartSkeleton
+              title={`CLOSE (${symbolQuery || symbol})`}
+              height={chartHeight}
+            />
+            <ChartSkeleton
+              title="Rubber Thai Price"
+              height={chartHeight}
+            />
+          </>
+        ) : (
+          <>
+            {symbol ? (
+              <DynamicChart
+                chartId="chart-close"
+                key={`top-${symbol}`}
+                title={`CLOSE (${symbol})`}
+                height={chartHeight}
+                color="#22c55e"
+                gradientId="greenArea"
+                seed={chartSeed + 1}
+                points={300}
+                globalHoverIndex={globalHoverIndex}
+                setGlobalHoverIndex={setGlobalHoverIndex}
+                chartRefs={chartRefs}
+                pointGap={pointGap}
+                handleZoom={handleZoom}
+              />
+            ) : (
+              <EmptyChartCard
+                title="CLOSE"
+                height={chartHeight}
+                message="Please select symbol"
+              />
+            )}
 
-          {/* BOTTOM CHART */}
-          <DynamicChart
-            chartId="chart-rubber"
-            key={`bot-${symbol}`}
-            title="Rubber Thai Price"
-            height={chartHeight}
-            color="#facc15"
-            gradientId="yellowArea"
-            seed={chartSeed + 97}
-            points={300}  // <--- เพิ่มข้อมูลเป็น 300 จุด จะได้ลากดูย้อนหลังได้ไกลขึ้น
-            globalHoverIndex={globalHoverIndex}
-            setGlobalHoverIndex={setGlobalHoverIndex}
-            chartRefs={chartRefs}
-            pointGap={pointGap}     // ส่ง State Zoom ลงไป
-            handleZoom={handleZoom} // ส่ง Function Zoom ลงไป
-          />
-        </div>
+            <DynamicChart
+              chartId="chart-rubber"
+              key={`bot-${symbol}`}
+              title="Rubber Thai Price"
+              height={chartHeight}
+              color="#facc15"
+              gradientId="yellowArea"
+              seed={chartSeed + 97}
+              points={300}
+              globalHoverIndex={globalHoverIndex}
+              setGlobalHoverIndex={setGlobalHoverIndex}
+              chartRefs={chartRefs}
+              pointGap={pointGap}
+              handleZoom={handleZoom}
+            />
+          </>
+        )}
+      </div>
 
       </div>
     </div>
