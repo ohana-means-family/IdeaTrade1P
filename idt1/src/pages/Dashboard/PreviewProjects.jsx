@@ -1,8 +1,8 @@
-// src/pages/dashboard/PreviewProject.jsx
+// src/pages/dashboard/previewproject.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import mitIcon from "@/assets/icons/amit.svg"; 
-import ToolsCard from "@/components/ToolsCard.jsx";
+import ToolsCard from "@/components/toolscard.jsx";
 
 import { auth, db } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
@@ -33,7 +33,7 @@ const projects = [
   },
   {
     id: "fortune",
-    name: "Stock Fortune",
+    name: "Stock Fortune", // หรือ Market Oracle
     desc: "Probabilistic market forecasting based on sentiment and historical data.",
     premium: true,
   },
@@ -93,53 +93,27 @@ const projects = [
 export default function PreviewProjects() {
   const navigate = useNavigate();
 
-  const [isGlobalMember, setIsGlobalMember] = useState(false);
+  const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
 
-  /* ===== Logic สำหรับประมวลผลสิทธิ์ใช้งาน ===== */
-  const processUserData = (userData) => {
-    const now = new Date();
-    const activeIds = [];
-
-    // 1. ตรวจสอบ Role หลัก (Membership ทั้งระบบ)
-    const hasGlobalRole = userData.role === "member" || userData.role === "membership";
-    setIsGlobalMember(hasGlobalRole);
-
-    // 2. ตรวจสอบจาก Object "subscriptions" (เช็ครายตัว + วันหมดอายุ)
-    if (userData.subscriptions) {
-      Object.entries(userData.subscriptions).forEach(([toolId, expTimestamp]) => {
-        // รองรับทั้ง Firestore Timestamp และ ISO String
-        const expDate = expTimestamp?.toDate ? expTimestamp.toDate() : new Date(expTimestamp);
-        if (expDate > now) {
-          activeIds.push(toolId);
-        }
-      });
-    }
-
-    // 3. ตรวจสอบจาก "unlockedItems" (กรณี Admin ปลดล็อคให้เป็นพิเศษ)
-    if (Array.isArray(userData.unlockedItems)) {
-      userData.unlockedItems.forEach(id => {
-        if (!activeIds.includes(id)) activeIds.push(id);
-      });
-    }
-
-    // 4. ตรวจสอบจาก "mySubscriptions" (โครงสร้างเก่าแบบ Array - ถ้ามี)
-    if (Array.isArray(userData.mySubscriptions)) {
-      userData.mySubscriptions.forEach(sub => {
-        if (!activeIds.includes(sub.id)) activeIds.push(sub.id);
-      });
-    }
-    
-    setUnlockedList(activeIds);
-  };
-
+/* ===== Load user profile ===== */
+/* ===== Load user profile ===== */
   useEffect(() => {
+    // ฟังก์ชันสำหรับโหลดโหมด Demo จาก LocalStorage
     const loadDemoProfile = () => {
       const saved = localStorage.getItem("userProfile");
       if (saved) {
-        processUserData(JSON.parse(saved));
+        const userData = JSON.parse(saved);
+        const subscriptions = userData.mySubscriptions || [];
+        const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+        const explicitUnlocked = userData.unlockedItems || [];
+        const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
+        
+        const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+        setIsMember(hasAccess);
+        setUnlockedList(combinedUnlocked);
       } else {
-        setIsGlobalMember(false);
+        setIsMember(false);
         setUnlockedList([]);
       }
     };
@@ -152,25 +126,45 @@ export default function PreviewProjects() {
 
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            processUserData(userData);
-            // อัปเดต LocalStorage เพื่อให้หน้าอื่นๆ และโหมด Demo ทำงานได้
-            localStorage.setItem("userProfile", JSON.stringify(userData));
+            const subscriptions = userData.mySubscriptions || [];
+            const unlockedFromSubs = subscriptions.map(sub => sub.id); 
+            const explicitUnlocked = userData.unlockedItems || [];
+            const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
+            const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
+
+            setIsMember(hasAccess);
+            setUnlockedList(combinedUnlocked);
           }
         } catch (err) {
           console.error("Error fetching Firestore:", err);
-          loadDemoProfile();
         }
       } else {
+        // 🔥 เข้าสู่โหมด DEMO (อ่านจาก LocalStorage) 🔥
         loadDemoProfile();
       }
     });
 
+    // ดักฟังการจำลองจ่ายเงินในโหมด Demo
     window.addEventListener("storage", loadDemoProfile);
+
     return () => {
       unsubscribe();
       window.removeEventListener("storage", loadDemoProfile);
     };
   }, []);
+
+  /* ===== Permission Logic ===== */
+  const canAccess = (project) =>
+    !project.premium || isMember || unlockedList.includes(project.id);
+
+  const handleOpenTool = (project) => {
+    if (canAccess(project)) {
+      alert(`Opening ${project.name}...`);
+      // navigate(`/tools/${project.id}`);
+    } else {
+      navigate("/member-register");
+    }
+  };
 
   const handleOpenMIT = () => {
     navigate("/dashboard", {
@@ -188,13 +182,17 @@ export default function PreviewProjects() {
         </h1>
 
         <div className="bg-[#263C4F] rounded-2xl p-6 md:p-8">
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex gap-4 w-full">
+              {/* Icon */}
               <div className="w-12 h-12 rounded-xl bg-[#1B2E3E] flex items-center justify-center shrink-0">
                 <img src={mitIcon} alt="MIT" className="w-7 h-7" />
               </div>
 
+              {/* Content */}
               <div className="flex-1 w-full">
+                {/* Title Row */}
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <h2 className="text-xl md:text-2xl font-semibold text-white">
                     MIT : Multi-Agent Intelligent Analyst
@@ -203,15 +201,16 @@ export default function PreviewProjects() {
                   <button
                     onClick={handleOpenMIT}
                     className="bg-[#0B78B8] hover:bg-[#0E8ED8]
-                               px-5 py-2 rounded-full
-                               text-white text-sm font-semibold
-                               transition flex items-center gap-2 shrink-0"
+                             px-5 py-2 rounded-full
+                             text-white text-sm font-semibold
+                             transition flex items-center gap-2 shrink-0"
                   >
                     <img src={mitIcon} className="w-4 h-4" alt="icon" />
                     Open MIT
                   </button>
                 </div>
 
+                {/* Description */}
                 <p className="text-sm text-slate-300 mt-2 leading-relaxed w-full">
                   Experience the next level of trading with our Multi-Agent LLM system
                   that simulates a professional institutional research team. By assigning
@@ -223,6 +222,7 @@ export default function PreviewProjects() {
             </div>
           </div>
 
+          {/* Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
             {[
               {
@@ -231,7 +231,7 @@ export default function PreviewProjects() {
               },
               {
                 title: "Bull vs. Bear Debate",
-                desc: "Our proprietary debate engine pits 'Bullish' vs. 'Bearish' AI agents against each other.",
+                desc: "Our proprietary debate engine pits 'Bullish' vs. 'Bearish' AI agents against each other to challenge assumptions.",
               },
               {
                 title: "Smart Execution & Risk Guard",
@@ -261,24 +261,19 @@ export default function PreviewProjects() {
       {/* ===== OTHER PROJECTS ===== */}
       <section>
         <h2 className="text-2xl font-semibold text-white mb-6">
-          Other Projects
+          Other Project
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => {
-          // เช็คว่าโปรเจกต์นี้ควรเป็น "สีทอง" และ "ปลดล็อค" หรือไม่
-          // สิทธิ์เข้าถึง = เป็นสมาชิกหลัก OR มีรายชื่อในคลังที่ยังไม่หมดอายุ
-          const hasAccess = isGlobalMember || unlockedList.includes(project.id);
-
-          return (
-            <ToolsCard
-              key={project.id}
-              project={project}
-              isMember={hasAccess} 
-              unlockedList={unlockedList}
-            />
-          );
-        })}
+        {projects.map((project) => (
+          <ToolsCard
+            key={project.id}
+            project={project}
+            // 🔥 แก้ตรงนี้: ให้มันส่งค่า true ไปปลดล็อกการ์ดเฉพาะเครื่องมือที่มี ID ตรงกับที่ซื้อเท่านั้น
+            isMember={unlockedList.includes(project.id)} 
+            unlockedList={unlockedList}
+          />
+        ))}
         </div>
       </section>
     </div>
