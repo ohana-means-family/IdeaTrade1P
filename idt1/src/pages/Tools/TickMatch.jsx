@@ -1002,7 +1002,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
   );
 };
 
-  /* ==========================================================
+/* ==========================================================
       CASE 1 : PREVIEW VERSION (Not Member)
   =========================================================== */
   if (!isMember) {
@@ -1050,14 +1050,15 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
             
             {/* Wrapper เพื่อดักจับ Mouse Hover สำหรับหยุด Auto Scroll */}
             <div 
-              className="relative group"
+              className="relative group w-full" 
               onMouseEnter={() => isPaused.current = true}
               onMouseLeave={() => isPaused.current = false}
             >
+              
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -1080,7 +1081,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -1089,8 +1090,8 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
           {/* Action Buttons */}
           <div className="flex gap-4">
-             <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600 hover:bg-slate-700 transition">Sign In</button>
-             <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold hover:shadow-lg transition">Join Membership</button>
+             <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600 hover:bg-slate-700 transition flex items-center justify-center">Sign In</button>
+             <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold hover:shadow-lg transition flex items-center justify-center">Join Membership</button>
           </div>
         </div>
       </div>
@@ -1145,14 +1146,15 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
             
             {/* Wrapper เพื่อดักจับ Mouse Hover สำหรับหยุด Auto Scroll */}
             <div 
-              className="relative group"
+              className="relative group w-full"
               onMouseEnter={() => isPaused.current = true}
               onMouseLeave={() => isPaused.current = false}
             >
+              
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -1175,7 +1177,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -1201,7 +1203,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
       </div>
     );
   }
-
+  
   /* ==========================================================
       CASE 3 : FULL TICKMATCH DASHBOARD
   =========================================================== */
