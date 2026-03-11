@@ -262,12 +262,38 @@ const CHART_CONFIG = {
   paddingLeft: 15,
   paddingRight: 60,
   paddingTop: 15,
-  paddingBottom: 25,
+  paddingBottom: 10,
   pointGap: 40,
   minWidth: 620,
 };
 
 const MANAGER_COLORS = ["#f97316", "#22c55e", "#3b82f6", "#0ea5e9", "#eab308"];
+
+// ============================================================
+// MOCK NAMES
+// ============================================================
+const SHAREHOLDER_NAMES = {
+  BANPU: "บ้านปู จำกัด (มหาชน)", BGRIM: "บี.กริม เพาเวอร์", EGCO: "ผลิตไฟฟ้า จำกัด (มหาชน)",
+  GPSC: "โกลบอล เพาเวอร์ ซินเนอร์ยี่", GULF: "กัลฟ์ เอ็นเนอร์จี ดีเวลลอปเมนท์", OR: "ปตท. น้ำมันและการค้าปลีก",
+  PTT: "ปตท. จำกัด (มหาชน)", PTTEP: "ปตท.สผ. จำกัด (มหาชน)", PTTGC: "พีทีที โกลบอล เคมิคอล",
+  RATCH: "ราช กรุ๊ป จำกัด (มหาชน)", TOP: "ไทยออยล์ จำกัด (มหาชน)", IVL: "อินโดรามา เวนเจอร์ส",
+  BBL: "ธนาคารกรุงเทพ", KBANK: "ธนาคารกสิกรไทย", KTB: "ธนาคารกรุงไทย",
+  SCB: "ธนาคารไทยพาณิชย์", TISCO: "ทิสโก้ไฟแนนเชียลกรุ๊ป", TTB: "ธนาคารทหารไทยธนชาต",
+  KTC: "บัตรกรุงไทย จำกัด (มหาชน)", SAWAD: "ศรีสวัสดิ์ คอร์ปอเรชั่น", MTC: "เมืองไทย แคปปิตอล",
+  TLI: "ไทยประกันชีวิต", ADVANC: "แอดวานซ์ อินโฟร์ เซอร์วิส", DELTA: "เดลต้า อีเลคโทรนิคส์",
+  COM7: "คอม เซเว่น จำกัด (มหาชน)", CCET: "ช ทวี จำกัด (มหาชน)", TRUE: "ทรู คอร์ปอเรชั่น",
+  CPALL: "ซีพี ออลล์ จำกัด (มหาชน)", CPF: "เจริญโภคภัณฑ์อาหาร", CBG: "คาราบาวกรุ๊ป",
+  OSP: "โอสถสภา จำกัด (มหาชน)", GLOBAL: "สยามโกลบอลเฮ้าส์", HMPRO: "โฮม โปรดักส์ เซ็นเตอร์",
+  BJC: "เบอร์ลี่ ยุคเกอร์ จำกัด (มหาชน)", CRC: "เซ็นทรัล รีเทล คอร์ปอเรชั่น", ITC: "อิตาเลียนไทย ดีเวล๊อปเมนต์",
+  TU: "ไทยยูเนี่ยน กรุ๊ป", AOT: "ท่าอากาศยานไทย", AWC: "แอสเสท เวิรด์ คอร์ป",
+  BDMS: "กรุงเทพดุสิตเวชการ", BH: "โรงพยาบาลบำรุงราษฎร์", BEM: "ทางด่วนและรถไฟฟ้ากรุงเทพ",
+  BTS: "บีทีเอส กรุ๊ป โฮลดิ้งส์", CPN: "เซ็นทรัลพัฒนา", LH: "แลนด์ แอนด์ เฮ้าส์",
+  MINT: "ไมเนอร์ อินเตอร์เนชั่นแนล", SCGP: "เอสซีจี แพคเกจจิ้ง",
+};
+
+const MANAGER_NAMES = [
+  "กลุ่มผู้บริหาร A", "กองทุนรวม B", "นักลงทุนสถาบัน C", "ผู้ถือหุ้นรายใหญ่ D", "กองทุนต่างประเทศ E",
+];
 
 const LABELS = Array.from({ length: 20 }, (_, i) => {
   const d = new Date("2025-01-01");
@@ -376,12 +402,15 @@ function WaveSkeleton({ delay = 0 }) {
   );
 }
 
-// ============================================================
-// ChartCard
-// ============================================================
-function ChartCard({ title, type, onChange, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol }) {
+function ChartCard({
+  title, type, onChange, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol,
+}) {
+  const [showLabels, setShowLabels] = useState(true);
+  const showToggle = type === "Shareholder" || type === "Manager";
+
   return (
-    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[280px]">
+    <div className="bg-[#111827] rounded-xl border border-slate-700 p-4 h-[280px] flex flex-col">
+      {/* Header */}
       <div className="mb-3 flex justify-between items-center">
         <select
           value={type}
@@ -395,26 +424,62 @@ function ChartCard({ title, type, onChange, chartId, globalHoverIndex, setGlobal
           <option>Shareholder</option>
           <option>Manager</option>
         </select>
-        <span className="text-xs text-slate-400">{title}</span>
+
+        <div className="flex items-center gap-2">
+          {showToggle && (
+            <button
+              onClick={() => setShowLabels((v) => !v)}
+              className={[
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full",
+                "text-[10px] font-semibold border transition-all duration-200",
+                showLabels
+                  ? "bg-cyan-500/15 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/25"
+                  : "bg-slate-800/70 border-slate-600/50 text-slate-500 hover:text-slate-300",
+              ].join(" ")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                {showLabels ? (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                )}
+              </svg>
+              <span>{showLabels ? "hide" : "show"}</span>
+            </button>
+          )}
+          <span className="text-xs text-slate-400">{title}</span>
+        </div>
       </div>
-      <div className="w-full h-[210px] bg-[#0f172a] rounded-lg p-4 relative overflow-hidden">
-        <ChartRenderer
-          type={type}
-          chartId={chartId}
-          globalHoverIndex={globalHoverIndex}
-          setGlobalHoverIndex={setGlobalHoverIndex}
-          chartRefs={chartRefs}
-          selectedSymbol={selectedSymbol}
-        />
+
+      {/* Chart area — ลบ toggle button ออกจากตรงนี้แล้ว */}
+      <div className="flex-1 relative" style={{ minHeight: 0 }}>
+        <div className="absolute inset-0 rounded-lg overflow-hidden bg-[#0f172a]">
+          <ChartRenderer
+            type={type}
+            chartId={chartId}
+            globalHoverIndex={globalHoverIndex}
+            setGlobalHoverIndex={setGlobalHoverIndex}
+            chartRefs={chartRefs}
+            selectedSymbol={selectedSymbol}
+            showLabels={showLabels}
+          />
+        </div>
       </div>
     </div>
   );
 }
-
 // ============================================================
 // ChartRenderer
 // ============================================================
-function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol }) {
+function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, selectedSymbol, showLabels = false }) {
   const scrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
@@ -490,8 +555,15 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
           <line x1={0} y1={height - paddingBottom} x2={chartWidth} y2={height - paddingBottom} stroke="#334155" strokeWidth="1.5" />
 
           {primaryData.map((_, i) => (
-            <text key={i} x={paddingLeft + i * pointGap} y={height - paddingBottom + 16} fill="#64748b" fontSize="9" textAnchor="middle">
-              {LABELS[i]}
+            <text
+              key={i}
+              x={paddingLeft + i * pointGap}
+              y={height - paddingBottom + 14}
+              fill="#475569"
+              fontSize="8"
+              textAnchor="middle"
+            >
+            {LABELS[i]}
             </text>
           ))}
 
@@ -525,8 +597,9 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
             <path d={curve(currentData.PredictTrend)} fill="none" stroke={getLineColor(type)} strokeWidth="2.5" />
           )}
 
-          {type === "Shareholder" && (
-            <path d={step(currentData.Shareholder)} fill="none" stroke={getLineColor(type)} strokeWidth="2" />
+          
+           {type === "Shareholder" && (
+            <path d={step(currentData.Shareholder)} fill="none" stroke={getLineColor(type)} strokeWidth="2.5" />
           )}
 
           {type === "Manager" &&
@@ -620,21 +693,42 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
             );
           })}
 
+          {/* ---------------- SHAREHOLDER (แกน Y) ---------------- */}
           {type === "Shareholder" && (() => {
             const lastVal = currentData.Shareholder[currentData.Shareholder.length - 1];
+            const nameStr = showLabels ? (SHAREHOLDER_NAMES[selectedSymbol] ?? selectedSymbol) : "";
+            const numStr = lastVal.toFixed(2);
+            
+            // คำนวณความกว้างกล่องให้ยืดหดตามตัวอักษร
+            const nameW = nameStr ? nameStr.length * 6 + 15 : 0;
+            const numW = 42;
+            const tagW = nameW + numW;
+            const translateX = 6 - (tagW > 42 ? tagW - 42 : 0);
+
             return (
-              <g transform={`translate(6, ${normalizeY(lastVal)})`}>
-                <rect x="0" y="-10" width="42" height="20" fill="#ef4444" rx="4" />
-                <text x="21" y="0" fill="#ffffff" fontSize="11" textAnchor="middle" dominantBaseline="central" fontWeight="bold">
-                  {lastVal.toFixed(2)}
+              <g transform={`translate(${translateX}, ${normalizeY(lastVal)})`}>
+                <rect x="0" y="-10" width={tagW} height="20" fill="#ef4444" rx="4" />
+                
+                {nameStr && (
+                  <>
+                    <text x={nameW / 2} y="0" fill="#ffffff" fontSize="9" textAnchor="middle" dominantBaseline="central" fontWeight="bold">
+                      {nameStr}
+                    </text>
+                    {/* เส้นคั่นระหว่างชื่อกับตัวเลข */}
+                    <line x1={nameW} y1="-10" x2={nameW} y2="10" stroke="#000000" strokeOpacity="0.15" strokeWidth="2" />
+                  </>
+                )}
+                
+                <text x={nameW + numW / 2} y="0" fill="#ffffff" fontSize="11" textAnchor="middle" dominantBaseline="central" fontWeight="bold">
+                  {numStr}
                 </text>
               </g>
             );
           })()}
 
+          {/* ---------------- MANAGER (แกน Y) ---------------- */}
           {type === "Manager" && (() => {
             const TAG_H = 20;
-            const TAG_W = 42;
             const MIN_GAP = TAG_H + 2;
 
             const tags = currentData.Manager.map((data, idx) => {
@@ -644,40 +738,106 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
                 idealY: normalizeY(lastVal),
                 realY: normalizeY(lastVal),
                 color: MANAGER_COLORS[idx],
-                label: lastVal > 0 ? `+${lastVal.toFixed(2)}` : lastVal.toFixed(2),
+                numStr: lastVal > 0 ? `+${lastVal.toFixed(2)}` : lastVal.toFixed(2),
+                nameStr: showLabels ? MANAGER_NAMES[idx] : "",
               };
             }).sort((a, b) => a.idealY - b.idealY);
 
+            // กันป้ายซ้อนทับกัน
             for (let i = 1; i < tags.length; i++) {
               if (tags[i].idealY - tags[i - 1].idealY < MIN_GAP)
                 tags[i].idealY = tags[i - 1].idealY + MIN_GAP;
             }
 
-            return tags.map(({ idx, idealY, realY, color, label }) => {
+            return tags.map(({ idx, idealY, realY, color, numStr, nameStr }) => {
               const shifted = Math.abs(idealY - realY) > 1;
+              
+              const nameW = nameStr ? nameStr.length * 6 + 15 : 0;
+              const numW = 42;
+              const TAG_W = nameW + numW;
+              const translateX = 6 - (TAG_W > 42 ? TAG_W - 42 : 0);
+
               return (
                 <g key={idx}>
                   {shifted && (
                     <line x1="5" y1={realY} x2="5" y2={idealY} stroke={color} strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
                   )}
-                  <g transform={`translate(6, ${idealY})`}>
+                  <g transform={`translate(${translateX}, ${idealY})`}>
                     <rect x="-1" y={`${-TAG_H / 2 - 1}`} width={TAG_W + 2} height={TAG_H + 2} fill="black" fillOpacity="0.3" rx="5" />
                     <rect x="0" y={`${-TAG_H / 2}`} width={TAG_W} height={TAG_H} fill={color} rx="4" />
                     <rect x="0" y={`${-TAG_H / 2}`} width={TAG_W} height={TAG_H / 2} fill="white" fillOpacity="0.08" rx="4" />
-                    <text x={TAG_W / 2} y="0" fill="white" fontSize="10.5" fontWeight="bold" textAnchor="middle" dominantBaseline="central" letterSpacing="-0.2">
-                      {label}
+                    
+                    {nameStr && (
+                      <>
+                        <text x={nameW / 2} y="0" fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
+                          {nameStr}
+                        </text>
+                        {/* เส้นคั่น */}
+                        <line x1={nameW} y1={`${-TAG_H / 2}`} x2={nameW} y2={`${TAG_H / 2}`} stroke="#000000" strokeOpacity="0.15" strokeWidth="2" />
+                      </>
+                    )}
+                    
+                    <text x={nameW + numW / 2} y="0" fill="white" fontSize="10.5" fontWeight="bold" textAnchor="middle" dominantBaseline="central" letterSpacing="-0.2">
+                      {numStr}
                     </text>
                   </g>
                 </g>
               );
             });
           })()}
+
+{/* %SHORT ฝั่งขวา — ShortB */}
+          {type === "%Short" && (() => {
+            const lastB = currentData["%ShortB"][currentData["%ShortB"].length - 1];
+            return (
+              <g transform={`translate(6, ${normalizeY(lastB)})`}>
+                <rect x="-1" y="-11" width="44" height="22" fill="black" fillOpacity="0.3" rx="5" />
+                <rect x="0" y="-10" width="42" height="20" fill="#f97316" rx="4" />
+                <text x="21" y="0" fill="white" fontSize="10.5" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
+                  {lastB.toFixed(2)}
+                </text>
+              </g>
+            );
+          })()}
         </svg>
       </div>
+
+      {/* %SHORT ฝั่งซ้าย — ShortA (fixed) */}
+      {type === "%Short" && (
+        <div className="absolute left-0 top-0 w-[55px] h-full pointer-events-none bg-[#0f172a] z-10 border-r border-slate-800/50">
+          <svg className="w-full h-full absolute left-0 top-0 overflow-visible pointer-events-none">
+            {[...Array(5)].map((_, i) => {
+              const y = paddingTop + (i * (height - paddingTop - paddingBottom)) / 4;
+              const value = yScale.max - (i * (yScale.max - yScale.min)) / 4;
+              const lastA = currentData["%ShortA"][currentData["%ShortA"].length - 1];
+              const tooClose = Math.abs(normalizeY(lastA) - y) < 12;
+              if (tooClose) return null;
+              return (
+                <text key={i} x="48" y={y} fill="#64748b" fontSize="10" textAnchor="end" dominantBaseline="central">
+                  {value.toFixed(2)}
+                </text>
+              );
+            })}
+            {(() => {
+              const lastA = currentData["%ShortA"][currentData["%ShortA"].length - 1];
+              return (
+                <g transform={`translate(7, ${normalizeY(lastA)})`}>
+                  <rect x="-1" y="-11" width="44" height="22" fill="black" fillOpacity="0.3" rx="5" />
+                  <rect x="0" y="-10" width="42" height="20" fill="#0ea5e9" rx="4" />
+                  <text x="21" y="0" fill="white" fontSize="10.5" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
+                    {lastA.toFixed(2)}
+                  </text>
+                </g>
+              );
+            })()}
+          </svg>
+        </div>
+      )}
+
+      <div className="absolute inset-y-0 left-0 right-[55px] bg-gradient-to-t from-[#0f172a]/90 via-transparent to-transparent pointer-events-none" style={{ top: "75%" }} />
     </div>
   );
 }
-
 function EmptyChartPanel({ title, value, onChange }) {
   return (
     <div className="bg-[#1c2024] border border-slate-700/60 rounded-xl p-4 h-[280px] flex flex-col">
@@ -877,17 +1037,38 @@ export default function StockFortuneTeller() {
     return () => window.removeEventListener("resize", checkScroll);
   }, []);
 
-  /* ===============================  SAVE ACTION  ================================ */
-  const handleSaveLayout = () => {
-    try {
-      localStorage.setItem("stockFortuneFilters", JSON.stringify(filters));
-      showToast("บันทึกรูปแบบกราฟเรียบร้อยแล้ว 💾", "success");
-    } catch (e) {
-      console.error("Failed to save layout", e);
-      showToast("บันทึกไม่สำเร็จ กรุณาลองใหม่", "error");
-    }
-  };
+const handleSaveLayout = () => {
+  try {
+    localStorage.setItem("stockFortuneFilters", JSON.stringify(filters));
+  } catch (e) {
+    console.error("Failed to save layout", e);
+  }
+};
 
+// แทนที่ฟังก์ชัน helper นี้ไว้ใกล้ๆ handleSaveLayout
+const resolveFilters = (currentFilters, changedKey, newValue) => {
+  const allOptions = ["Last", "%Short", "PredictTrend", "Peak", "Shareholder", "Manager"];
+  const updated = { ...currentFilters, [changedKey]: newValue };
+
+  // หา chart อื่นที่มีค่าซ้ำกับที่เพิ่งเลือก
+  const conflictKey = Object.entries(updated).find(
+    ([k, v]) => k !== changedKey && v === newValue
+  )?.[0];
+
+  if (conflictKey) {
+    // หา option ที่ยังไม่มีใครใช้
+    const usedValues = Object.values(updated);
+    const unused = allOptions.find((opt) => !usedValues.includes(opt));
+    if (unused) {
+      updated[conflictKey] = unused;
+    } else {
+      // fallback: สลับค่าเดิมของ changedKey ให้ conflictKey
+      updated[conflictKey] = currentFilters[changedKey];
+    }
+  }
+
+  return updated;
+};
   /* ===============================  FEATURES  ================================ */
   const features = [
     { title: "Last", desc: "Stay updated with intuitive, real-time daily price action charts." },
@@ -1122,7 +1303,7 @@ export default function StockFortuneTeller() {
                 <div className="mb-3 flex justify-between items-center">
                   <select
                     value={value}
-                    onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
+                    onChange={(e) => setFilters((prev) => resolveFilters(prev, key, e.target.value))}
                     className="bg-[#1f2937] text-xs border border-slate-600 rounded-md px-2 py-1 focus:outline-none focus:border-cyan-500"
                   >
                     <option>Last</option>
@@ -1150,8 +1331,8 @@ export default function StockFortuneTeller() {
               setGlobalHoverIndex={setGlobalHoverIndex}
               chartRefs={chartRefs}
               selectedSymbol={selectedSymbol}
-              dataVersion={dataVersion}
-              onChange={(newValue) => setFilters({ ...filters, [key]: newValue })}
+              //dataVersion={dataVersion}
+              onChange={(newValue) => setFilters((prev) => resolveFilters(prev, key, newValue))}
             />
             ))}
           </div>
@@ -1162,7 +1343,7 @@ export default function StockFortuneTeller() {
                 key={key}
                 title={key}
                 value={value}
-                onChange={(newValue) => setFilters({ ...filters, [key]: newValue })}
+                onChange={(newValue) => setFilters((prev) => resolveFilters(prev, key, newValue))}
               />
             ))}
           </div>
