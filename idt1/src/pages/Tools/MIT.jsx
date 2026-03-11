@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import mit from "@/assets/images/mit.png";
 
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
 
@@ -32,8 +33,8 @@ export default function MITLanding() {
             </div>
             <div className="aspect-video w-full bg-slate-900 relative group">
               <img 
-                src={CHART_IMAGE_URL} 
-                alt="Chart Preview" 
+                src={mit} 
+                alt="MIT Preview" 
                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-700 ease-in-out" 
               />
             </div>
