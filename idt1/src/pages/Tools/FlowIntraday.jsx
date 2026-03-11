@@ -272,8 +272,71 @@ function SymbolInput({ value, onChange }) {
   );
 }
 
+function ChartSkeleton({ delay = 0 }) {
+  return (
+    <div className="w-full h-full bg-[#141b2d] rounded-lg overflow-hidden relative">
+      <style>{`
+        @keyframes shimmerFlowIntraday {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
+
+      <div className="absolute inset-0 flex flex-col justify-between p-3">
+        <div className="flex items-center justify-between">
+          <div className="h-2 rounded-full bg-slate-800 w-20" />
+          <div className="h-2 rounded-full bg-slate-800 w-12" />
+        </div>
+
+        <div className="flex-1 my-3 rounded bg-slate-800/60 relative overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+            {[0.2, 0.4, 0.6, 0.8].map((y, i) => (
+              <line
+                key={`h-${i}`}
+                x1="0"
+                y1={`${y * 100}%`}
+                x2="100%"
+                y2={`${y * 100}%`}
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+            ))}
+            {[0.2, 0.4, 0.6, 0.8].map((x, i) => (
+              <line
+                key={`v-${i}`}
+                x1={`${x * 100}%`}
+                y1="0"
+                x2={`${x * 100}%`}
+                y2="100%"
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+            ))}
+          </svg>
+        </div>
+
+        <div className="flex gap-2 justify-between">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-2 rounded-full bg-slate-800 flex-1" />
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.08) 40%, rgba(125,211,252,0.18) 50%, rgba(56,189,248,0.08) 60%, transparent 100%)",
+          animation: "shimmerFlowIntraday 1.8s ease-in-out infinite",
+          animationDelay: `${delay}s`,
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── INTERACTIVE GRID CHART ──────────────────────────────────
-function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverIndex, setGlobalHoverIndex, chartRefs }) {
+function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverIndex, setGlobalHoverIndex, chartRefs, isLoading = false }) {
   const series = useMemo(() => generateFlowSeries(symbol), [symbol]);
 
   const scrollRef    = useRef(null);
@@ -297,6 +360,14 @@ function InteractiveGridChart({ symbol, chartId, refreshKey = 0, globalHoverInde
     scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     return () => { delete chartRefs.current[chartId]; };
   }, [chartId, chartRefs, series]);
+
+if (isLoading) {
+  return (
+    <div ref={containerRef} className="w-full h-full p-2 bg-[#141b2d]">
+      <ChartSkeleton />
+    </div>
+  );
+}
 
   if (!series) {
     return (
@@ -573,6 +644,7 @@ function FullscreenSymbolInput({ value, onChange }) {
 
 // ─── FULLSCREEN CHART ─────────────────────────────────────────
 function FullscreenChart({ symbol, chartId, chartRefs }) {
+  const loadingTimeoutsRef = useRef({});
   const series = useMemo(() => generateFlowSeries(symbol), [symbol]);
   const containerRef = useRef(null);
   const scrollRef    = useRef(null);
@@ -773,6 +845,8 @@ export default function FlowIntraday() {
   const [newListName,     setNewListName]      = useState("");
   const [activeWatchlist, setActiveWatchlist]  = useState(null);
 
+  const [loadingMap, setLoadingMap] = useState(Array(12).fill(false));
+
   const selectedSymbols = useMemo(
     () => [...new Set(symbols.filter((s) => s.trim() !== ""))],
     [symbols]
@@ -873,9 +947,55 @@ export default function FlowIntraday() {
     return () => document.removeEventListener("mousedown", fn);
   }, [showWatchPanel]);
 
-  const handleSymbolChange = useCallback((index, value) => {
-    setSymbols((prev) => { const u = [...prev]; u[index] = value.toUpperCase(); return u; });
-  }, []);
+  const loadingTimeoutsRef = useRef({});
+
+const handleSymbolChange = useCallback((index, value) => {
+  const nextValue = value.toUpperCase().trim();
+
+  setGlobalHoverIndex(null);
+
+  if (loadingTimeoutsRef.current[index]) {
+    clearTimeout(loadingTimeoutsRef.current[index]);
+  }
+
+  if (!nextValue) {
+    setSymbols((prev) => {
+      const updated = [...prev];
+      updated[index] = "";
+      return updated;
+    });
+
+    setLoadingMap((prev) => {
+      const updated = [...prev];
+      updated[index] = false;
+      return updated;
+    });
+
+    return;
+  }
+
+  setLoadingMap((prev) => {
+    const updated = [...prev];
+    updated[index] = true;
+    return updated;
+  });
+
+  loadingTimeoutsRef.current[index] = setTimeout(() => {
+    setSymbols((prev) => {
+      const updated = [...prev];
+      updated[index] = nextValue;
+      return updated;
+    });
+
+    setLoadingMap((prev) => {
+      const updated = [...prev];
+      updated[index] = false;
+      return updated;
+    });
+
+    delete loadingTimeoutsRef.current[index];
+  }, 700);
+}, []);
 
   const features = [
     { title: "Multi-Asset Flow Monitor", desc: "Monitor up to 12 stocks at once in a powerful grid layout." },
@@ -1099,6 +1219,7 @@ export default function FlowIntraday() {
                   globalHoverIndex={globalHoverIndex}
                   setGlobalHoverIndex={setGlobalHoverIndex}
                   chartRefs={chartRefs}
+                  isLoading={!!loadingMap[index]}
                 />
               </div>
             </div>
@@ -1142,6 +1263,7 @@ export default function FlowIntraday() {
               globalHoverIndex={globalHoverIndex}
               setGlobalHoverIndex={setGlobalHoverIndex}
               chartRefs={chartRefs}
+              isLoading={!!loadingMap[fullscreenIndex]}
             />
           </div>
         </div>
