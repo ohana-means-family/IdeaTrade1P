@@ -111,7 +111,7 @@ const FloatingTooltip = ({ visible, top, text }) => {
   if (!visible) return null;
   return (
     <div
-      style={{ top: top, left: 85 }} 
+      style={{ top: top, left: 85 }}
       className="fixed z-[10000] -translate-y-1/2 px-3 py-1.5 bg-[#333333] text-white text-[13px] rounded-md border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] pointer-events-none whitespace-nowrap animate-fade-in"
     >
       <div className="absolute top-1/2 -left-1.5 -mt-1.5 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-[#333333]"></div>
@@ -130,8 +130,8 @@ export default function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [unlockedList, setUnlockedList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,40 +164,35 @@ export default function Sidebar({
           if (userSnap.exists()) {
             const userData = userSnap.data();
             const unlockedItems = userData.unlockedItems || [];
-            const subscriptionsMap = userData.subscriptions || {}; // โหลด Map วันหมดอายุ
+            const subscriptionsMap = userData.subscriptions || {};
             const now = new Date();
             const validUnlockedList = [];
 
-            // 🔥 ลูปเช็คทุกรายการที่เคยซื้อว่าหมดอายุหรือยัง
             unlockedItems.forEach((itemId) => {
               const expireData = subscriptionsMap[itemId];
-              
+
               if (expireData) {
-                // แปลง Firebase Timestamp หรือวันที่ ให้เป็น JS Date
                 const expDate = expireData.toDate ? expireData.toDate() : new Date(expireData);
-                
-                // ถ้ายาวกว่าเวลาปัจจุบัน แสดงว่ายัง "ไม่หมดอายุ"
+
                 if (expDate > now) {
                   validUnlockedList.push(itemId);
                 }
               } else {
-                // ถ้าโปรเจกต์ไหนไม่มีวันที่กำหนดใน subscriptions ถือว่าถาวร
                 validUnlockedList.push(itemId);
               }
             });
 
-            // เช็คสถานะ Member โดยอิงจาก Role หรือมีแพ็กเกจที่ยังไม่หมดอายุเหลืออยู่
             const hasAccess = userData.role === "member" || userData.role === "membership" || validUnlockedList.length > 0;
 
             setIsMember(hasAccess);
-            setUnlockedList(validUnlockedList); // เก็บเฉพาะอันที่ยังไม่หมดอายุเข้า State
+            setUnlockedList(validUnlockedList);
           }
         } catch (error) {
           console.error("Error fetching Firestore:", error);
         }
       } else {
         setIsLoggedIn(false);
-        loadDemoProfile(); 
+        loadDemoProfile();
       }
     });
 
@@ -212,16 +207,16 @@ export default function Sidebar({
   /* ================= AUTH ACTIONS ================= */
   const handleSignUp = () => navigate("/register");
   const handleSignIn = () => navigate("/welcome");
-  
+
   const handleSignOutClick = () => {
     setShowLogoutModal(true);
   };
 
   const confirmSignOut = async () => {
     try {
-      await signOut(auth); 
-      localStorage.removeItem("userProfile"); 
-      setIsLoggedIn(false); 
+      await signOut(auth);
+      localStorage.removeItem("userProfile");
+      setIsLoggedIn(false);
       setIsMember(false);
       setShowLogoutModal(false);
       navigate("/welcome");
@@ -232,28 +227,27 @@ export default function Sidebar({
 
   const handleNavigation = (id, projectItem = null) => {
     if (PROJECT_PREVIEWS[id]) {
-        // เช็คจาก State ใหม่ที่กรองของหมดอายุทิ้งไปแล้ว
-        const isUnlocked = unlockedList.includes(id);
-        if (!isUnlocked) {
-            const previewPage = PROJECT_PREVIEWS[id];
-            setActivePage(previewPage);
-            
-            if (location.pathname !== "/dashboard") {
-                navigate("/dashboard", { state: { goTo: previewPage } });
-            }
-            return; 
+      const isUnlocked = unlockedList.includes(id);
+      if (!isUnlocked) {
+        const previewPage = PROJECT_PREVIEWS[id];
+        setActivePage(previewPage);
+
+        if (location.pathname !== "/dashboard") {
+          navigate("/dashboard", { state: { goTo: previewPage } });
         }
+        return;
+      }
     }
 
     setActivePage(id);
     if (projectItem && openProject) openProject(projectItem);
-    
+
     if (location.pathname !== "/dashboard") {
-        if (id !== "mit" && id !== "profile" && id !== "subscription") {
-             navigate("/dashboard", { state: { goTo: id } });
-        } else {
-             navigate(`/${id}`); 
-        }
+      if (id !== "mit" && id !== "profile" && id !== "subscription") {
+        navigate("/dashboard", { state: { goTo: id } });
+      } else {
+        navigate(`/${id}`);
+      }
     }
   };
 
@@ -262,8 +256,8 @@ export default function Sidebar({
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltipState({
       visible: true,
-      top: rect.top + (rect.height / 2),
-      text: text
+      top: rect.top + rect.height / 2,
+      text: text,
     });
   };
 
@@ -284,297 +278,276 @@ export default function Sidebar({
         .animate-fade-in { animation: fade-in 0.1s ease-out; }
       `}</style>
 
-      {/* ✅ Floating Tooltip */}
-      <FloatingTooltip 
-        visible={tooltipState.visible} 
-        top={tooltipState.top} 
-        text={tooltipState.text} 
-      />
+      <div className="md:hidden fixed top-4 left-4 z-[10003]">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0c0f14]/90 border border-white/10 shadow-lg backdrop-blur-sm"
+        >
+          <img
+            src={ToggleIcon}
+            className={`w-4 pointer-events-none transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+            alt="toggle"
+          />
+        </button>
+      </div>
 
-      {/* ✅ LOGOUT CONFIRMATION MODAL */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-[10002] bg-black/60 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-[#1F2937] p-8 rounded-lg shadow-2xl flex flex-col items-center gap-6 w-[400px] border border-white/10">
-            <h2 className="text-lg text-gray-200 font-medium text-center">
-              Are you sure you want to log out?
-            </h2>
-            <div className="flex gap-4 w-full justify-center">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="px-6 py-2 rounded bg-[#9CA3AF] text-white font-semibold hover:bg-gray-500 transition"
-              >
-                CANCEL
-              </button>
-              <button
-                onClick={confirmSignOut}
-                className="px-6 py-2 rounded bg-[#EF4444] text-white font-semibold hover:bg-red-700 transition"
-              >
-                LOGOUT
-              </button>
+      <div className="hidden md:block">
+        {/* ✅ Floating Tooltip */}
+        <FloatingTooltip
+          visible={tooltipState.visible}
+          top={tooltipState.top}
+          text={tooltipState.text}
+        />
+
+        {/* ✅ LOGOUT CONFIRMATION MODAL */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-[10002] bg-black/60 flex items-center justify-center backdrop-blur-sm">
+            <div className="bg-[#1F2937] p-8 rounded-lg shadow-2xl flex flex-col items-center gap-6 w-[400px] border border-white/10">
+              <h2 className="text-lg text-gray-200 font-medium text-center">
+                Are you sure you want to log out?
+              </h2>
+              <div className="flex gap-4 w-full justify-center">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="px-6 py-2 rounded bg-[#9CA3AF] text-white font-semibold hover:bg-gray-500 transition"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={confirmSignOut}
+                  className="px-6 py-2 rounded bg-[#EF4444] text-white font-semibold hover:bg-red-700 transition"
+                >
+                  LOGOUT
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <aside
-        className={`h-screen bg-gradient-to-b from-[#0c0f14] to-[#0a0d11] border-r border-white/10 flex flex-col transition-all duration-300 shrink-0 ${
-          collapsed ? "w-[80px] items-center py-4" : "w-[280px] overflow-hidden"
-        }`}
-      >
-        {/* ================= HEADER & LOGO ================= */}
-        <div className={`flex items-center shrink-0 transition-all duration-300 ${collapsed ? "flex-col-reverse gap-6 mb-4" : "justify-between px-6 py-6"}`}>
-          {!collapsed && <img src={logo} className="w-36 transition-opacity object-contain pointer-events-none" alt="logo" />}
-
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={`transition-all hover:opacity-100 p-1 rounded-full hover:bg-white/5 ${collapsed ? "opacity-60 rotate-180" : "opacity-60"}`}
-          >
-            <img src={ToggleIcon} className="w-4 pointer-events-none" alt="toggle" />
-          </button>
-        </div>
-
-        {/* ================= STATUS BADGES ================= */}
-        <div className={`flex shrink-0 transition-all duration-300 ${collapsed ? "flex-col gap-1 w-full px-2 mb-3" : "flex-row gap-2 px-6 mb-0"}`}>
-           <div className={`font-bold rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center transition-all whitespace-nowrap overflow-hidden
-             ${collapsed ? "text-[10px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}
-           >
-               {collapsed ? "ONLINE" : "STATUS: ONLINE"}
-           </div>
-
-           <div className={`font-bold rounded border flex items-center justify-center transition-all whitespace-nowrap overflow-hidden
-             ${isMember ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"}
-             ${collapsed ? "text-[10px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}
-           >
-               {collapsed ? (isMember ? "MEMBER" : "FREE") : (isMember ? "MEMBERSHIP" : "FREE ACCESS")}
-           </div>
-        </div>
-
-        {/* ================= MENU ITEMS ================= */}
-        <nav 
-          className={`flex-1 no-scrollbar w-full ${
-            collapsed 
-              ? "px-2 flex flex-col items-center gap-2 overflow-y-auto" 
-              : "px-3 mt-4 overflow-y-auto"
+        <aside
+          className={`h-screen bg-gradient-to-b from-[#0c0f14] to-[#0a0d11] border-r border-white/10 flex flex-col transition-all duration-300 shrink-0 ${
+            collapsed ? "w-[80px] items-center py-4" : "w-[280px] overflow-hidden"
           }`}
         >
-          
-          {/* SEARCH BAR */}
-          <div className={`transition-all duration-300 mb-2 ${collapsed ? "w-10" : "w-full"}`}>
-            <div 
-              onClick={() => collapsed && setCollapsed(false)}
-              onMouseEnter={(e) => handleMouseEnter(e, "Search")}
-              onMouseLeave={handleMouseLeave}
-              className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all 
-              ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-4"}`}
-            >
-              <svg className={`w-4 h-4 text-gray-500 shrink-0 ${!collapsed && "mr-4"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          {/* ================= HEADER & LOGO ================= */}
+          <div className={`flex items-center shrink-0 transition-all duration-300 ${collapsed ? "flex-col-reverse gap-6 mb-4" : "justify-between px-6 py-6"}`}> 
+            {!collapsed && <img src={logo} className="w-36 transition-opacity object-contain pointer-events-none" alt="logo" />} 
 
-              {!collapsed && (
-                <input
-                  type="text"
-                  placeholder="Search Something..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent text-gray-300 text-[13px] placeholder-gray-600 focus:outline-none"
-                />
-              )}
-            </div>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className={`transition-all hover:opacity-100 p-1 rounded-full hover:bg-white/5 ${collapsed ? "opacity-60 rotate-180" : "opacity-60"}`}
+            >
+              <img src={ToggleIcon} className="w-4 pointer-events-none" alt="toggle" />
+            </button>
           </div>
 
-          {/* Preview Button */}
-          <button
-            onClick={() => handleNavigation("preview-projects")} 
-            onMouseEnter={(e) => handleMouseEnter(e, "Preview Projects")}
-            onMouseLeave={handleMouseLeave}
-            className={`rounded-lg flex items-center shrink-0 transition-all cursor-pointer relative group
-            ${activePage === "preview-projects" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-            ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-          >
-            <div className="relative flex items-center justify-center pointer-events-none">
-                <img src={getIcon("preview", activePage === "preview-projects")} className="w-5" alt="preview" />
-                {collapsed && (
-                   <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00ff47] rounded-full border-2 border-[#15181e]"></div>
-                )}
-            </div>
-            {!collapsed && (
-              <>
-                <span className="pointer-events-none">Preview Projects</span>
-                <div className="ml-auto w-2 h-2 bg-[#00ff47] rounded-full shadow-[0_0_5px_#00ff47]"></div>
-              </>
-            )}
-          </button>
+          {/* ================= STATUS BADGES ================= */}
+          <div className={`flex shrink-0 transition-all duration-300 ${collapsed ? "flex-col gap-1 w-full px-2 mb-3" : "flex-row gap-2 px-6 mb-0"}`}> 
+            <div className={`font-bold rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center transition-all whitespace-nowrap overflow-hidden ${collapsed ? "text-[10px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}> 
+              {collapsed ? "ONLINE" : "STATUS: ONLINE"} 
+            </div> 
 
-          {/* Beta Label */}
-          {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Beta Tools</div>}
+            <div className={`font-bold rounded border flex items-center justify-center transition-all whitespace-nowrap overflow-hidden ${isMember ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"} ${collapsed ? "text-[10px] py-1 w-full" : "text-[11px] px-2 py-1 rounded-full"}`}> 
+              {collapsed ? (isMember ? "MEMBER" : "FREE") : (isMember ? "MEMBERSHIP" : "FREE ACCESS")} 
+            </div> 
+          </div> 
 
-          {/* MIT Button */}
-          <button
-            onClick={() => handleNavigation("mit")} 
-            onMouseEnter={(e) => handleMouseEnter(e, "MIT")}
-            onMouseLeave={handleMouseLeave}
-            className={`rounded-lg flex items-center shrink-0 transition-all relative group cursor-pointer
-            ${activePage === "mit" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-            ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
+          {/* ================= MENU ITEMS ================= */}
+          <nav
+            className={`flex-1 no-scrollbar w-full ${
+              collapsed
+                ? "px-2 flex flex-col items-center gap-2 overflow-y-auto"
+                : "px-3 mt-4 overflow-y-auto"
+            }`}
           >
-              <div className={`flex items-center gap-3 pointer-events-none ${collapsed ? "justify-center w-full" : ""}`}>
-                <img src={getIcon("mit", activePage === "mit")} className="w-5" alt="mit" />
-                {!collapsed && <span>MIT</span>}
-              </div>
-              
+            {/* SEARCH BAR */}
+            <div className={`transition-all duration-300 mb-2 ${collapsed ? "w-10" : "w-full"}`}> 
+              <div
+                onClick={() => collapsed && setCollapsed(false)}
+                onMouseEnter={(e) => handleMouseEnter(e, "Search")}
+                onMouseLeave={handleMouseLeave}
+                className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all ${collapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-4"}`}
+              >
+                <svg className={`w-4 h-4 text-gray-500 shrink-0 ${!collapsed && "mr-4"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> 
+                </svg> 
+
+                {!collapsed && ( 
+                  <input 
+                    type="text" 
+                    placeholder="Search Something..." 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    className="w-full bg-transparent text-gray-300 text-[13px] placeholder-gray-600 focus:outline-none" 
+                  />
+                )} 
+              </div> 
+            </div> 
+
+            {/* Preview Button */} 
+            <button
+              onClick={() => handleNavigation("preview-projects")}
+              onMouseEnter={(e) => handleMouseEnter(e, "Preview Projects")}
+              onMouseLeave={handleMouseLeave}
+              className={`rounded-lg flex items-center shrink-0 transition-all cursor-pointer relative group ${activePage === "preview-projects" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"} ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
+            >
+              <div className="relative flex items-center justify-center pointer-events-none"> 
+                <img src={getIcon("preview", activePage === "preview-projects")} className="w-5" alt="preview" /> 
+                {collapsed && ( 
+                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00ff47] rounded-full border-2 border-[#15181e]"></div> 
+                )} 
+              </div> 
+              {!collapsed && (
+                <> 
+                  <span className="pointer-events-none">Preview Projects</span> 
+                  <div className="ml-auto w-2 h-2 bg-[#00ff47] rounded-full shadow-[0_0_5px_#00ff47]"></div> 
+                </>
+              )} 
+            </button> 
+
+            {/* Beta Label */} 
+            {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Beta Tools</div>} 
+
+            {/* MIT Button */} 
+            <button
+              onClick={() => handleNavigation("mit")}
+              onMouseEnter={(e) => handleMouseEnter(e, "MIT")}
+              onMouseLeave={handleMouseLeave}
+              className={`rounded-lg flex items-center shrink-0 transition-all relative group cursor-pointer ${activePage === "mit" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"} ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`} 
+            >
+              <div className={`flex items-center gap-3 pointer-events-none ${collapsed ? "justify-center w-full" : ""}`}> 
+                <img src={getIcon("mit", activePage === "mit")} className="w-5" alt="mit" /> 
+                {!collapsed && <span>MIT</span>} 
+              </div> 
+
               {collapsed ? (
                 <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-400 pointer-events-none"></span>
               ) : (
                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400 text-black pointer-events-none">FREE</span>
-              )}
-          </button>
+              )} 
+            </button> 
 
-          {/* Member Label */}
-          {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Membership Tools</div>}
+            {/* Member Label */} 
+            {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Membership Tools</div>} 
 
-          {/* Project List */}
-          {filteredProjects.length > 0 ? (
-            filteredProjects.map((p) => {
-              const unlocked = unlockedList.includes(p.id);
-              const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
+            {/* Project List */} 
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map((p) => {
+                const unlocked = unlockedList.includes(p.id);
+                const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
 
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => handleNavigation(p.id, p)}
-                  onMouseEnter={(e) => handleMouseEnter(e, p.name)}
-                  onMouseLeave={handleMouseLeave}
-                  className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-                  ${active ? "bg-slate-800" : "hover:bg-white/5"}
-                  ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
-                >
-                   <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
-                     ${active 
-                       ? (unlocked ? "text-[#ffcc00]" : "text-white") 
-                       : (unlocked ? "text-[#977100]" : "text-gray-400")
-                     }
-                     ${collapsed ? "justify-center w-full" : ""}`}
-                   >
-                      <img 
-                        src={getIcon(p.iconKey, active)} 
-                        className="w-5" 
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleNavigation(p.id, p)}
+                    onMouseEnter={(e) => handleMouseEnter(e, p.name)}
+                    onMouseLeave={handleMouseLeave}
+                    className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group ${active ? "bg-slate-800" : "hover:bg-white/5"} ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`} 
+                  >
+                    <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none ${active ? (unlocked ? "text-[#ffcc00]" : "text-white") : (unlocked ? "text-[#977100]" : "text-gray-400")} ${collapsed ? "justify-center w-full" : ""}`}>
+                      <img
+                        src={getIcon(p.iconKey, active)}
+                        className="w-5"
                         alt={p.name}
                         style={
-                          active 
-                            ? (unlocked 
+                          active
+                            ? unlocked
                               ? { filter: "brightness(0) saturate(100%) invert(87%) sepia(26%) saturate(6838%) hue-rotate(359deg) brightness(101%) contrast(103%)" }
-                              : { filter: "brightness(0) invert(1)" } 
-                            )
-                            : (unlocked 
-                              ? { filter: "brightness(0) saturate(100%) invert(43%) sepia(70%) saturate(2264%) hue-rotate(24deg) brightness(92%) contrast(101%)" } 
-                              : {} 
-                            )
+                              : { filter: "brightness(0) invert(1)" }
+                            : unlocked
+                              ? { filter: "brightness(0) saturate(100%) invert(43%) sepia(70%) saturate(2264%) hue-rotate(24deg) brightness(92%) contrast(101%)" }
+                              : {}
                         }
                       />
-                      {!collapsed && <span>{p.name}</span>}
-                   </div>
-                   
-                   {!collapsed && <CrownIcon color="#facc15" />}
-                </button>
-              );
-            })
-          ) : (
-            !collapsed && <div className="text-gray-500 text-[12px] text-center mt-4">No projects found</div>
-          )}
+                      {!collapsed && <span>{p.name}</span>} 
+                    </div> 
 
-          {/* ================= ACCOUNT SECTION ================= */}
-          {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
+                    {!collapsed && <CrownIcon color="#facc15" />} 
+                  </button>
+                );
+              })
+            ) : (
+              !collapsed && <div className="text-gray-500 text-[12px] text-center mt-4">No projects found</div>
+            )} 
 
-          {/* 1. Profile (ให้โชว์ตลอด ไม่ว่าจะล็อกอินจริงหรือเล่น Demo) */}
-          <button
-            onClick={() => handleNavigation("profile")}
-            onMouseEnter={(e) => handleMouseEnter(e, "Profile")}
-            onMouseLeave={handleMouseLeave}
-            className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-            ${activePage === "profile" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-            ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-          >
-             <ProfileIconSVG />
-             {!collapsed && <span className="pointer-events-none">Profile</span>}
-          </button>
+            {/* ================= ACCOUNT SECTION ================= */} 
+            {collapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>} 
 
-          {/* 2. Manage Subscription (ให้โชว์ถ้าเป็น Member หรือมีการกดซื้อ Demo ไว้) */}
-          {(isMember || unlockedList.length > 0) && (
             <button
-              onClick={() => handleNavigation("subscription")}
-              onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
+              onClick={() => handleNavigation("profile")}
+              onMouseEnter={(e) => handleMouseEnter(e, "Profile")}
               onMouseLeave={handleMouseLeave}
-              className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
-              ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"}
-              ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+              className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group ${activePage === "profile" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"} ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
             >
-               <SettingsIconSVG />
-               {!collapsed && <span className="pointer-events-none">Manage Subscription</span>}
-            </button>
-          )}
+              <ProfileIconSVG />
+              {!collapsed && <span className="pointer-events-none">Profile</span>} 
+            </button> 
 
-          {/* 3. ปุ่ม Sign Out (โชว์เฉพาะตอนเลือกล็อกอินของจริงเท่านั้น) */}
-          {isLoggedIn && (
+            {(isMember || unlockedList.length > 0) && (
+              <button
+                onClick={() => handleNavigation("subscription")}
+                onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
+                onMouseLeave={handleMouseLeave}
+                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group ${activePage === "subscription" ? "bg-slate-800 text-white" : "hover:bg-white/5 text-gray-300"} ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
+              >
+                <SettingsIconSVG />
+                {!collapsed && <span className="pointer-events-none">Manage Subscription</span>} 
+              </button>
+            )} 
+
+            {isLoggedIn && (
+              <button
+                onClick={handleSignOutClick}
+                onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
+                onMouseLeave={handleMouseLeave}
+                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
+              >
+                <LogoutIconSVG />
+                {!collapsed && <span className="pointer-events-none">Sign Out</span>} 
+              </button>
+            )} 
+
+            {!isLoggedIn && (
+              <> 
+                <button
+                  onClick={handleSignUp}
+                  onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")}
+                  onMouseLeave={handleMouseLeave}
+                  className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
+                >
+                  <img src={signupIcon} alt="Sign Up" className="w-5 opacity-80 pointer-events-none" />
+                  {!collapsed && <span className="pointer-events-none">Sign Up</span>} 
+                </button> 
+
+                <button
+                  onClick={handleSignIn}
+                  onMouseEnter={(e) => handleMouseEnter(e, "Sign In")}
+                  onMouseLeave={handleMouseLeave}
+                  className={`rounded-lg flex items-center shrink-0 transition-all hover:bg-white/5 text-gray-300 cursor-pointer relative group ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`} 
+                >
+                  <img src={signinIcon} alt="Sign In" className="w-5 opacity-80 pointer-events-none" />
+                  {!collapsed && <span className="pointer-events-none">Sign In</span>} 
+                </button> 
+              </>
+            )} 
+
+            <div className="h-10 shrink-0" />
+          </nav> 
+
+          {/* ================= FOOTER ================= */}
+          <div className="px-2 pb-2 w-full flex justify-center shrink-0">
             <button
-              onClick={handleSignOutClick}
-              onMouseEnter={(e) => handleMouseEnter(e, "Sign Out")}
+              onClick={() => setActivePage("premiumtools")}
+              onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")}
               onMouseLeave={handleMouseLeave}
-              className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
-              ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+              className={`flex items-center justify-center transition-all shadow-lg overflow-hidden shrink-0 cursor-pointer relative group ${collapsed ? "w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400" : "w-full h-11 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-semibold gap-2"}`} 
             >
-               <LogoutIconSVG />
-               {!collapsed && <span className="pointer-events-none">Sign Out</span>}
+              <CrownIcon color="#000" />
+              {!collapsed && <span className="whitespace-nowrap pointer-events-none">Join Membership</span>} 
             </button>
-          )}
-
-          {/* 4. ปุ่ม Sign Up / Sign In (โชว์เมื่อยังไม่ได้ล็อกอิน ให้เค้ากดไปสมัครได้) */}
-          {!isLoggedIn && (
-            <>
-              <button
-                onClick={handleSignUp}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign Up")}
-                onMouseLeave={handleMouseLeave}
-                className={`rounded-lg flex items-center shrink-0 transition-all mb-1 hover:bg-white/5 text-gray-300 cursor-pointer relative group
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-              >
-                 <img src={signupIcon} alt="Sign Up" className="w-5 opacity-80 pointer-events-none" />
-                 {!collapsed && <span className="pointer-events-none">Sign Up</span>}
-              </button>
-
-              <button
-                onClick={handleSignIn}
-                onMouseEnter={(e) => handleMouseEnter(e, "Sign In")}
-                onMouseLeave={handleMouseLeave}
-                className={`rounded-lg flex items-center shrink-0 transition-all hover:bg-white/5 text-gray-300 cursor-pointer relative group
-                ${collapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
-              >
-                 <img src={signinIcon} alt="Sign In" className="w-5 opacity-80 pointer-events-none" />
-                 {!collapsed && <span className="pointer-events-none">Sign In</span>}
-              </button>
-            </>
-          )}
-
-          <div className="h-10 shrink-0" />
-        </nav>
-
-        {/* ================= FOOTER ================= */}
-        <div className={`px-2 pb-2 w-full flex justify-center shrink-0`}>
-          <button
-            onClick={() => setActivePage("premiumtools")}
-            onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")}
-            onMouseLeave={handleMouseLeave}
-            className={`flex items-center justify-center transition-all shadow-lg overflow-hidden shrink-0 cursor-pointer relative group
-            ${collapsed 
-              ? "w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400" 
-              : "w-full h-11 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-semibold gap-2"}`}
-          >
-            <CrownIcon color="#000" />
-            {!collapsed && <span className="whitespace-nowrap pointer-events-none">Join Membership</span>}
-          </button>
-        </div>
-
-      </aside>
+          </div>
+        </aside>
+      </div>
     </>
   );
 }
