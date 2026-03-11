@@ -10,7 +10,6 @@ import PremiumTools from "@/pages/Dashboard/PremiumTools.jsx";
 import Profile from "@/pages/Profile/Profile.jsx";
 import ManageSubscription from "@/pages/Profile/Subscriptions";
 
-// ✅ 1. Import ตัว Guard เข้ามา
 import ToolAccessGuard from "@/components/ToolAccessGuard"; 
 
 // --- Tools Components ---
@@ -27,13 +26,10 @@ import DRInsight from "@/pages/Tools/DRInsight";
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
 
-// ✅ 2. เพิ่ม isPremium เพื่อแยกระหว่างของฟรีกับของเสียเงิน
 const TOOL_CONFIG = {
-  // 🔓 MIT (ไม่ครอบ Guard)
   mit: { component: MITLanding, id: "mit", name: "MIT Tool", isPremium: false },
   "MIT": { component: MITLanding, id: "mit", name: "MIT Tool", isPremium: false },
 
-  // 🔒 Premium Tools (ครอบ Guard ทั้งหมด 9 ตัว)
   fortune: { component: StockFortuneTeller, id: "fortune", name: "Stock Fortune Teller", isPremium: true },
   "stock-fortune": { component: StockFortuneTeller, id: "fortune", name: "Stock Fortune Teller", isPremium: true },
 
@@ -65,7 +61,6 @@ const TOOL_CONFIG = {
 const FULL_WIDTH_PAGES = []; 
 const FULL_WIDTH_PATHS = [];
 
-// ดึงเฉพาะ Key มาเพื่อบอกว่าหน้าไหนห้ามมี Padding
 const NO_PADDING_PAGES = [
   "profile", 
   "subscription", 
@@ -81,8 +76,10 @@ export default function Dashboard({ initialPage }) {
   /* --- State --- */
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState(initialPage || "preview-projects");
-   
   const [unlockedItems, setUnlockedItems] = useState([]);
+
+  // ✅ Mobile sidebar state
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   /* --- Effects --- */
   useEffect(() => {
@@ -91,7 +88,6 @@ export default function Dashboard({ initialPage }) {
     } else {
       const path = location.pathname;
       
-      // Check path mapping
       if (path === "/mit" || path === "/MIT") setActivePage("mit");
       else if (path === "/stock-fortune" || path === "/fortune") setActivePage("fortune");
       else if (path.includes("/petroleum")) setActivePage("petroleum");
@@ -102,7 +98,6 @@ export default function Dashboard({ initialPage }) {
       else if (path.includes("/bidask") || path.includes("/BidAsk")) setActivePage("bidask");
       else if (path.includes("/tickmatch") || path.includes("/TickMatch")) setActivePage("tickmatch");
       else if (path.includes("/dr") || path.includes("/DRInsight")) setActivePage("dr");
-      
       else if (path.includes("/profile")) setActivePage("profile");
       else if (path.includes("/subscription")) setActivePage("subscription");
     }
@@ -121,6 +116,11 @@ export default function Dashboard({ initialPage }) {
     if (initialPage) setActivePage(initialPage);
   }, [initialPage]);
 
+  // ✅ ปิด mobile sidebar เมื่อ page เปลี่ยน
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [activePage]);
+
   /* --- Helpers --- */
   const isFullWidthPage = () => {
     return FULL_WIDTH_PAGES.includes(activePage) || FULL_WIDTH_PATHS.includes(location.pathname);
@@ -134,21 +134,17 @@ export default function Dashboard({ initialPage }) {
 
   /* --- Render Content Logic --- */
   const renderContent = () => {
-    // 1. Profile & Subscriptions
     if (activePage === "profile") return <div className="w-full min-h-full bg-[#0f172a] p-8"><Profile /></div>;
     if (activePage === "subscription") return <div className="w-full min-h-full bg-[#0f172a] p-8"><ManageSubscription /></div>;
     
-    // 2. Dashboard Home
     if (activePage === "preview-projects" || activePage === "whatsnew") return <PreviewProjects />;
     if (activePage === "premiumtools") return <PremiumTools />;
 
-    // 3. ✅ Tools Rendering (แยกเรนเดอร์ระหว่างของฟรีกับเสียเงิน)
     const toolConfig = TOOL_CONFIG[activePage];
     
     if (toolConfig) {
       const ToolComponent = toolConfig.component;
       
-      // ถ้าเป็น Premium Tool ให้เอา Guard มาครอบก่อน
       if (toolConfig.isPremium) {
         return (
           <ToolAccessGuard toolId={toolConfig.id} toolName={toolConfig.name}>
@@ -157,19 +153,39 @@ export default function Dashboard({ initialPage }) {
         );
       }
       
-      // ถ้าไม่ใช่ Premium (เช่น MIT) ให้โชว์เนื้อหาปกติได้เลย
       return <ToolComponent />;
     }
 
-    // Default Fallback
     return <PreviewProjects />;
   };
 
 /* --- Main Render --- */
   return (
     <div className="flex h-screen bg-[#0B0E14] text-white overflow-hidden font-sans">
-      
-      {/* Sidebar: ต้องแน่ใจว่าในไฟล์ Sidebar.jsx คุณลบ 'fixed' ออกแล้วตามที่คุยกัน */}
+
+      {/* ✅ Mobile Topbar — โชว์เฉพาะ mobile (md:hidden) */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-4 h-14 bg-[#0f1520] border-b border-white/10 shadow-lg">
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="p-1.5 rounded-md text-white/70 hover:text-white active:scale-95 transition-all"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+
+        {/* Logo text: IDEA V TRADE */}
+        <div className="flex items-center gap-1.5 font-bold text-[15px] tracking-widest select-none">
+          <span className="text-white">IDEA</span>
+          <span className="text-red-500 font-black">V</span>
+          <span className="text-white">TRADE</span>
+        </div>
+      </div>
+
+      {/* Sidebar */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -179,15 +195,17 @@ export default function Dashboard({ initialPage }) {
           else setActivePage(page);
         }}
         openProject={(p) => setActivePage(p.id)} 
+        mobileOpen={mobileOpen}                    // ✅
+        onMobileClose={() => setMobileOpen(false)} // ✅
       />
 
       {/* Main Content Area */}
       <main className="flex-1 w-full relative overflow-y-auto transition-all duration-300">
-        
+        {/* ✅ Spacer สำหรับ mobile topbar (h-14) */}
+        <div className="md:hidden h-14 shrink-0" />
         <div className={isFullWidthPage() || isNoPaddingPage() ? "p-0" : "p-8 pb-20"}>
           {renderContent()}
         </div>
-
       </main>
     </div>
   );
