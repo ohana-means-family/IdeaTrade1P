@@ -42,7 +42,7 @@ export default function MITLanding() {
         </div>
         
         <button 
-          onClick={() => navigate("/member-register")} 
+          onClick={() => window.open('https://ideatrade1.com/mit', '_blank')}
           className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:shadow-[0_0_30px_rgba(6,182,212,0.8)] hover:scale-105 transition-all duration-300 cursor-pointer"
         >
           Start Using Tool
