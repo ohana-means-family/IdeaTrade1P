@@ -295,6 +295,16 @@ const MANAGER_NAMES = [
   "กลุ่มผู้บริหาร A", "กองทุนรวม B", "นักลงทุนสถาบัน C", "ผู้ถือหุ้นรายใหญ่ D", "กองทุนต่างประเทศ E",
 ];
 
+const MANAGER_NAMES_BY_SYMBOL = {
+  BANPU: ["วเศษ วิศิษฎ์วิญญ", "ศุภชัย เจียรวนนท์", "อิสระ ว่องกุศลกิจ", "ก่อศักดิ์ ไชยรัศมีศักดิ์", "ประทีป ตั้งมติธรรม"],
+  KBANK: ["ตระกูลล่ำซำ", "กบข.", "กองทุนบัวหลวง", "Vanguard Group", "กองทุน ThaiNVDR"],
+  PTT:   ["กระทรวงการคลัง", "กบข.", "กองทุนวายุภักษ์", "BlackRock", "กองทุน ThaiNVDR"],
+  SCB:   ["ตระกูลโสภณพนิช", "กบข.", "กองทุนบัวหลวง", "Morgan Stanley", "กองทุน ThaiNVDR"],
+  CPALL: ["ตระกูลเจียรวนนท์", "CP Group", "กบข.", "Goldman Sachs", "กองทุน ThaiNVDR"],
+  // fallback สำหรับ symbol อื่นๆ
+  DEFAULT: ["กลุ่มผู้ก่อตั้ง", "กบข.", "กองทุนรวมในประเทศ", "กองทุนต่างประเทศ", "กองทุน ThaiNVDR"],
+};
+
 const LABELS = Array.from({ length: 20 }, (_, i) => {
   const d = new Date("2025-01-01");
   d.setDate(d.getDate() + i * 7);
@@ -727,7 +737,7 @@ function ChartRenderer({ type, chartId, globalHoverIndex, setGlobalHoverIndex, c
               if (mOpacity(idx)===0) return null;
               const lastVal = data[data.length-1];
               const isLabelVisible = showLabels ? visibleLabels[`mgr-${idx}`] !== false : !!visibleLabels[`mgr-${idx}`];
-              return { idx, idealY:normalizeY(lastVal), realY:normalizeY(lastVal), color:MANAGER_COLORS[idx], numStr:lastVal>0?`+${lastVal.toFixed(2)}`:lastVal.toFixed(2), nameStr:isLabelVisible?MANAGER_NAMES[idx]:"", isIsolated:isolatedIdx===idx };
+              return { idx, idealY:normalizeY(lastVal), realY:normalizeY(lastVal), color:MANAGER_COLORS[idx], numStr:lastVal>0?`+${lastVal.toFixed(2)}`:lastVal.toFixed(2), nameStr:isLabelVisible?(MANAGER_NAMES_BY_SYMBOL[selectedSymbol] ?? MANAGER_NAMES_BY_SYMBOL.DEFAULT)[idx]:"", isIsolated:isolatedIdx===idx };
             }).filter(Boolean).sort((a,b)=>a.idealY-b.idealY);
             
             for (let i=1;i<tags.length;i++) { if(tags[i].idealY-tags[i-1].idealY<MIN_GAP) tags[i].idealY=tags[i-1].idealY+MIN_GAP; }
