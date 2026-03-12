@@ -262,31 +262,34 @@ function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, c
   }
 
   return (
-    <div className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
-        <select
-          value={stockName}
-          onChange={(e) => setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value }))}
-          className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-            paddingRight: '28px'
-          }}
-        >
-          <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
-          {allStockOptions.map(s => (
-            <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">
-              {s.dr} - {s.name}
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center gap-3 text-slate-600">
-          <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-sm" title="Fullscreen">⛶</button>
-          <button className="hover:text-white transition text-sm">⚙</button>
+      <div className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
+          <select
+            value={stockName}
+            onChange={(e) => {
+              onStockSelect(e.target.value);  // ← เรียก handleStockClick ที่มี loading
+              setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value }));
+            }}
+            className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 8px center',
+              paddingRight: '28px'
+            }}
+          >
+            <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
+            {allStockOptions.map(s => (
+              <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">
+                {s.dr} - {s.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-3 text-slate-600">
+            <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-sm" title="Fullscreen">⛶</button>
+            <button className="hover:text-white transition text-sm">⚙</button>
+          </div>
         </div>
-      </div>
 
       <div
         className="relative bg-[#0B1221] cursor-crosshair"
@@ -351,6 +354,40 @@ function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, c
   );
 }
 
+function WaveSkeleton({ delay = 0 }) {
+  return (
+    <div className="w-full h-[180px] bg-[#0f172a] rounded-lg overflow-hidden relative">
+      <style>{`
+        @keyframes shimmer {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
+      <div className="absolute inset-0 flex flex-col justify-between p-3">
+        <div className="flex gap-2">
+          <div className="h-2 rounded-full bg-slate-800 w-1/3" />
+          <div className="h-2 rounded-full bg-slate-800 w-1/5" />
+        </div>
+        <div className="flex-1 my-3 rounded bg-slate-800/60" />
+        <div className="flex gap-3 justify-between">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-2 rounded-full bg-slate-800 flex-1" />
+          ))}
+        </div>
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.08) 40%, rgba(125,211,252,0.18) 50%, rgba(56,189,248,0.08) 60%, transparent 100%)",
+          animation: "shimmer 1.8s ease-in-out infinite",
+          animationDelay: `${delay}s`,
+        }}
+      />
+    </div>
+  );
+}
+
 /* ===============================
     MAIN COMPONENT
 ================================ */
@@ -377,6 +414,7 @@ export default function DRInsight() {
   const [selectedSymbol, setSelectedSymbol] = useState("");
 
   const { accessData, isFreeAccess } = useSubscription();
+  const [isLoadingCharts, setIsLoadingCharts] = useState(false);
 
   useEffect(() => {
     if (isFreeAccess) { setIsMember(true); return; }
@@ -392,9 +430,14 @@ export default function DRInsight() {
   }, [accessData, isFreeAccess]);
 
   const handleStockClick = (symbol) => {
-    setChartSelections({ chart1: symbol, chart2: symbol, chart3: symbol });
-    setSelectedSymbol(symbol);
-  };
+  setIsLoadingCharts(true);
+  setChartSelections({ chart1: symbol, chart2: symbol, chart3: symbol });
+  setSelectedSymbol(symbol);
+
+  setTimeout(() => {
+    setIsLoadingCharts(false);
+  }, 700);
+};
 
   useEffect(() => {
     const newData = { ...chartData };
@@ -588,7 +631,27 @@ export default function DRInsight() {
 
         {/* Charts */}
         <div className="flex flex-col gap-3 px-3 pb-6">
-          {['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+        {isLoadingCharts ? (
+          ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+            <div key={chartKey} className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
+                <select
+                  disabled
+                  value={chartSelections[chartKey]}
+                  className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs opacity-50 cursor-not-allowed"
+                >
+                  <option>Select a symbol...</option>
+                </select>
+                <div className="flex items-center gap-3 text-slate-600 opacity-50">
+                  <span className="text-sm">⛶</span>
+                  <span className="text-sm">⚙</span>
+                </div>
+              </div>
+              <WaveSkeleton delay={index * 0.2} />
+            </div>
+          ))
+        ) : (
+          ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
             <ChartCard
               key={chartKey}
               chartKey={chartKey}
@@ -600,9 +663,11 @@ export default function DRInsight() {
               setHoverPos={setHoverPos}
               themeColor={themeColors[index]}
               onFullscreen={setFullscreenChart}
+              onStockSelect={handleStockClick}
             />
-          ))}
-        </div>
+          ))
+        )}
+      </div>
 
       </div>
       {/* END MOBILE LAYOUT */}
@@ -669,96 +734,117 @@ export default function DRInsight() {
             })}
           </div>
 
-          <div className="col-span-6 flex flex-col gap-4 h-full overflow-hidden">
-            {['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
-              const stockName = chartSelections[chartKey];
-              const lineColor = themeColors[index];
-              const data = chartData[chartKey];
-              const { min, max } = chartMinMax[chartKey];
-              const range = max - min || 1;
-              const pathD = buildSvgPath(data, min, max);
-
-              let currentYPercent = null;
-              let hoverValue = null;
-              let actualXPercent = hoverPos;
-
-              if (hoverPos !== null && data.length > 0) {
-                const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
-                hoverValue = data[dataIndex];
-                currentYPercent = 100 - ((hoverValue - min) / range) * 100;
-                actualXPercent = (dataIndex / (data.length - 1)) * 100;
-              }
-
-              return (
-                <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
-                  <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
-                    <select
-                      value={stockName}
-                      onChange={(e) => setChartSelections({ ...chartSelections, [chartKey]: e.target.value })}
-                      className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px'
-                      }}
-                    >
-                      <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
-                      {allStockOptions.map(s => (
-                        <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-3 text-slate-600">
-                      <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
-                      <button className="hover:text-white transition">⚙</button>
-                    </div>
-                  </div>
-                  <div
-                    className="flex-1 w-full bg-[#0B1221] border border-slate-800/40 rounded-lg relative overflow-hidden flex items-end cursor-crosshair"
-                    onMouseMove={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoverPos(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
-                    }}
-                    onMouseLeave={() => setHoverPos(null)}
-                  >
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                    {!stockName && (
-                      <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <span className="text-slate-500 text-sm">Select a symbol to display chart</span>
-                      </div>
-                    )}
-                    {stockName && (
-                      <>
-                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
-                              <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                          <path d={pathD + " V 100 H 0 Z"} fill={`url(#grad-${index})`} stroke="none" />
-                        </svg>
-                        <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none z-10">
-                          {[max, min + range * 0.75, min + range * 0.5, min + range * 0.25, min].map((v, i) => (
-                            <span key={i}>{v.toFixed(2)}</span>
-                          ))}
-                        </div>
-                        {hoverPos !== null && currentYPercent !== null && (
-                          <>
-                            <div className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80" style={{ left: `${actualXPercent}%` }}></div>
-                            <div className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80" style={{ top: `${currentYPercent}%` }}></div>
-                            <div className="absolute z-30 pointer-events-none w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
-                              style={{ left: `${actualXPercent}%`, top: `${currentYPercent}%`, backgroundColor: lineColor, boxShadow: `0 0 10px ${lineColor}` }}></div>
-                            <div className="absolute right-0 z-30 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 text-white text-[9px] rounded shadow-md border border-slate-600 pointer-events-none"
-                              style={{ top: `${currentYPercent}%` }}>{hoverValue?.toFixed(2)}</div>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+         <div className="col-span-6 flex flex-col gap-4 h-full overflow-hidden">
+  {isLoadingCharts ? (
+    ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+      <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
+        <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
+          <select
+            disabled
+            value={chartSelections[chartKey]}
+            className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 opacity-50 cursor-not-allowed"
+          >
+            <option>Select a symbol...</option>
+          </select>
+          <div className="flex gap-3 text-slate-600 opacity-50">
+            <button disabled>⛶</button>
+            <button disabled>⚙</button>
           </div>
+        </div>
+        <WaveSkeleton delay={index * 0.2} />
+      </div>
+    ))
+  ) : (
+    ['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
+      const stockName = chartSelections[chartKey];
+      const lineColor = themeColors[index];
+      const data = chartData[chartKey];
+      const { min, max } = chartMinMax[chartKey];
+      const range = max - min || 1;
+      const pathD = buildSvgPath(data, min, max);
+
+      let currentYPercent = null;
+      let hoverValue = null;
+      let actualXPercent = hoverPos;
+
+      if (hoverPos !== null && data.length > 0) {
+        const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
+        hoverValue = data[dataIndex];
+        currentYPercent = 100 - ((hoverValue - min) / range) * 100;
+        actualXPercent = (dataIndex / (data.length - 1)) * 100;
+      }
+
+      return (
+        <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
+          <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
+            <select
+              value={stockName}
+              onChange={(e) => setChartSelections({ ...chartSelections, [chartKey]: e.target.value })}
+              className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px'
+              }}
+            >
+              <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
+              {allStockOptions.map(s => (
+                <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>
+              ))}
+            </select>
+            <div className="flex gap-3 text-slate-600">
+              <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
+              <button className="hover:text-white transition">⚙</button>
+            </div>
+          </div>
+          <div
+            className="flex-1 w-full bg-[#0B1221] border border-slate-800/40 rounded-lg relative overflow-hidden flex items-end cursor-crosshair"
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setHoverPos(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+            }}
+            onMouseLeave={() => setHoverPos(null)}
+          >
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+            {!stockName && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <span className="text-slate-500 text-sm">Select a symbol to display chart</span>
+              </div>
+            )}
+            {stockName && (
+              <>
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
+                      <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  <path d={pathD + " V 100 H 0 Z"} fill={`url(#grad-${index})`} stroke="none" />
+                </svg>
+                <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none z-10">
+                  {[max, min + range * 0.75, min + range * 0.5, min + range * 0.25, min].map((v, i) => (
+                    <span key={i}>{v.toFixed(2)}</span>
+                  ))}
+                </div>
+                {hoverPos !== null && currentYPercent !== null && (
+                  <>
+                    <div className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80" style={{ left: `${actualXPercent}%` }}></div>
+                    <div className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80" style={{ top: `${currentYPercent}%` }}></div>
+                    <div className="absolute z-30 pointer-events-none w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
+                      style={{ left: `${actualXPercent}%`, top: `${currentYPercent}%`, backgroundColor: lineColor, boxShadow: `0 0 10px ${lineColor}` }}></div>
+                    <div className="absolute right-0 z-30 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 text-white text-[9px] rounded shadow-md border border-slate-600 pointer-events-none"
+                      style={{ top: `${currentYPercent}%` }}>{hoverValue?.toFixed(2)}</div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    })
+  )}
+</div>
 
           <div className="col-span-3 flex flex-col h-full bg-[#111827] border border-slate-800/80 rounded-xl p-4 shadow-xl overflow-hidden">
             <div className="text-center pb-3 mb-4 border-b border-slate-800/60 shrink-0">
@@ -781,7 +867,12 @@ export default function DRInsight() {
                       <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
                         {filtered.map((stock, idx) => (
                           <div key={idx} onClick={() => handleStockClick(stock.dr)}
-                            className={`flex justify-between items-center text-[10px] p-1.5 rounded cursor-pointer transition-colors group ${selectedSymbol === stock.dr ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/60'}`}>
+                            className={`w-full flex items-center justify-between px-5 py-2.5 border-b border-slate-800/40 transition-colors text-left ${
+                            selectedSymbol === stock.dr
+                              ? "bg-cyan-500/15 border-l-2 border-l-cyan-400"
+                              : "hover:bg-[#1a2030] active:bg-[#1e2638]"
+                          }`}
+                        >
                             <div className="flex items-center gap-2">
                               <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
                               <span className="text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
