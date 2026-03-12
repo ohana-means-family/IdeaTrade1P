@@ -145,7 +145,7 @@ const ManageSubscription = () => {
     return (
       <div key={item.key} className={`${bgClass} border ${cardBorder} rounded-xl mb-4 p-5 md:py-4 md:px-6 hover:border-gray-600 transition-all backdrop-blur-sm`}>
         
-        {/* === Mobile Card Layout === */}
+ {/* === Mobile Card Layout === */}
         <div className="md:hidden flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-[#4db8ff] text-xl tracking-tight">{item.name}</h3>
@@ -157,7 +157,6 @@ const ManageSubscription = () => {
               {statusIcon}
               <span className={`font-extrabold text-[13px] uppercase tracking-wide ${statusColor}`}>{statusText}</span>
             </div>
-            {/* 🔴 นำ Paid on และ Exp กลับมาแสดงเหมือนเดิม */}
             <div className="flex flex-col pl-5 mt-0.5">
               <span className="text-gray-500 text-[11px]">Paid on {item.purchaseDetail}</span>
               <span className="text-[#FF6200] text-[11px] font-medium">
@@ -166,16 +165,19 @@ const ManageSubscription = () => {
             </div>
           </div>
 
-          <div className="text-[26px] font-black text-white flex items-baseline gap-1 mt-1">
-            {item.priceValue.toLocaleString()} <span className="text-xl font-bold text-gray-300">฿</span>
+          {/* 🔴 รวมบรรทัดราคา และ Payment Method ให้อยู่ซ้าย-ขวาตรงข้ามกัน */}
+          <div className="flex justify-between items-end mt-1">
+            <div className="text-[26px] font-black text-white flex items-baseline gap-1">
+              {item.priceValue.toLocaleString()} <span className="text-xl font-bold text-gray-300">฿</span>
+            </div>
+            <div className="text-gray-400 text-[12px] pb-1.5">
+              {item.paymentMethod || 'Bank Transfer'}
+            </div>
           </div>
 
+          {/* ปุ่มกดจะอยู่ล่างสุด */}
           <div className="mt-1">
             {btnMobile}
-          </div>
-
-          <div className="text-gray-400 text-[12px] pt-3 border-t border-gray-700/50 text-left mt-1">
-            {item.paymentMethod || 'Bank Transfer'}
           </div>
         </div>
 
