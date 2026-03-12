@@ -862,23 +862,13 @@ export default function PetroleumInsights() {
 
     return (
       <div className="w-full min-h-screen bg-[#0c111b] text-white px-6 py-6" onClick={() => setShowOilDropdown(false)}>
-        <style>{`
-          @keyframes symbolBounce {
-            0%   { transform: scale(1); }
-            30%  { transform: scale(1.04); }
-            50%  { transform: scale(0.98); }
-            70%  { transform: scale(1.02); }
-            100% { transform: scale(1); }
-          }
-          .symbol-bounce { animation: symbolBounce 1.8s ease-in-out infinite; }
-          .hide-scrollbar::-webkit-scrollbar { display: none; }
-        `}</style>
+        <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
 
         <div className="max-w-[1600px] mx-auto">
           <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative w-56" onClick={(e) => e.stopPropagation()}>
-                <div className={`relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center ${!symbol && !symbolQuery ? "symbol-bounce" : ""}`}> 
+                <div className= " relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center "> 
                   <input
                     value={symbolQuery}
                     onChange={(e) => {
