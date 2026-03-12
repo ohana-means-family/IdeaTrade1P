@@ -436,6 +436,31 @@ export default function TickMatch() {
     return () => window.removeEventListener('resize', checkScroll);
   }, []);
 
+  // ✅ เพิ่ม helper นี้ก่อน AnalysisPanel
+function FitText({ value, className }) {
+  const spanRef = useRef(null);
+  
+  useEffect(() => {
+    const el = spanRef.current;
+    if (!el) return;
+    const parent = el.parentElement;
+    if (!parent) return;
+    
+    let size = 13;
+    el.style.fontSize = size + "px";
+    
+    while (el.scrollWidth > parent.clientWidth && size > 8) {
+      size -= 0.5;
+      el.style.fontSize = size + "px";
+    }
+  }, [value]);
+  
+  return (
+    <span ref={spanRef} className={className} style={{ whiteSpace: 'nowrap', display: 'block' }}>
+      {value}
+    </span>
+  );
+}
   /* ===============================
       3. COMPONENT: AnalysisPanel (เฉพาะของ TickMatch)
   ================================ */
@@ -539,57 +564,68 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
           <div className="col-span-2">
             <button
               onClick={() => setIsSynced(!isSynced)}
-              className={`w-full h-[40px] flex items-center justify-center gap-2 text-sm font-semibold rounded-lg transition-all duration-200
+              className={`w-full h-[32px] flex items-center justify-center gap-1 text-[10px] font-semibold rounded-lg transition-all duration-200
                 ${isSynced ? "bg-[#0E3A6D] hover:bg-[#124a8a] text-white" : "bg-[#8FA3B5] hover:bg-[#7f95a8] text-white"}`}
             >
               {isSynced ? (
                 <>
-                  <LinkOutlinedIcon sx={{ fontSize: 17, opacity: 0.95 }} />
+                  <LinkOutlinedIcon sx={{ fontSize: 10, opacity: 0.95 }} />
                   SYNC
                 </>
               ) : (
                 <>
-                  <LinkOffOutlinedIcon sx={{ fontSize: 17, opacity: 0.9 }} />
+                  <LinkOffOutlinedIcon sx={{ fontSize: 7.4, opacity: 0.9 }} />
                   UNSYNC
                 </>
               )}
             </button>
           </div>
 
-          {/* SYMBOL Input */}
-          <div className="col-span-4 relative">
-            <input
-              value={symbol}
-              placeholder=" "
-              onChange={(e) => {
-                setSymbol(e.target.value);
-                setShowSymbolDropdown(true);
-              }}
-              onFocus={() => setShowSymbolDropdown(true)}
-              onBlur={() => setTimeout(() => setShowSymbolDropdown(false), 150)}
-              className="peer w-full bg-[#111827] border border-slate-600 rounded-md px-3 py-2 text-white text-xs uppercase outline-none"
-            />
-            <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:-top-2 peer-focus:text-[10px] -top-2">
-              Symbol*
-            </label>
+{/* SYMBOL Input */}
+<div className="col-span-4 relative">
+  <input
+    value={symbol}
+    placeholder=" "
+    onChange={(e) => {
+      setSymbol(e.target.value);
+      setShowSymbolDropdown(true);
+    }}
+    onFocus={() => setShowSymbolDropdown(true)}
+    onBlur={() => setTimeout(() => setShowSymbolDropdown(false), 150)}
+    className="peer w-full bg-[#111827] border border-slate-600 rounded-md px-3 py-2 text-white text-xs uppercase outline-none pr-7"
+  />
+  <label className="absolute left-3 px-1 text-[10px] bg-[#0f172a] text-slate-400 transition-all duration-200 pointer-events-none peer-placeholder-shown:top-2 peer-placeholder-shown:text-xs peer-focus:-top-2 peer-focus:text-[10px] -top-2">
+    Symbol*
+  </label>
+  {symbol && (
+    <button
+      onMouseDown={() => {
+        setSymbol("");
+        setShowSymbolDropdown(false);
+      }}
+      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+    >
+      ✕
+    </button>
+  )}
 
-            {showSymbolDropdown && filteredSymbols.length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-[#0f172a] border border-slate-700 rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
-                {filteredSymbols.map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => {
-                      setSymbol(item);
-                      setShowSymbolDropdown(false);
-                    }}
-                    className="px-3 py-2 text-xs text-white hover:bg-indigo-600 cursor-pointer transition"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+  {showSymbolDropdown && filteredSymbols.length > 0 && (
+    <div className="absolute left-0 right-0 mt-1 bg-[#0f172a] border border-slate-700 rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
+      {filteredSymbols.map((item, index) => (
+        <div
+          key={index}
+          onClick={() => {
+            setSymbol(item);
+            setShowSymbolDropdown(false);
+          }}
+          className="px-3 py-2 text-xs text-white hover:bg-indigo-600 cursor-pointer transition"
+        >
+          {item}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
           {/* DATE Input */}
           <div className="col-span-3 relative">
@@ -618,28 +654,47 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
           </div>
         </div>
 
-        {/* --- SECTION 2: Summary Cards --- */}
-        <div className="px-3 pb-2">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-[#1e1e1e] border border-green-900/50 rounded p-2 flex flex-col relative overflow-hidden">
-              <span className="text-[10px] text-slate-400">Sum Buy</span>
-              <span className={`font-bold text-lg text-right ${activeSymbol ? 'text-green-500' : 'text-white'}`}>{data.sumBuy}</span>
-              <div className="absolute bottom-0 left-0 h-[2px] bg-green-500 w-full"></div>
-            </div>
-            <div className="bg-[#1e1e1e] border border-red-900/50 rounded p-2 flex flex-col relative overflow-hidden">
-              <span className="text-[10px] text-slate-400">Sum Sell</span>
-              <span className={`font-bold text-lg text-right ${activeSymbol ? 'text-red-500' : 'text-white'}`}>{data.sumSell}</span>
-              <div className="absolute bottom-0 left-0 h-[2px] bg-red-500 w-full"></div>
-            </div>
-            <div className="bg-[#1e1e1e] border border-slate-700/50 rounded p-2 flex flex-col relative overflow-hidden">
-              <span className="text-[10px] text-slate-400">Net Acc. Vol</span>
-              <span className={`${data.netVol === "0" ? 'text-white' : (data.netVol.includes('-') ? 'text-red-500' : 'text-green-500')} font-bold text-lg text-right`}>
-                {data.netVol}
-              </span>
-              <div className={`absolute bottom-0 left-0 h-[2px] w-full ${data.netVol === "0" ? 'bg-slate-500' : (data.netVol.includes('-') ? 'bg-red-500' : 'bg-green-500')}`}></div>
-            </div>
-          </div>
-        </div>
+{/* --- SECTION 2: Summary Cards --- */}
+<div className="px-3 pb-2">
+  <div className="grid grid-cols-3 gap-2">
+    
+    <div className="bg-[#1e1e1e] border border-green-900/50 rounded p-2 flex flex-col relative overflow-hidden min-w-0">
+      <span className="text-[10px] text-slate-400">Sum Buy</span>
+      <FitText 
+        value={data.sumBuy} 
+        className={`font-bold ${activeSymbol ? 'text-green-500' : 'text-white'}`} 
+      />
+      <div className="absolute bottom-0 left-0 h-[2px] bg-green-500 w-full"></div>
+    </div>
+
+    <div className="bg-[#1e1e1e] border border-green-900/50 rounded p-2 flex flex-col relative overflow-hidden min-w-0">
+      <span className="text-[10px] text-slate-400">Sum Sell</span>
+      <FitText 
+        value={data.sumSell} 
+        className={`font-bold ${activeSymbol ? 'text-red-500' : 'text-white'}`} 
+      />
+      <div className="absolute bottom-0 left-0 h-[2px] bg-red-500 w-full"></div>
+    </div>
+
+    <div className="bg-[#1e1e1e] border border-green-900/50 rounded p-2 flex flex-col relative overflow-hidden min-w-0">
+      <span className="text-[10px] text-slate-400">Net Acc. Vol</span>
+      <FitText 
+        value={data.netVol} 
+        className={`font-bold ${
+          data.netVol === "0" ? 'text-white' 
+          : data.netVol.includes('-') ? 'text-red-500' 
+          : 'text-green-500'
+        }`} 
+      />
+      <div className={`absolute bottom-0 left-0 h-[2px] w-full ${
+        data.netVol === "0" ? 'bg-slate-500' 
+        : data.netVol.includes('-') ? 'bg-red-500' 
+        : 'bg-green-500'
+      }`}></div>
+    </div>
+
+  </div>
+</div>
 
         {/* Progress Bar */}
         <div className="px-3 pb-2">
@@ -725,7 +780,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
                       {row.type}
                     </span>
                   </div>
-                  <div className={`p-2 text-right ${row.sum.includes('-') ? 'text-red-400' : 'text-green-400'}`}>{row.sum}</div>
+                  <div className="p-2 text-right truncate min-w-0 max-w-[60px]">{row.sum}</div>
                 </div>
               ))
             ) : (
@@ -1058,7 +1113,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -1081,7 +1136,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -1154,7 +1209,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Left Button */}
               <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showLeft && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -1177,7 +1232,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
               {/* Right Button */}
               <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-500 transition shadow-xl ${!showRight && "opacity-0 pointer-events-none"}`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -1210,7 +1265,7 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="w-full h-screen bg-[#0B1221] text-white p-4 animate-fade-in flex flex-col gap-4 overflow-hidden">
+    <div className="w-full h-screen bg-[#0B1221] text-white p-2 md:p-4 animate-fade-in flex flex-col gap-2 md:gap-4 overflow-hidden">
 
       {/* Main Grid Layout (2 Panels ของ TickMatch) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
