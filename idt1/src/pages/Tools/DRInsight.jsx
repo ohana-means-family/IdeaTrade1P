@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
 
 import DRInsightDashboard from "./components/DRInsightDashboard.jsx";
+import SettingsIcon from "@mui/icons-material/Settings";
+import drIcon from "@/assets/icons/dr.svg";
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -285,9 +287,11 @@ function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, c
               </option>
             ))}
           </select>
-          <div className="flex items-center gap-3 text-slate-600">
-            <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-sm" title="Fullscreen">⛶</button>
-            <button className="hover:text-white transition text-sm">⚙</button>
+          <div className="flex items-center gap-3 text-slate-400">
+            <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
+            <button className="hover:text-cyan-400 transition">
+              <SettingsIcon sx={{ fontSize: 16, color: "inherit" }} />
+            </button>
           </div>
         </div>
 
@@ -678,25 +682,25 @@ export default function DRInsight() {
       <div className="hidden md:flex md:flex-col h-screen p-3 overflow-hidden animate-fade-in">
 
         <div className="flex items-center justify-center gap-6 mb-4 shrink-0">
-          <div className="bg-[#111827] border border-slate-800 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
-            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Filter symbol..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="bg-transparent text-xs text-slate-300 focus:outline-none placeholder-slate-600 w-40"
-            />
-          </div>
-          {[{ label: "ราคาน้ำมัน", color: "bg-blue-500" }, { label: "PE Ratio", color: "bg-red-500" }, { label: "Last", color: "bg-green-500" }].map(item => (
-            <div key={item.label} className="bg-[#111827] px-5 py-2 rounded-full text-[11px] text-slate-400 border border-slate-800 flex items-center gap-3 shadow-sm whitespace-nowrap">
-              <span>{item.label}</span>
-              <div className={`w-8 h-0.5 ${item.color}`}></div>
+            <div className="bg-[#111827] border border-slate-800 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+              <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Filter symbol..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="bg-transparent text-xs text-slate-300 focus:outline-none placeholder-slate-600 w-40"
+              />
             </div>
-          ))}
-        </div>
+            {[{ label: "ราคาน้ำมัน", color: "bg-blue-500" }, { label: "PE Ratio", color: "bg-red-500" }, { label: "Last", color: "bg-green-500" }].map(item => (
+              <div key={item.label} className="bg-[#111827] px-5 py-2 rounded-full text-[11px] text-slate-400 border border-slate-800 flex items-center gap-3 shadow-sm whitespace-nowrap">
+                <span>{item.label}</span>
+                <div className={`w-8 h-0.5 ${item.color}`}></div>
+              </div>
+            ))}
+          </div>
 
         <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
 
@@ -711,7 +715,7 @@ export default function DRInsight() {
               <div key={title} className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flex}`}>
                 <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
                   <span className="font-bold text-[12px] text-white">{title}</span>
-                  <span className="text-cyan-500 text-[10px] font-bold">{icon}</span>
+                  <img src={drIcon} alt={title} className="w-4 h-4" />
                 </div>
                 <div className="flex justify-between text-[8px] text-slate-500 px-2 py-1 font-semibold uppercase tracking-wider sticky top-0 bg-[#111827] border-b border-slate-800/60 z-20">
                   <span>DR/DRx</span>
@@ -748,7 +752,9 @@ export default function DRInsight() {
           </select>
           <div className="flex gap-3 text-slate-600 opacity-50">
             <button disabled>⛶</button>
-            <button disabled>⚙</button>
+            <button disabled>
+              <SettingsIcon sx={{ fontSize: 16 }} />
+            </button>
           </div>
         </div>
         <WaveSkeleton delay={index * 0.2} />
@@ -792,8 +798,10 @@ export default function DRInsight() {
               ))}
             </select>
             <div className="flex gap-3 text-slate-600">
-              <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
-              <button className="hover:text-white transition">⚙</button>
+              <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition text-slate-400" title="Fullscreen">⛶</button>
+              <button className="hover:text-cyan-400 transition text-slate-400">
+                <SettingsIcon sx={{ fontSize: 16, color: "inherit" }} />
+              </button>
             </div>
           </div>
           <div
@@ -862,7 +870,7 @@ export default function DRInsight() {
                   <div key={title} className="bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 flex-1">
                     <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
                       <span className="font-bold text-[13px] text-white">{title}</span>
-                      <span className="text-cyan-500 text-[11px] font-bold">{icon}</span>
+                      <img src={drIcon} alt={title} className="w-4 h-4" />
                     </div>
                     <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
                       {filtered.map((stock, idx) => (
@@ -896,7 +904,7 @@ export default function DRInsight() {
                     <div key={title} className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flex}`}>
                       <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
                         <span className="font-bold text-[13px] text-white">{title}</span>
-                        <span className="text-cyan-500 text-[11px] font-bold">{icon}</span>
+                        <img src={drIcon} alt={title} className="w-4 h-4" />
                       </div>
                       <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
                         {filtered.map((stock, idx) => (
