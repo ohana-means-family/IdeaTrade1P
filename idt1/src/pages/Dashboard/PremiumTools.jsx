@@ -3,6 +3,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ToolsCard from "@/components/ToolsCard";
 
+import fortuneIcon from "@/assets/icons/fortune.svg";
+import petroleumIcon from "@/assets/icons/petroleum.svg";
+import rubberIcon from "@/assets/icons/rubber.svg";
+import flowIcon from "@/assets/icons/flow.svg";
+import s50Icon from "@/assets/icons/s50.svg";
+import goldIcon from "@/assets/icons/gold.svg";
+import bidaskIcon from "@/assets/icons/bidask.svg";
+import tickmatchIcon from "@/assets/icons/tickmatch.svg";
+import drIcon from "@/assets/icons/dr.svg";
+
 // Import Firebase ให้เหมือนหน้า PreviewProject
 import { auth, db } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
@@ -36,54 +46,63 @@ const projects = [
     name: "Stock Fortune",
     desc: "Probabilistic market forecasting based on sentiment and historical data.",
     premium: true,
+    icon: <img src={fortuneIcon} alt="fortune" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "petroleum",
     name: "Petroleum",
     desc: "Global crude oil insights, supply chain analysis, and energy sector trends.",
     premium: true,
+    icon: <img src={petroleumIcon} alt="petroleum" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "rubber",
     name: "Rubber Thai",
     desc: "Comprehensive data on Thai rubber exports, futures, and agricultural indices.",
     premium: true,
+    icon: <img src={rubberIcon} alt="rubber" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "flow",
     name: "Flow Intraday",
     desc: "Monitor real-time institutional fund flow and sector rotation throughout the day.",
     premium: true,
+    icon: <img src={flowIcon} alt="flow" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "s50",
     name: "S50",
     desc: "In-depth analytics for SET50 Index Futures, basis, and volatility monitoring.",
     premium: true,
+    icon: <img src={s50Icon} alt="s50" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "gold",
     name: "Gold",
     desc: "Live spot gold tracking correlated with currency exchange rates and macro data.",
     premium: true,
+    icon: <img src={goldIcon} alt="gold" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "bidask",
     name: "BidAsk Analysis",
     desc: "Visualize buy/sell pressure and detect hidden liquidity walls in the order book.",
     premium: true,
+    icon: <img src={bidaskIcon} alt="bidask" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "tickmatch",
     name: "TickMatch",
     desc: "Analyze trade-by-trade execution to spot aggressive large-volume transactions.",
     premium: true,
+    icon: <img src={tickmatchIcon} alt="tickmatch" className="w-5 h-5 brightness-0 invert" />
   },
   {
     id: "dr",
     name: "DR (Global)",
     desc: "Track Depositary Receipts movements to access global markets via local exchange.",
     premium: true,
+    icon: <img src={drIcon} alt="dr" className="w-5 h-5 brightness-0 invert" />
   },
 ];
 
@@ -175,7 +194,6 @@ export default function PremiumTools() {
           <ToolsCard
             key={tool.id}
             project={tool}
-            // ปรับตรงนี้ให้เหมือนหน้า PreviewProject เลยครับ
             isMember={unlockedList.includes(tool.id)}
             unlockedList={unlockedList}
           />
