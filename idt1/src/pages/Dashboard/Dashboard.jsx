@@ -12,6 +12,8 @@ import ManageSubscription from "@/pages/Profile/Subscriptions";
 
 import ToolAccessGuard from "@/components/ToolAccessGuard"; 
 
+import logoImage from "@/assets/images/logo.png";
+
 // --- Tools Components ---
 import StockFortuneTeller from "@/pages/Tools/StockFortuneTeller";
 import PetroleumInsights from "@/pages/Tools/PetroleumInsights";
@@ -177,11 +179,13 @@ export default function Dashboard({ initialPage }) {
           </svg>
         </button>
 
-        {/* Logo text: IDEA V TRADE */}
-        <div className="flex items-center gap-1.5 font-bold text-[15px] tracking-widest select-none">
-          <span className="text-white">IDEA</span>
-          <span className="text-red-500 font-black">V</span>
-          <span className="text-white">TRADE</span>
+        {/* Mobile Silebar logo */}
+        <div className="flex items-center select-none cursor-pointer">
+          <img 
+            src={logoImage} 
+            alt="IDEA V TRADE Logo" 
+            className="h-12 w-auto object-contain" 
+          />
         </div>
       </div>
 
