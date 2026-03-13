@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 // ✅ Import Firebase Auth เข้ามาเพื่อจัดการสถานะแบบ Real-time
 import { doc, getDoc } from "firebase/firestore";
@@ -263,29 +264,31 @@ const SidebarContent = ({
 
   return (
     <>
+
       {/* ✅ LOGOUT CONFIRMATION MODAL */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-[10002] bg-black/60 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-[#1F2937] p-8 rounded-lg shadow-2xl flex flex-col items-center gap-6 w-[400px] border border-white/10">
-            <h2 className="text-lg text-gray-200 font-medium text-center">
+      {showLogoutModal && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center backdrop-blur-sm px-4">
+          <div className="bg-[#1F2937] p-6 sm:p-8 rounded-lg shadow-2xl flex flex-col items-center gap-6 w-full max-w-[400px] border border-white/10">
+            <h2 className="text-base sm:text-lg text-gray-200 font-medium text-center">
               Are you sure you want to log out?
             </h2>
-            <div className="flex gap-4 w-full justify-center">
+            <div className="flex gap-3 sm:gap-4 w-full justify-center">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="px-6 py-2 rounded bg-[#9CA3AF] text-white font-semibold hover:bg-gray-500 transition"
+                className="px-5 sm:px-6 py-2 rounded bg-[#9CA3AF] text-white font-semibold hover:bg-gray-500 transition text-sm sm:text-base"
               >
                 CANCEL
               </button>
               <button
                 onClick={confirmSignOut}
-                className="px-6 py-2 rounded bg-[#EF4444] text-white font-semibold hover:bg-red-700 transition"
+                className="px-5 sm:px-6 py-2 rounded bg-[#EF4444] text-white font-semibold hover:bg-red-700 transition text-sm sm:text-base"
               >
                 LOGOUT
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body // <-- บังคับให้ Modal ไป render ที่ body ระดับนอกสุด
       )}
 
       {/* ================= HEADER & LOGO ================= */}
