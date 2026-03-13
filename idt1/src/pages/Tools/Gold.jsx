@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 import GoldDashboard from "./components/GoldDashboard.jsx";
 
@@ -189,19 +190,7 @@ function DynamicChart({ title, height = 280, color, gradientId, seed, points = 7
             className="w-7 h-7 rounded-md bg-[#1e293b] text-slate-400 hover:text-white hover:bg-slate-700 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={`Refresh ${title}`}
           >
-            <svg
-              className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 4v5h.582M20 20v-5h-.581M5.8 9A7 7 0 0119 8m-.8 7A7 7 0 015 16"
-              />
-            </svg>
+            <RefreshIcon sx={{ fontSize: 16, color: "inherit" }} className={isRefreshing ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
