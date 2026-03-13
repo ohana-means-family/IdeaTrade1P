@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase'; 
 
 const SubscriptionContext = createContext();
@@ -10,53 +10,67 @@ export const SubscriptionProvider = ({ children }) => {
   const [isFreeAccess, setIsFreeAccess] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    let unsubscribeDoc = null; 
+
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      // 🟢 เพิ่มตรงนี้ 1: เคลียร์ Listener เก่าทิ้งทันทีที่มีการเปลี่ยนสถานะ Auth (เช่น กด Sign Out)
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+        unsubscribeDoc = null;
+      }
+
       if (user) {
         setIsFreeAccess(false);
+        setLoading(true);
         
-        try {
-          // 🔴 1. พยายามดึงข้อมูลจาก Firestore (กรณีเชื่อมต่อ Emulator ได้)
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            setAccessData(docSnap.data().subscriptions || {});
-          } else {
-            // 🔴 2. ถ้า Firestore หาไม่เจอ หรือติดต่อไม่ได้ (เช่น เพื่อนใช้ผ่าน ngrok แล้วติดเรื่อง Port)
-            // ให้ไปเช็คข้อมูลที่ "เราเซ็ตไว้ตอน Login" ใน localStorage แทน
-            const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
-            if (savedProfile.role === "member") {
-              // จำลองสิทธิ์ Member ให้ใช้งานได้
-              setAccessData({ fortune: true }); // ให้สิทธิ์ใช้หน้า Stock Fortune
-            } else {
-              setAccessData({});
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching subscriptions:", error);
-          // 🔴 3. ถ้า Error (ส่วนใหญ่เพื่อนจะติด Load failed ตรงนี้) ให้ใช้ข้อมูลจาก localStorage เป็นหลัก
+        const handleFallbackLocalData = () => {
           const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
           if (savedProfile.role === "member") {
-            setAccessData({ fortune: true });
+            const futureDate = Date.now() + (30 * 24 * 60 * 60 * 1000); 
+            setAccessData({ fortune: futureDate }); 
           } else {
             setAccessData({});
           }
+        };
+
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          
+          // 🟢 ตรงนี้ unsubscribeDoc จะเก็บฟังก์ชันไว้เคลียร์ตัวเองรอบหน้า
+          unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+              setAccessData(docSnap.data().subscriptions || {});
+            } else {
+              handleFallbackLocalData();
+            }
+            setLoading(false);
+          }, (error) => {
+            console.error("Error fetching subscriptions realtime:", error);
+            handleFallbackLocalData();
+            setLoading(false);
+          });
+
+        } catch (error) {
+          console.error("Catch error setting up snapshot:", error);
+          handleFallbackLocalData();
+          setLoading(false);
         }
       } else {
-        // 🟢 ถ้ายังไม่ได้ล็อกอิน (โหมดคนนอก)
         setIsFreeAccess(true);
         setAccessData({});
         
-        // เช็คเผื่อกรณีเป็น Free Access จากปุ่ม Try Free
         const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
         if (savedProfile.role === "free") {
           setIsFreeAccess(true);
         }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeDoc) unsubscribeDoc(); 
+    };
   }, []);
 
   return (

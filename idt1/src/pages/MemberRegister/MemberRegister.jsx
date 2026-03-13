@@ -1,9 +1,9 @@
 // src/pages/MemberRegister/MemberRegister.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore"; // ✅ เพิ่ม Timestamp
 import { db, auth } from "/src/firebase";
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 import KbankIcon from "@/assets/icons/Kbank.png";
 import CloseIcon from "@/assets/icons/Close_Circle.png";
@@ -40,8 +40,11 @@ const paymentMethods = [
   { id: "promptpay", label: "PromptPay", icon: QrBlue, activeIcon: QrGray },
 ];
 
+// ✅ ประกาศฟังก์ชันแค่ครั้งเดียวตรงนี้
 export default function MemberRegister() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedTools, setSelectedTools] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -60,6 +63,23 @@ export default function MemberRegister() {
   const [slipImage, setSlipImage] = useState(null);
   const [copied, setCopied] = useState(false);
   const [isEditSummary, setIsEditSummary] = useState(false);
+
+  // ✅ เพิ่ม useEffect บล็อกนี้เข้าไปตรงนี้
+  useEffect(() => {
+    if (location.state && location.state.preselectedTool) {
+      const toolNameFromPopup = location.state.preselectedTool;
+      
+      const matchedTool = TOOLS.find(
+        (t) => t.name.toLowerCase() === toolNameFromPopup.toLowerCase() || 
+               t.id.toLowerCase() === toolNameFromPopup.toLowerCase()
+      );
+
+      if (matchedTool) {
+        setSelectedTools([{ id: matchedTool.id, billing: "monthly" }]);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state]);
 
   /* ================= FUNCTIONS ================= */
   const closeModal = () => {

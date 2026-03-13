@@ -4,12 +4,15 @@ import './Subscriptions.css';
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth"; 
+import { useNavigate } from 'react-router-dom';
 
 const ManageSubscription = () => {
   const [activeSubs, setActiveSubs] = useState([]);
   const [expiringSubs, setExpiringSubs] = useState([]);
   const [endedSubs, setEndedSubs] = useState([]);
   const [summary, setSummary] = useState({ monthly: 0, yearly: 0 });
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
     const processAndSetSubscriptions = (savedSubs, expirations = {}) => {
@@ -104,6 +107,16 @@ const ManageSubscription = () => {
   // Shared Desktop Grid Structure
   const gridCols = "grid-cols-[2.5fr_1.5fr_2.5fr_1.5fr_1.5fr_2fr]";
 
+  // 👈 แก้ไขฟังก์ชันนี้: รับ parameter item เพื่อส่งชื่อเครื่องมือและรอบบิล
+  const handleActionClick = (item) => {
+    navigate('/member-register', {
+      state: { 
+        preselectedTool: item.name,   // ส่งชื่อ Tool 
+        preselectedCycle: item.cycle  // ส่งรอบบิล (เช่น Monthly, Yearly)
+      } 
+    });
+  };
+
   const renderRow = (item, type) => {
     let statusColor, statusIcon, statusText, actionText, cardBorder, bgClass;
     let btnDesktop, btnMobile;
@@ -113,22 +126,24 @@ const ManageSubscription = () => {
       statusIcon = <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />;
       statusText = 'inactive';
       actionText = 'Renew';
-      cardBorder = 'border-[#007bff]'; 
+      cardBorder = 'border-red-500/30'; 
       bgClass = 'bg-[#1a2332]/80';
       
-      btnDesktop = <button className="text-[#4db8ff] font-bold text-[14px] hover:underline underline-offset-4 transition-all">{actionText}</button>;
-      btnMobile = <button className="w-full py-3 rounded-lg font-bold bg-[#007bff] hover:bg-[#0069d9] text-white transition-all shadow-md">{actionText}</button>;
+      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
+      btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-red-500/50 text-red-400 text-[13px] hover:text-white hover:bg-red-900/40 hover:border-red-500 transition-all">{actionText}</button>;
+      btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-red-500/50 text-red-400 hover:text-white hover:bg-red-900/40 transition-all">{actionText}</button>;
       
     } else if (type === 'expiring') {
       statusColor = 'text-yellow-500';
       statusIcon = <ClockIcon className="w-4 h-4 text-yellow-500 shrink-0" />;
       statusText = 'expiring';
       actionText = 'Extend';
-      cardBorder = 'border-gray-800';
+      cardBorder = 'border-yellow-500/30';
       bgClass = 'bg-[#242b35]/80';
 
-      btnDesktop = <button className="text-[#4db8ff] font-bold text-[14px] hover:underline underline-offset-4 transition-all">{actionText}</button>;
-      btnMobile = <button className="w-full py-3 rounded-lg font-bold bg-[#2a323d] border border-gray-600 text-[#4db8ff] transition-all">{actionText}</button>;
+      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
+      btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-yellow-500/50 text-yellow-500 text-[13px] hover:text-white hover:bg-yellow-900/40 hover:border-yellow-500 transition-all">{actionText}</button>;
+      btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-yellow-500/50 text-yellow-500 hover:text-white hover:bg-yellow-900/40 transition-all">{actionText}</button>;
 
     } else {
       statusColor = 'text-green-500';
@@ -138,14 +153,15 @@ const ManageSubscription = () => {
       cardBorder = 'border-gray-800';
       bgClass = 'bg-[#242b35]/80';
 
-      btnDesktop = <button className="px-5 py-1.5 rounded-md border border-gray-600 text-gray-400 text-[13px] hover:text-white hover:bg-gray-700 transition-all">{actionText}</button>;
-      btnMobile = <button className="w-full py-3 rounded-lg font-bold bg-transparent border border-gray-600 text-gray-400 hover:text-white transition-all">{actionText}</button>;
+      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
+      btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-gray-600 text-gray-400 text-[13px] hover:text-white hover:bg-gray-700 transition-all">{actionText}</button>;
+      btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-gray-600 text-gray-400 hover:text-white hover:bg-gray-700 transition-all">{actionText}</button>;
     }
 
     return (
       <div key={item.key} className={`${bgClass} border ${cardBorder} rounded-xl mb-4 p-5 md:py-4 md:px-6 hover:border-gray-600 transition-all backdrop-blur-sm`}>
         
- {/* === Mobile Card Layout === */}
+        {/* === Mobile Card Layout === */}
         <div className="md:hidden flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-[#4db8ff] text-xl tracking-tight">{item.name}</h3>
@@ -165,7 +181,6 @@ const ManageSubscription = () => {
             </div>
           </div>
 
-          {/* 🔴 รวมบรรทัดราคา และ Payment Method ให้อยู่ซ้าย-ขวาตรงข้ามกัน */}
           <div className="flex justify-between items-end mt-1">
             <div className="text-[26px] font-black text-white flex items-baseline gap-1">
               {item.priceValue.toLocaleString()} <span className="text-xl font-bold text-gray-300">฿</span>
@@ -175,7 +190,6 @@ const ManageSubscription = () => {
             </div>
           </div>
 
-          {/* ปุ่มกดจะอยู่ล่างสุด */}
           <div className="mt-1">
             {btnMobile}
           </div>

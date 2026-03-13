@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ลบ useLocation ออกไป เพราะไม่จำเป็นแล้ว
 import { createPortal } from "react-dom";
 
-// ✅ Import Firebase Auth เข้ามาเพื่อจัดการสถานะแบบ Real-time
-import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from "@/firebase"; // เช็ค path ให้ตรงกับโปรเจกต์คุณ
+// ✅ 1. Import Context เพื่อดึงสิทธิ์ให้ตรงกับการ์ด 100%
+import { useSubscription } from "@/context/SubscriptionContext"; 
+
+import { auth } from "@/firebase"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import logo from "@/assets/images/logo.png";
@@ -122,84 +123,49 @@ const FloatingTooltip = ({ visible, top, text }) => {
 };
 
 /* ================= SIDEBAR INNER CONTENT ================= */
-// แยก content ออกมาเป็น component เพื่อ reuse ทั้ง desktop + mobile
 const SidebarContent = ({
   collapsed,
   setCollapsed,
   activePage,
   setActivePage,
   openProject,
-  onMobileClose, // ✅ ใช้สำหรับปิด mobile overlay หลังกด menu
+  onMobileClose, 
   isMobile = false,
 }) => {
   const navigate = useNavigate();
-  const location = useLocation();
+  
+  // ✅ 2. ดึงสิทธิ์จาก Context โดยตรง เพื่อให้ตรงกับการ์ดหน้า Dashboard
+  const { accessData } = useSubscription();
   
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [isMember, setIsMember] = useState(false);
-  const [unlockedList, setUnlockedList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
+  // ✅ 3. ลบโค้ดโหลดฐานข้อมูลซ้ำซ้อนทิ้ง ปล่อยให้ SubscriptionProvider จัดการแทน
   useEffect(() => {
-    const loadDemoProfile = () => {
-      const saved = localStorage.getItem("userProfile");
-      if (saved) {
-        const userData = JSON.parse(saved);
-        const unlocked = userData.unlockedItems || [];
-        const hasAccess = userData.role === "member" || userData.role === "membership" || unlocked.length > 0;
-        setIsMember(hasAccess);
-        setUnlockedList(unlocked);
-      } else {
-        setIsMember(false);
-        setUnlockedList([]);
-      }
-    };
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setIsLoggedIn(true);
-        try {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            const unlockedItems = userData.unlockedItems || [];
-            const subscriptionsMap = userData.subscriptions || {};
-            const now = new Date();
-            const validUnlockedList = [];
-
-            unlockedItems.forEach((itemId) => {
-              const expireData = subscriptionsMap[itemId];
-              if (expireData) {
-                const expDate = expireData.toDate ? expireData.toDate() : new Date(expireData);
-                if (expDate > now) validUnlockedList.push(itemId);
-              } else {
-                validUnlockedList.push(itemId);
-              }
-            });
-
-            const hasAccess = userData.role === "member" || userData.role === "membership" || validUnlockedList.length > 0;
-            setIsMember(hasAccess);
-            setUnlockedList(validUnlockedList);
-          }
-        } catch (error) {
-          console.error("Error fetching Firestore:", error);
-        }
-      } else {
-        setIsLoggedIn(false);
-        loadDemoProfile(); 
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+      setIsMember(savedProfile.role === "member" || savedProfile.role === "membership");
     });
-
-    window.addEventListener("storage", loadDemoProfile);
-    return () => {
-      unsubscribe();
-      window.removeEventListener("storage", loadDemoProfile);
-    };
+    return () => unsubscribe();
   }, []);
+
+  // ✅ 4. เช็กว่า Tool ไหนปลดล็อกแล้วบ้าง (เช็กจากวันหมดอายุ)
+  const isToolUnlocked = (id) => {
+    const expireTimestamp = accessData[id];
+    if (!expireTimestamp) return false;
+    
+    let expireDate;
+    try {
+      expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
+    } catch (error) {
+      expireDate = new Date(0); 
+    }
+    return expireDate > new Date(); // ตรวจสอบว่ายังไม่เลยวันปัจจุบัน
+  };
 
   /* ================= AUTH ACTIONS ================= */
   const handleSignUp = () => { navigate("/register"); onMobileClose?.(); };
@@ -220,35 +186,27 @@ const SidebarContent = ({
     }
   };
 
+  // ✅ 5. นี่คือพระเอกของเรา ลบคำสั่ง navigate ทั้งหมดออก ให้เหลือแค่ส่งชื่อ!
   const handleNavigation = (id, projectItem = null) => {
-    if (PROJECT_PREVIEWS[id]) {
-      const isUnlocked = unlockedList.includes(id);
-      if (!isUnlocked) {
-        const previewPage = PROJECT_PREVIEWS[id];
-        setActivePage(previewPage);
-        if (location.pathname !== "/dashboard") {
-          navigate("/dashboard", { state: { goTo: previewPage } });
-        }
-        onMobileClose?.(); // ✅ ปิด mobile sidebar
-        return; 
-      }
+    let targetId = id;
+    
+    // ถ้ายังไม่ได้ปลดล็อก ให้บังคับให้ targetId เป็นหน้า Preview แทน
+    if (PROJECT_PREVIEWS[id] && !isToolUnlocked(id)) {
+      targetId = PROJECT_PREVIEWS[id];
     }
 
-    setActivePage(id);
-    if (projectItem && openProject) openProject(projectItem);
-    onMobileClose?.(); // ✅ ปิด mobile sidebar
-    
-    if (location.pathname !== "/dashboard") {
-      if (id !== "mit" && id !== "profile" && id !== "subscription") {
-        navigate("/dashboard", { state: { goTo: id } });
-      } else {
-        navigate(`/${id}`); 
-      }
+    // โยนชื่อหน้าเว็บไปให้ Dashboard.jsx เป็นคนสั่งเปลี่ยน URL (navigate)
+    if (projectItem && openProject) {
+      openProject({ ...projectItem, id: targetId });
+    } else {
+      setActivePage(targetId);
     }
+    
+    onMobileClose?.(); 
   };
 
   const handleMouseEnter = (e, text) => {
-    if (!collapsed || isMobile) return; // tooltip ไม่ต้องโชว์ใน mobile mode
+    if (!collapsed || isMobile) return; 
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltipState({ visible: true, top: rect.top + (rect.height / 2), text });
   };
@@ -259,11 +217,11 @@ const SidebarContent = ({
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Mobile: ไม่ collapsed, Desktop: ตาม state
   const isCollapsed = isMobile ? false : collapsed;
 
   return (
     <>
+      <FloatingTooltip visible={tooltipState.visible} top={tooltipState.top} text={tooltipState.text} />
 
       {/* ✅ LOGOUT CONFIRMATION MODAL */}
       {showLogoutModal && createPortal(
@@ -288,14 +246,13 @@ const SidebarContent = ({
             </div>
           </div>
         </div>,
-        document.body // <-- บังคับให้ Modal ไป render ที่ body ระดับนอกสุด
+        document.body 
       )}
 
       {/* ================= HEADER & LOGO ================= */}
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isCollapsed ? "flex-col-reverse gap-6 mb-4" : "justify-between px-6 py-6"}`}>
         {!isCollapsed && <img src={logo} className="w-36 transition-opacity object-contain pointer-events-none" alt="logo" />}
 
-        {/* Desktop toggle button (ซ่อนใน mobile) */}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -305,7 +262,6 @@ const SidebarContent = ({
           </button>
         )}
 
-        {/* ✅ Mobile: ปุ่ม X ปิด */}
         {isMobile && (
           <button
             onClick={onMobileClose}
@@ -420,7 +376,7 @@ const SidebarContent = ({
         {/* Project List */}
         {filteredProjects.length > 0 ? (
           filteredProjects.map((p) => {
-            const unlocked = unlockedList.includes(p.id);
+            const unlocked = isToolUnlocked(p.id); // ดึงสถานะ Unlocked ให้ตรงกับ Context 100%
             const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
 
             return (
@@ -481,7 +437,8 @@ const SidebarContent = ({
           {!isCollapsed && <span className="pointer-events-none">Profile</span>}
         </button>
 
-        {(isMember || unlockedList.length > 0) && (
+        {/* โชว์ปุ่ม Manage Subscription ถ้าเป็น Member หรือมีแพ็กเกจอย่างน้อย 1 อัน */}
+        {(isMember || Object.keys(accessData).length > 0) && (
           <button
             onClick={() => handleNavigation("subscription")}
             onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
@@ -540,7 +497,12 @@ const SidebarContent = ({
       {/* ================= FOOTER ================= */}
       <div className="px-2 pb-2 w-full flex justify-center shrink-0">
         <button
-          onClick={() => { setActivePage("premiumtools"); onMobileClose?.(); }}
+          // 🔴 ลบของเดิมทิ้ง: onClick={() => handleNavigation("preview-projects")} 
+          // 🟢 ใส่ของใหม่เข้าไปแทน: สั่งเปลี่ยน URL ไปที่ /premium-tools และปิดเมนูมือถือ
+          onClick={() => { 
+            navigate("/premium-tools"); 
+            onMobileClose?.(); 
+          }}
           onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")}
           onMouseLeave={handleMouseLeave}
           className={`flex items-center justify-center transition-all shadow-lg overflow-hidden shrink-0 cursor-pointer relative group
@@ -563,8 +525,8 @@ export default function Sidebar({
   activePage,
   setActivePage,
   openProject,
-  mobileOpen,        // ✅ รับ prop ใหม่
-  onMobileClose,     // ✅ รับ prop ใหม่
+  mobileOpen,        
+  onMobileClose,     
 }) {
   const sharedProps = { collapsed, setCollapsed, activePage, setActivePage, openProject };
 
@@ -576,9 +538,6 @@ export default function Sidebar({
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fade-in 0.1s ease-out; }
       `}</style>
-
-      {/* ✅ Floating Tooltip (desktop only) */}
-      {/* Tooltip ถูก handle ใน SidebarContent แต่ใส่ไว้ที่นี่ได้ถ้าต้องการ global */}
 
       {/* ============ DESKTOP SIDEBAR ============ */}
       <aside
@@ -594,7 +553,6 @@ export default function Sidebar({
       </aside>
 
       {/* ============ MOBILE OVERLAY SIDEBAR ============ */}
-      {/* Backdrop */}
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"

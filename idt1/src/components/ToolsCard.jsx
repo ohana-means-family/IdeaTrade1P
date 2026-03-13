@@ -115,7 +115,7 @@ export default function ToolsCard({
             <OpenInNewIcon sx={{ width: 16, height: 16 }} />
           </>
         ) : isUnlocked ? (
-          "OPEN EXTERNAL"
+          "OPEN TOOL"
         ) : (
           "JOIN MEMBERSHIP"
         )}

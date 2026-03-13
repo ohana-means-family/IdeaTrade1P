@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ToolsCard from "@/components/ToolsCard";
 
+// ✅ 1. Import Context เข้ามาใช้เป็นศูนย์กลางข้อมูลสิทธิ์
+import { useSubscription } from "@/context/SubscriptionContext";
+
 import fortuneIcon from "@/assets/icons/fortune.svg";
 import petroleumIcon from "@/assets/icons/petroleum.svg";
 import rubberIcon from "@/assets/icons/rubber.svg";
@@ -13,10 +16,9 @@ import bidaskIcon from "@/assets/icons/bidask.svg";
 import tickmatchIcon from "@/assets/icons/tickmatch.svg";
 import drIcon from "@/assets/icons/dr.svg";
 
-// Import Firebase ให้เหมือนหน้า PreviewProject
-import { auth, db } from "@/firebase"; 
+// Import Firebase (เก็บ auth ไว้เผื่อเช็กสถานะล็อกอินเฉยๆ)
+import { auth } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 
 /* =======================
    Data Configuration
@@ -109,62 +111,46 @@ const projects = [
 export default function PremiumTools() {
   const navigate = useNavigate();
   const [isMember, setIsMember] = useState(false);
-  const [unlockedList, setUnlockedList] = useState([]);
+  
+  // ✅ 2. ดึง accessData มาจาก Context (ตัวเดียวกับที่ Sidebar ใช้)
+  const { accessData } = useSubscription();
   
   // กรองเฉพาะ Tools ที่เป็น Premium
   const premiumTools = projects.filter((tool) => tool.premium);
 
-  /* อัปเดต Load user profile ให้เช็คแบบเดียวกับหน้า Preview ===== */
+  // ✅ 3. ฟังก์ชันเช็กสถานะปลดล็อกจากการเปรียบเทียบเวลา (เหมือนใน Sidebar เลย)
+  const isToolUnlocked = (id) => {
+    const expireTimestamp = accessData[id];
+    if (!expireTimestamp) return false;
+    
+    let expireDate;
+    try {
+      expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
+    } catch (error) {
+      expireDate = new Date(0); 
+    }
+    return expireDate > new Date(); // ตรวจสอบว่าเลยวันปัจจุบันหรือยัง
+  };
+
+  /* ✅ 4. ลบการดึงฐานข้อมูลแบบเก่าทิ้งไป เก็บไว้แค่เช็กสถานะการเป็น Member ทั่วไป */
   useEffect(() => {
     const loadDemoProfile = () => {
       const saved = localStorage.getItem("userProfile");
       if (saved) {
         const userData = JSON.parse(saved);
-        const subscriptions = userData.mySubscriptions || [];
-        const unlockedFromSubs = subscriptions.map(sub => sub.id); 
-        const explicitUnlocked = userData.unlockedItems || [];
-        const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
-        
-        const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
-        setIsMember(hasAccess);
-        setUnlockedList(combinedUnlocked);
+        setIsMember(userData.role === "member" || userData.role === "membership");
       } else {
         setIsMember(false);
-        setUnlockedList([]);
       }
     };
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            const subscriptions = userData.mySubscriptions || [];
-            const unlockedFromSubs = subscriptions.map(sub => sub.id); 
-            const explicitUnlocked = userData.unlockedItems || [];
-            const combinedUnlocked = [...new Set([...explicitUnlocked, ...unlockedFromSubs])];
-            const hasAccess = userData.role === "member" || userData.role === "membership" || combinedUnlocked.length > 0;
-
-            setIsMember(hasAccess);
-            setUnlockedList(combinedUnlocked);
-          }
-        } catch (err) {
-          console.error("Error fetching Firestore:", err);
-        }
-      } else {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
         loadDemoProfile();
       }
     });
 
-    window.addEventListener("storage", loadDemoProfile);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener("storage", loadDemoProfile);
-    };
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -190,14 +176,21 @@ export default function PremiumTools() {
 
       {/* ===== Grid Section ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {premiumTools.map((tool) => (
-          <ToolsCard
-            key={tool.id}
-            project={tool}
-            isMember={unlockedList.includes(tool.id)}
-            unlockedList={unlockedList}
-          />
-        ))}
+        {premiumTools.map((tool) => {
+          // ✅ 5. เช็กว่า Tool นี้ถูกปลดล็อกหรือไม่โดยเรียกใช้ฟังก์ชัน
+          const unlocked = isToolUnlocked(tool.id);
+          
+          return (
+            <ToolsCard
+              key={tool.id}
+              project={tool}
+              // ส่งค่า isMember เป็น unlocked เพื่อให้การ์ดเปลี่ยนสีตามสถานะ
+              isMember={unlocked} 
+              // จำลอง unlockedList ให้ตรงกับ ToolsCard props (ถ้า ToolsCard ต้องการ)
+              unlockedList={unlocked ? [tool.id] : []} 
+            />
+          );
+        })}
       </div>
     </div>
   );

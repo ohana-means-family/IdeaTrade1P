@@ -79,46 +79,58 @@ export default function Dashboard({ initialPage }) {
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState(initialPage || "preview-projects");
   const [unlockedItems, setUnlockedItems] = useState([]);
-
-  // ✅ Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ✅ 1. เพิ่ม State เพื่อเช็กว่าดึงข้อมูลเสร็จสมบูรณ์หรือยัง
+  const [isDataReady, setIsDataReady] = useState(false);
+
   /* --- Effects --- */
+
+  // ✅ 2. รวมการดึงข้อมูลไว้ที่เดียว และเมื่อเสร็จค่อยเปิดธง isDataReady
   useEffect(() => {
+    const fetchUserData = async () => {
+      setIsDataReady(false);
+      try {
+        const user = JSON.parse(localStorage.getItem("userProfile") || "{}");
+        setUnlockedItems(user.unlockedItems || []);
+      } catch (e) {
+        console.error("Error loading user profile:", e);
+      } finally {
+        setIsDataReady(true); // ข้อมูลดึงเสร็จ 100% แล้ว
+      }
+    };
+
+    fetchUserData();
+  }, [location.pathname]);
+
+  // ✅ 3. เช็ก location.state หรือเปลี่ยน Tab "ก็ต่อเมื่อ" isDataReady = true เท่านั้น
+  useEffect(() => {
+    if (!isDataReady) return; 
+
     if (location.state?.goTo) {
       setActivePage(location.state.goTo);
     } else {
-      const path = location.pathname;
+      const path = location.pathname.split("/").pop(); 
       
-      if (path === "/mit" || path === "/MIT") setActivePage("mit");
-      else if (path === "/stock-fortune" || path === "/fortune") setActivePage("fortune");
-      else if (path.includes("/petroleum")) setActivePage("petroleum");
-      else if (path.includes("/rubber") || path.includes("/RubberThai")) setActivePage("rubber");
-      else if (path.includes("/flow") || path.includes("/FlowIntraday")) setActivePage("flow");
-      else if (path.includes("/s50") || path.includes("/S50")) setActivePage("s50");
-      else if (path.includes("/gold") || path.includes("/Gold")) setActivePage("gold");
-      else if (path.includes("/bidask") || path.includes("/BidAsk")) setActivePage("bidask");
-      else if (path.includes("/tickmatch") || path.includes("/TickMatch")) setActivePage("tickmatch");
-      else if (path.includes("/dr") || path.includes("/DRInsight")) setActivePage("dr");
-      else if (path.includes("/profile")) setActivePage("profile");
-      else if (path.includes("/subscription")) setActivePage("subscription");
+      if (path === "mit" || path === "MIT") setActivePage("mit");
+      else if (path === "stock-fortune" || path === "fortune") setActivePage("fortune");
+      else if (path === "petroleum" || path === "petroleum-preview") setActivePage("petroleum");
+      else if (path === "rubber" || path === "RubberThai") setActivePage("rubber");
+      else if (path === "flow" || path === "FlowIntraday") setActivePage("flow");
+      else if (path === "s50" || path === "S50") setActivePage("s50");
+      else if (path === "gold" || path === "Gold") setActivePage("gold");
+      else if (path === "bidask" || path === "BidAsk") setActivePage("bidask");
+      else if (path === "tickmatch" || path === "TickMatch") setActivePage("tickmatch");
+      else if (path === "dr" || path === "DRInsight") setActivePage("dr");
+      else if (path === "profile") setActivePage("profile");
+      else if (path === "subscription") setActivePage("subscription");
+      else if (path === "preview-projects") setActivePage("preview-projects");
+      else if (path === "premium-tools" || path === "premiumtools") setActivePage("premiumtools");
+      
+      else setActivePage("preview-projects"); // Fallback ถ้าหาไม่เจอจริงๆ
     }
-  }, [location.state, location.pathname]);
+  }, [location.state, location.pathname, isDataReady]);
 
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("userProfile") || "{}");
-      setUnlockedItems(user.unlockedItems || []);
-    } catch (e) {
-      console.error("Error loading user profile:", e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (initialPage) setActivePage(initialPage);
-  }, [initialPage]);
-
-  // ✅ ปิด mobile sidebar เมื่อ page เปลี่ยน
   useEffect(() => {
     setMobileOpen(false);
   }, [activePage]);
@@ -142,7 +154,8 @@ export default function Dashboard({ initialPage }) {
     if (activePage === "preview-projects" || activePage === "whatsnew") return <PreviewProjects />;
     if (activePage === "premiumtools") return <PremiumTools />;
 
-    const toolConfig = TOOL_CONFIG[activePage];
+    const normalizedPage = activePage.toLowerCase(); 
+    const toolConfig = TOOL_CONFIG[normalizedPage] || TOOL_CONFIG[activePage];
     
     if (toolConfig) {
       const ToolComponent = toolConfig.component;
@@ -161,11 +174,20 @@ export default function Dashboard({ initialPage }) {
     return <PreviewProjects />;
   };
 
+  // ✅ 4. แสดงหน้าจอ Loading ระหว่างรอข้อมูล ป้องกันไม่ให้ ToolAccessGuard เด้งไล่ผู้ใช้
+  if (!isDataReady) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#0B0E14]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
 /* --- Main Render --- */
   return (
     <div className="flex h-screen bg-[#0B0E14] text-white overflow-hidden font-sans">
 
-      {/* ✅ Mobile Topbar — โชว์เฉพาะ mobile (md:hidden) */}
+      {/* Mobile Topbar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-4 h-14 bg-[#0f1520] border-b border-white/10 shadow-lg">
         <button
           onClick={() => setMobileOpen(true)}
@@ -189,23 +211,34 @@ export default function Dashboard({ initialPage }) {
         </div>
       </div>
 
-      {/* Sidebar */}
+       {/* Sidebar */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         activePage={activePage}
         setActivePage={(page) => {
-          if (page === "home") setActivePage("preview-projects");
-          else setActivePage(page);
+          if (page === "home" || page === "preview-projects") {
+            navigate("/preview-projects");
+          } else if (page === "fortune") {
+            navigate("/stock-fortune");
+          } else if (page === "premiumtools") { 
+            // 🟢 เพิ่มบรรทัดนี้: เติมขีดกลางให้ตรงกับ AppRoutes
+            navigate("/premium-tools"); 
+          } else {
+            navigate(`/${page}`);
+          }
         }}
-        openProject={(p) => setActivePage(p.id)} 
-        mobileOpen={mobileOpen}                    // ✅
-        onMobileClose={() => setMobileOpen(false)} // ✅
+        openProject={(p) => {
+          if (p.id === "fortune") navigate("/stock-fortune");
+          else navigate(`/${p.id}`);
+        }} 
+        mobileOpen={mobileOpen}                    
+        onMobileClose={() => setMobileOpen(false)} 
       />
 
       {/* Main Content Area */}
       <main className="flex-1 w-full relative overflow-y-auto transition-all duration-300">
-        {/* ✅ Spacer สำหรับ mobile topbar (h-14) */}
+        {/* Spacer สำหรับ mobile topbar */}
         <div className="md:hidden h-14 shrink-0" />
         <div className={isFullWidthPage() || isNoPaddingPage() ? "p-0" : "p-8 pb-20"}>
           {renderContent()}

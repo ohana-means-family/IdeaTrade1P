@@ -1,17 +1,19 @@
+// src/components/ExpiredPopup.jsx (หรือ path ที่คุณเก็บไฟล์ไว้)
 import React from 'react';
 import { createPortal } from 'react-dom'; 
-import { useNavigate } from 'react-router-dom'; // 👈 1. นำเข้า useNavigate
+import { useNavigate } from 'react-router-dom'; 
 
 const ExpiredPopup = ({ toolName, expireDateStr, hasPurchased = true, onClose }) => {
-  const navigate = useNavigate(); // 👈 2. เรียกใช้งาน navigate
+  const navigate = useNavigate(); 
 
   // 🔥 ถ้าไม่เคยซื้อเลย ให้ return null
   if (!hasPurchased) return null;
 
-  // 👈 3. สร้างฟังก์ชันสำหรับกดปุ่มต่ออายุ (ใช้เทคนิคกันจอกระพริบเหมือนเดิม)
   const handleRenewClick = () => {
-    // นำทางไปหน้า จ่ายเงิน/สมัครสมาชิก
-    navigate('/member-register'); 
+    // 👈 แก้ไขตรงนี้: นำทางไปหน้า จ่ายเงิน และส่ง state ไปด้วย
+    navigate('/member-register', {
+      state: { preselectedTool: toolName }
+    });
 
     // หน่วงเวลาปิด Popup เล็กน้อยเพื่อให้หน้าใหม่โหลดเสร็จก่อน
     setTimeout(() => {
@@ -19,9 +21,7 @@ const ExpiredPopup = ({ toolName, expireDateStr, hasPurchased = true, onClose })
     }, 150);
   };
 
-  // 2. ใช้ createPortal เพื่อวาร์ป Popup ไปอยู่ที่ body ระดับนอกสุด
   return createPortal(
-    /* 3. เปลี่ยนจาก absolute เป็น fixed และใช้ z-[9999] เพื่อให้ทับ Navbar */
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md p-4">
       
       <div className="bg-[#1e1e1e] border border-red-900/50 rounded-xl shadow-2xl p-7 w-full max-w-md text-center relative overflow-hidden animate-in fade-in zoom-in duration-300">
@@ -47,7 +47,6 @@ const ExpiredPopup = ({ toolName, expireDateStr, hasPurchased = true, onClose })
             Renew now to continue viewing real-time data.
           </p>
           
-          {/* 👈 4. ใส่ onClick={handleRenewClick} ให้กับปุ่มนี้ */}
           <button 
             onClick={handleRenewClick}
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg w-full transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-4 cursor-pointer"
@@ -74,7 +73,7 @@ const ExpiredPopup = ({ toolName, expireDateStr, hasPurchased = true, onClose })
 
       </div>
     </div>,
-    document.body // ระบุเป้าหมายคือ body
+    document.body
   );
 };
 
