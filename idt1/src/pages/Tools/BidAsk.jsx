@@ -204,18 +204,18 @@ export default function BidAsk() {
               onMouseLeave={() => isPaused.current = false}
             >
 
-              <button
+              <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-20 z-20 
-                            w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
-                            hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
-                            hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
-                            flex items-center justify-center transition-all duration-300 backdrop-blur-sm
-                            active:scale-95
-                            ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                          active:scale-95
+                          ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
                 aria-label="Scroll Left"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -245,18 +245,18 @@ export default function BidAsk() {
                 ))}
               </div>
 
-              <button
+              <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-20 z-20 
-                            w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
-                            hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
-                            hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
-                            flex items-center justify-center transition-all duration-300 backdrop-blur-sm
-                            active:scale-95
-                            ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                          active:scale-95
+                          ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 aria-label="Scroll Right"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -346,18 +346,18 @@ export default function BidAsk() {
               onMouseLeave={() => isPaused.current = false}
             >
 
-              <button
+              <button 
                 onClick={() => scroll("left")}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-20 z-20 
-                            w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
-                            hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
-                            hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
-                            flex items-center justify-center transition-all duration-300 backdrop-blur-sm
-                            active:scale-95
-                            ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                          active:scale-95
+                          ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
                 aria-label="Scroll Left"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -387,18 +387,18 @@ export default function BidAsk() {
                 ))}
               </div>
 
-              <button
+              <button 
                 onClick={() => scroll("right")}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-20 z-20 
-                            w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
-                            hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
-                            hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
-                            flex items-center justify-center transition-all duration-300 backdrop-blur-sm
-                            active:scale-95
-                            ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white 
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white 
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm
+                          active:scale-95
+                          ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 aria-label="Scroll Right"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
