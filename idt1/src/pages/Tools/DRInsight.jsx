@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
+import drIcon from "@/assets/icons/dr.svg";
+import { Fullscreen, Settings as SettingsIcon } from '@mui/icons-material';
 
 import DRInsightDashboard from "./components/DRInsightDashboard.jsx";
 
@@ -286,8 +288,10 @@ function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, c
             ))}
           </select>
           <div className="flex items-center gap-3 text-slate-600">
-            <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-sm" title="Fullscreen">⛶</button>
-            <button className="hover:text-white transition text-sm">⚙</button>
+            <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition text-slate-400" title="Fullscreen">⛶</button>
+            <button className="hover:text-cyan-400 transition text-slate-400">
+              <SettingsIcon sx={{ fontSize: 16, color: "inherit" }} />
+            </button>
           </div>
         </div>
 
@@ -712,9 +716,10 @@ export default function DRInsight() {
 
           <div className="col-span-3 flex flex-col gap-4 h-full overflow-hidden">
           {[
-            { title: "USA", stocks: usaStocks, icon: "🌎", flex: "flex-[4]" },
-            { title: "Europe", stocks: europeStocks, icon: "🌍", flex: "flex-[3]" },
-            { title: "ETC", stocks: etcStocks, icon: "🌐", flex: "flex-[2]" },
+            // บรรทัดที่ประมาณ 800+ แทน emoji 🌎 🌍 🌐
+          { title: "USA", stocks: usaStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[4]" },
+          { title: "Europe", stocks: europeStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[3]" },
+          { title: "ETC", stocks: etcStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
           ].map(({ title, stocks, icon, flex }) => {
             const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
             return (
@@ -802,8 +807,12 @@ export default function DRInsight() {
               ))}
             </select>
             <div className="flex gap-3 text-slate-600">
-              <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
-              <button className="hover:text-white transition">⚙</button>
+              <div className="flex gap-3 text-white">
+                <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
+                <button className="hover:text-cyan-400 transition">
+                  <SettingsIcon sx={{ fontSize: 18 }} />
+                </button>
+              </div>
             </div>
           </div>
           <div
@@ -863,10 +872,10 @@ export default function DRInsight() {
             <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
               <div className="flex flex-col gap-4 h-full overflow-hidden">
               {[
-                { title: "Japan", stocks: japanStocks, icon: "JP" },
-                { title: "Singapore", stocks: singaporeStocks, icon: "SG" },
-                { title: "Vietnam", stocks: vietnamStocks, icon: "VN" },
-              ].map(({ title, stocks, icon }) => {
+                { title: "Japan", stocks: japanStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[4]" },
+                { title: "Singapore", stocks: singaporeStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
+                { title: "Vietnam", stocks: vietnamStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
+              ].map(({ title, stocks, icon, flex }) => {
                 const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
                 return (
                   <div key={title} className="bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 flex-1">
@@ -898,8 +907,8 @@ export default function DRInsight() {
             </div>
               <div className="flex flex-col gap-4 h-full overflow-hidden">
                 {[
-                  { title: "China", stocks: chinaStocks, icon: "CN", flex: "flex-[3]" },
-                  { title: "Taiwan", stocks: taiwanStocks, icon: "TW", flex: "flex-1" },
+                  { title: "China", stocks: chinaStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[3]" },
+                  { title: "Taiwan", stocks: taiwanStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-1" },
                 ].map(({ title, stocks, icon, flex }) => {
                   const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
                   return (
