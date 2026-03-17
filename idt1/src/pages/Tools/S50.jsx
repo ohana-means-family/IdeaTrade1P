@@ -6,6 +6,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 
 import S50Dashboard from "./components/S50Dashboard.jsx";
 
+// ❌ เอา export default function S50() ที่ครอบตรงนี้ออกแล้ว
 const scrollbarHideStyle = {
   msOverflowStyle: 'none',
   scrollbarWidth: 'none'
@@ -123,7 +124,7 @@ function ChartBodySkeleton() {
 }
 
 // ============================================================
-// REUSABLE CHART CARD (NEW STYLE) - with refresh from parent
+// REUSABLE CHART CARD (NEW STYLE)
 // ============================================================
 function ChartCard({ 
   title, 
@@ -324,7 +325,7 @@ function ChartCard({
 }
 
 // ============================================================
-// MAIN EXPORT S50
+// MAIN EXPORT S50 (ของจริงคือตัวนี้ครับ)
 // ============================================================
 export default function S50() {
   const navigate = useNavigate();
@@ -337,18 +338,19 @@ export default function S50() {
   const [showRight, setShowRight] = useState(true);
   const [timeframe, setTimeframe] = useState("Day");
 
-  // Shared Hover State (Sync across charts)
   const [globalHoverIndex, setGlobalHoverIndex] = useState(null);
   const chartRefs = useRef({});
 
-  // ✅ Centralized Refresh State
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-  const { accessData, isFreeAccess } = useSubscription();
+  const { accessData, isFreeAccess, currentUser } = useSubscription();
+
+ // ดึงค่าจาก localStorage (เปลี่ยน "token" เป็นชื่อ key ที่คุณใช้จริง)
+const user = localStorage.getItem("token");
 
   /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
@@ -383,7 +385,6 @@ export default function S50() {
     }
   }, [accessData, isFreeAccess]);
 
-  // ✅ Centralized handleRefresh (from Gold.jsx pattern)
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
 
@@ -422,7 +423,6 @@ export default function S50() {
     setTimeout(() => { isPaused.current = false; }, 500);
   };
 
-  // Auto Scroll Effect
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -495,7 +495,7 @@ export default function S50() {
           ref={scrollContainerRef}
           onScroll={checkScroll}
           className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar"
-          style={scrollbarHideStyle}
+          style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
         >
           {features.map((item, index) => (
             <div
@@ -585,13 +585,18 @@ export default function S50() {
           {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
-              >
-                Sign In
-              </button>
+              
+              {/* ตรวจสอบว่าถ้า "ไม่มี" user ค่อยแสดงปุ่ม Sign In */}
+              {!currentUser && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                >
+                  Sign In
+                </button>
+              )}
 
+              {/* ปุ่ม Join Membership แสดงตลอดสำหรับคนที่ไม่ใช่ Member */}
               <button
                 onClick={() => navigate("/member-register")}
                 className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"

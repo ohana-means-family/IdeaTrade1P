@@ -8,12 +8,18 @@ export const SubscriptionProvider = ({ children }) => {
   const [accessData, setAccessData] = useState({});
   const [loading, setLoading] = useState(true);
   const [isFreeAccess, setIsFreeAccess] = useState(false);
+  
+  // 🟢 1. เพิ่ม State สำหรับเก็บข้อมูล User ที่ล็อกอินแล้ว
+  const [currentUser, setCurrentUser] = useState(null); 
 
   useEffect(() => {
     let unsubscribeDoc = null; 
 
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      // 🟢 เพิ่มตรงนี้ 1: เคลียร์ Listener เก่าทิ้งทันทีที่มีการเปลี่ยนสถานะ Auth (เช่น กด Sign Out)
+      
+      // 🟢 2. เซ็ตค่า User ลง State เพื่อให้หน้าอื่นดึงไปใช้ได้
+      setCurrentUser(user); 
+
       if (unsubscribeDoc) {
         unsubscribeDoc();
         unsubscribeDoc = null;
@@ -36,7 +42,6 @@ export const SubscriptionProvider = ({ children }) => {
         try {
           const docRef = doc(db, 'users', user.uid);
           
-          // 🟢 ตรงนี้ unsubscribeDoc จะเก็บฟังก์ชันไว้เคลียร์ตัวเองรอบหน้า
           unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
               setAccessData(docSnap.data().subscriptions || {});
@@ -74,7 +79,8 @@ export const SubscriptionProvider = ({ children }) => {
   }, []);
 
   return (
-    <SubscriptionContext.Provider value={{ accessData, loading, isFreeAccess }}>
+    // 🟢 3. เพิ่ม currentUser เข้าไปใน value เพื่อแจกจ่ายให้ Component อื่น
+    <SubscriptionContext.Provider value={{ accessData, loading, isFreeAccess, currentUser }}>
       {children}
     </SubscriptionContext.Provider>
   );

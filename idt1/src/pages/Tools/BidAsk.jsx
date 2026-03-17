@@ -26,7 +26,7 @@ export default function BidAsk() {
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-  const { accessData, isFreeAccess } = useSubscription();
+  const { accessData, isFreeAccess, currentUser } = useSubscription();
 
   /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
@@ -264,14 +264,19 @@ export default function BidAsk() {
             </div>
           </div>
 
+          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
-              >
-                Sign In
-              </button>
+              
+              {/* 🟢 ครอบปุ่ม Sign In ด้วยเงื่อนไขนี้ */}
+              {!currentUser && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                >
+                  Sign In
+                </button>
+              )}
 
               <button
                 onClick={() => navigate("/member-register")}

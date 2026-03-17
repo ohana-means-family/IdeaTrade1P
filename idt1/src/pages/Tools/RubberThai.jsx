@@ -479,7 +479,7 @@ export default function RubberThai() {
     });
   }, []);
 
-const { accessData, isFreeAccess } = useSubscription();
+const { accessData, isFreeAccess, currentUser } = useSubscription();
 
   // ================= คำนวณความสูงให้เต็มจอแบบ 100% =================
   const [chartHeight, setChartHeight] = useState(240);
@@ -695,17 +695,41 @@ const { accessData, isFreeAccess } = useSubscription();
               </button>
             </div>
           </div>
+
+          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              {!isMember ? (
+              
+              {!currentUser ? (
+                // 1. กรณี: ยังไม่ได้ล็อกอิน -> โชว์ปุ่ม Sign In + Join Membership
                 <>
-                  <button onClick={() => navigate("/login")} className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300">Sign In</button>
-                  <button onClick={() => navigate("/member-register")} className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300">Join Membership</button>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                  >
+                    Sign In
+                  </button>
+
+                  <button
+                    onClick={() => navigate("/member-register")}
+                    className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+                  >
+                    Join Membership
+                  </button>
                 </>
+              ) : !isMember ? (
+                // 2. กรณี: ล็อกอินแล้ว แต่ "ยังไม่มีแพ็กเกจ/แพ็กเกจหมดอายุ" -> โชว์แค่ Join Membership
+                <button
+                  onClick={() => navigate("/member-register")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+                >
+                  Join Membership
+                </button>
               ) : (
+                // 3. กรณี: ล็อกอินแล้ว + เป็น Member -> โชว์ปุ่ม Start Using Tool
                 <button
                   onClick={() => setEnteredTool(true)}
-                  className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
+                  className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
                 >
                   <span className="mr-2">Start Using Tool</span>
                   <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -713,10 +737,11 @@ const { accessData, isFreeAccess } = useSubscription();
                   </svg>
                 </button>
               )}
+
             </div>
           </div>
-        </div>
       </div>
+    </div>
     );
   }
 

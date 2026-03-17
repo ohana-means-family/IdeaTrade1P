@@ -907,6 +907,8 @@ function EmptyChartPanel({ title, value, onChange }) {
 // MAIN EXPORT
 // ============================================================
 export default function StockFortuneTeller() {
+  const navigate = useNavigate(); 
+
   const scrollContainerRef = useRef(null);
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
@@ -949,7 +951,7 @@ export default function StockFortuneTeller() {
   // ── Toast ──
   const { toasts, showToast } = useToast();
 
-  const { accessData, isFreeAccess } = useSubscription();
+  const { accessData, isFreeAccess, currentUser } = useSubscription();
 
   const symbols = [
     "BANPU", "BGRIM", "EGCO", "GPSC", "GULF", "OR", "PTT", "PTTEP",
@@ -1150,19 +1152,28 @@ const resolveFilters = (currentFilters, changedKey, newValue) => {
             </div>
           </div>
           {featuresSection}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => window.open("/login", "_blank")}
-              className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => window.open("/member-register", "_blank")}
-              className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
-            >
-              Join Membership
-            </button>
+
+          {/* CTA Buttons */}
+          <div className="text-center w-full max-w-md mx-auto mt-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              
+              {/* 🟢 ครอบปุ่ม Sign In ด้วยเงื่อนไขนี้ */}
+              {!currentUser && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                >
+                  Sign In
+                </button>
+              )}
+
+              <button
+                onClick={() => navigate("/member-register")}
+                className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+              >
+                Join Membership
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -647,7 +647,7 @@ export default function PetroleumInsights() {
     []
   );
 
-  const { accessData, isFreeAccess } = useSubscription();
+  const { accessData, isFreeAccess, currentUser } = useSubscription();
 
  /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
@@ -808,17 +808,35 @@ export default function PetroleumInsights() {
             </div>
           </div>
           {featuresSection}
+          
+            {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <button onClick={() => navigate("/login")} className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300">Sign In</button>
-              <button onClick={() => navigate("/member-register")} className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300">Join Membership</button>
+              
+              {/* ตรวจสอบว่าถ้า "ไม่มี" user ค่อยแสดงปุ่ม Sign In */}
+              {!currentUser && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                >
+                  Sign In
+                </button>
+              )}
+
+              {/* ปุ่ม Join Membership แสดงตลอดสำหรับคนที่ไม่ใช่ Member */}
+              <button
+                onClick={() => navigate("/member-register")}
+                className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+              >
+                Join Membership
+              </button>
             </div>
           </div>
+
         </div>
       </div>
     );
   }
-
   if (isMember && !enteredTool) {
     return (
       <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">

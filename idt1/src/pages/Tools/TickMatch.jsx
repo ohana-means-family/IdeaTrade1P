@@ -322,7 +322,7 @@ export default function TickMatch() {
   const scrollDirection = useRef(1); // 1 = ขวา, -1 = ซ้าย
   const isPaused = useRef(false);    // เก็บสถานะว่าเมาส์ชี้อยู่ไหม
 
-  const { accessData, isFreeAccess } = useSubscription();
+  const { accessData, isFreeAccess, currentUser } = useSubscription();
 
  /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
@@ -1169,10 +1169,27 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-             <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600 hover:bg-slate-700 transition flex items-center justify-center">Sign In</button>
-             <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold hover:shadow-lg transition flex items-center justify-center">Join Membership</button>
+          {/* CTA Buttons */}
+          <div className="text-center w-full max-w-md mx-auto mt-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              
+              {/* 🟢 ครอบปุ่ม Sign In ด้วยเงื่อนไขนี้ */}
+              {!currentUser && (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300"
+                >
+                  Sign In
+                </button>
+              )}
+
+              <button
+                onClick={() => navigate("/member-register")}
+                className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+              >
+                Join Membership
+              </button>
+            </div>
           </div>
         </div>
       </div>
