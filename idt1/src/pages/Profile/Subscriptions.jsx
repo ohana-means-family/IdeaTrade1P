@@ -1,7 +1,8 @@
 // src/pages/ManageSubscription.jsx
 import React, { useState, useEffect } from 'react';
 import './Subscriptions.css';
-import { doc, getDoc } from "firebase/firestore";
+// 🟢 1. เพิ่ม updateDoc และ Timestamp เข้ามาสำหรับใช้ตอน Test
+import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db, auth } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth"; 
 import { useNavigate } from 'react-router-dom';
@@ -104,18 +105,49 @@ const ManageSubscription = () => {
     return () => unsubscribe();
   }, []);
 
-  // Shared Desktop Grid Structure
   const gridCols = "grid-cols-[2.5fr_1.5fr_2.5fr_1.5fr_1.5fr_2fr]";
 
-  // 👈 แก้ไขฟังก์ชันนี้: รับ parameter item เพื่อส่งชื่อเครื่องมือและรอบบิล
   const handleActionClick = (item) => {
     navigate('/member-register', {
       state: { 
-        preselectedTool: item.name,   // ส่งชื่อ Tool 
-        preselectedCycle: item.cycle  // ส่งรอบบิล (เช่น Monthly, Yearly)
+        preselectedTool: item.name,
+        preselectedCycle: item.cycle
       } 
     });
   };
+
+  /* ======================= REMOVE THIS TEST BLOCK LATER ======================= */
+  // 🟢 2. ฟังก์ชันสำหรับอัปเดตวันหมดอายุเพื่อทดสอบ
+  const handleTestStatus = async (item, mode) => {
+    const targetDate = new Date();
+    if (mode === 'expiring') {
+      targetDate.setDate(targetDate.getDate() + 2); // เหลือ 2 วัน
+    } else {
+      targetDate.setDate(targetDate.getDate() - 1); // หมดอายุไปแล้ว 1 วัน
+    }
+
+    const user = auth.currentUser;
+    if (user) {
+      // 1. อัปเดตใน Firebase
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        [`subscriptions.${item.id}`]: Timestamp.fromDate(targetDate)
+      });
+    } else {
+      // 2. อัปเดตใน LocalStorage (โหมด Demo)
+      const saved = localStorage.getItem('userProfile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.subscriptions) parsed.subscriptions = {};
+        parsed.subscriptions[item.id] = targetDate.toISOString();
+        localStorage.setItem('userProfile', JSON.stringify(parsed));
+      }
+    }
+    
+    // รีโหลดหน้าจอเพื่อให้ useEffect คำนวณวันใหม่
+    window.location.reload();
+  };
+  /* ============================================================================ */
 
   const renderRow = (item, type) => {
     let statusColor, statusIcon, statusText, actionText, cardBorder, bgClass;
@@ -129,7 +161,6 @@ const ManageSubscription = () => {
       cardBorder = 'border-red-500/30'; 
       bgClass = 'bg-[#1a2332]/80';
       
-      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
       btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-red-500/50 text-red-400 text-[13px] hover:text-white hover:bg-red-900/40 hover:border-red-500 transition-all">{actionText}</button>;
       btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-red-500/50 text-red-400 hover:text-white hover:bg-red-900/40 transition-all">{actionText}</button>;
       
@@ -141,7 +172,6 @@ const ManageSubscription = () => {
       cardBorder = 'border-yellow-500/30';
       bgClass = 'bg-[#242b35]/80';
 
-      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
       btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-yellow-500/50 text-yellow-500 text-[13px] hover:text-white hover:bg-yellow-900/40 hover:border-yellow-500 transition-all">{actionText}</button>;
       btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-yellow-500/50 text-yellow-500 hover:text-white hover:bg-yellow-900/40 transition-all">{actionText}</button>;
 
@@ -153,7 +183,6 @@ const ManageSubscription = () => {
       cardBorder = 'border-gray-800';
       bgClass = 'bg-[#242b35]/80';
 
-      // 👈 แก้ไข onClick ทุกปุ่มให้ส่ง item เข้าไป
       btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-gray-600 text-gray-400 text-[13px] hover:text-white hover:bg-gray-700 transition-all">{actionText}</button>;
       btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-gray-600 text-gray-400 hover:text-white hover:bg-gray-700 transition-all">{actionText}</button>;
     }
@@ -185,8 +214,19 @@ const ManageSubscription = () => {
             <div className="text-[26px] font-black text-white flex items-baseline gap-1">
               {item.priceValue.toLocaleString()} <span className="text-xl font-bold text-gray-300">฿</span>
             </div>
-            <div className="text-gray-400 text-[12px] pb-1.5">
-              {item.paymentMethod || 'Bank Transfer'}
+            
+            <div className="flex flex-col items-end gap-1">
+              <div className="text-gray-400 text-[12px] pb-1.5">
+                {item.paymentMethod || 'Bank Transfer'}
+              </div>
+              
+              {/* ======================= REMOVE THIS TEST BLOCK LATER ======================= */}
+              {/* ปุ่มเทสต์โหมด Mobile */}
+              <div className="flex gap-1 opacity-40 hover:opacity-100 transition-opacity">
+                <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
+                <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
+              </div>
+              {/* ============================================================================ */}
             </div>
           </div>
 
@@ -220,7 +260,17 @@ const ManageSubscription = () => {
              {btnDesktop}
            </div>
 
-           <div className="text-gray-400 text-[13px] text-right truncate">{item.paymentMethod || 'Bank Transfer'}</div>
+           <div className="flex flex-col items-end gap-1">
+             <div className="text-gray-400 text-[13px] text-right truncate">{item.paymentMethod || 'Bank Transfer'}</div>
+             
+             {/* ======================= REMOVE THIS TEST BLOCK LATER ======================= */}
+             {/* ปุ่มเทสต์โหมด Desktop */}
+             <div className="flex gap-1 opacity-20 hover:opacity-100 transition-opacity">
+               <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
+               <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
+             </div>
+             {/* ============================================================================ */}
+           </div>
         </div>
 
       </div>
