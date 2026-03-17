@@ -591,7 +591,7 @@ export default function MemberRegister() {
               onClick={() => {
                 setSelectedTools([]);
                 setSelectedPayment(null);
-                navigate("/dashboard"); 
+                navigate(-1); // ✅ เปลี่ยนเป็น -1 เพื่อสั่งให้ถอยกลับไปหน้าก่อนหน้า
               }}
               className="mt-3 w-full text-sm text-[#9FB3C8] hover:text-white transition"
             >
