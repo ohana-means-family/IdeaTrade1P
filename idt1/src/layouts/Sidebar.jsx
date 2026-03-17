@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // ลบ useLocation ออกไป เพราะไม่จำเป็นแล้ว
 import { createPortal } from "react-dom";
 
-// ✅ 1. Import Context เพื่อดึงสิทธิ์ให้ตรงกับการ์ด 100%
 import { useSubscription } from "@/context/SubscriptionContext"; 
 
 import { auth } from "@/firebase"; 
@@ -134,7 +133,6 @@ const SidebarContent = ({
 }) => {
   const navigate = useNavigate();
   
-  // ✅ 2. ดึงสิทธิ์จาก Context โดยตรง เพื่อให้ตรงกับการ์ดหน้า Dashboard
   const { accessData } = useSubscription();
   
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -143,17 +141,24 @@ const SidebarContent = ({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
-  // ✅ 3. ลบโค้ดโหลดฐานข้อมูลซ้ำซ้อนทิ้ง ปล่อยให้ SubscriptionProvider จัดการแทน
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoggedIn(!!user);
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    setIsLoggedIn(!!user);
+    
+    // เช็กว่าใน accessData (ที่ดึงมาจาก Firestore) มีข้อมูลการซื้อไหม
+    const hasPackages = Object.keys(accessData).length > 0;
+    
+    if (hasPackages) {
+      setIsMember(true);
+    } else {
+      // ถ้าไม่มีข้อมูลใน Firestore ค่อยไปดูใน localStorage (เผื่อโหมด Demo)
       const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
       setIsMember(savedProfile.role === "member" || savedProfile.role === "membership");
-    });
-    return () => unsubscribe();
-  }, []);
+    }
+  });
+  return () => unsubscribe();
+}, [accessData]); // 👈 ใส่ accessData เป็นตัวกระตุ้นให้เช็กใหม่เมื่อข้อมูลเปลี่ยน
 
-  // ✅ 4. เช็กว่า Tool ไหนปลดล็อกแล้วบ้าง (เช็กจากวันหมดอายุ)
   const isToolUnlocked = (id) => {
     const expireTimestamp = accessData[id];
     if (!expireTimestamp) return false;
@@ -186,7 +191,6 @@ const SidebarContent = ({
     }
   };
 
-  // ✅ 5. นี่คือพระเอกของเรา ลบคำสั่ง navigate ทั้งหมดออก ให้เหลือแค่ส่งชื่อ!
   const handleNavigation = (id, projectItem = null) => {
     let targetId = id;
     
