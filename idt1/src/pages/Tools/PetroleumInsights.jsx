@@ -5,6 +5,7 @@ import { useSubscription } from "../../context/SubscriptionContext";
 
 // นำเข้า Dashboard ตัวเต็มมาใช้แสดงในพรีวิว
 import PetroleumDashboard from "./components/PetroleumDashboard";
+import ToolHint from "@/components/ToolHint";
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -885,6 +886,9 @@ export default function PetroleumInsights() {
         <div className="max-w-[1600px] mx-auto">
           <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
             <div className="flex flex-wrap items-center gap-3">
+            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+              วิเคราะห์น้ำมันดิบ WTI, Brent และสินค้าพลังงานด้วย Flow Analysis
+            </ToolHint>
               <div className="relative w-56" onClick={(e) => e.stopPropagation()}>
                 <div className= " relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center "> 
                   <input

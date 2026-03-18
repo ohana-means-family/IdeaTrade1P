@@ -1227,15 +1227,9 @@ const resolveFilters = (currentFilters, changedKey, newValue) => {
       {/* TOP BAR */}
       <div className="flex items-center gap-3 mb-6">
         {/* ✨ เพิ่ม ToolHint ที่นี่ */}
-        <ToolHint
-          toolName="Stock Fortune Teller"
-          description="ใช้วิเคราะห์แนวโน้มของหุ้นตรวจนิน และไม่ไว้ใจพวกผู้บริหาร ตรวจสิ่งและไม่ไว้ใจพวกผู้บริหาร อันดีอืนไหม"
-          onViewDetails={() => {
-            // เลื่อนไปยังส่วน features หรือเปิดหน้าใหม่
-            setEnteredTool(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-        />
+        <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+          วิเคราะห์แนวโน้มหุ้นด้วย Flow Analysis ตรวจจับสัญญาณซื้อขายเชิงลึก
+        </ToolHint>
 
         <div className="relative w-80">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fontSize="small" />
