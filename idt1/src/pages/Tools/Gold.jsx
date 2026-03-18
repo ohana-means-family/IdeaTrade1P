@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
+import ToolHint from "@/components/ToolHint.jsx";
 import GoldDashboard from "./components/GoldDashboard.jsx";
 
 const scrollbarHideStyle = {
@@ -107,7 +107,7 @@ function ChartBodySkeleton() {
 /* ==========================================================
    DYNAMIC CHART COMPONENT (NEW STYLE)
 ========================================================== */
-function DynamicChart({ title, height = 280, color, gradientId, seed, points = 70, basePrice = 2000, vol = 5, className = "", chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, onRefresh, isRefreshing }) {
+function DynamicChart({ title, height = 280, color, gradientId, seed, points = 70, basePrice = 2000, vol = 5, className = "", chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs, onRefresh, isRefreshing, toolHint }) {
   
   const data = useMemo(() => generateRawSeries({ seed, points, basePrice, vol }), [seed, points, basePrice, vol]);
 
@@ -171,11 +171,18 @@ function DynamicChart({ title, height = 280, color, gradientId, seed, points = 7
   const isHovering = globalHoverIndex !== null && !isDragging && globalHoverIndex < data.length;
   const hoverX = isHovering ? paddingLeft + globalHoverIndex * pointGap : null;
 
+  // FIX 1: card div ครอบทั้ง header + SVG container ไว้ด้วยกัน
   return (
-    <div className={`bg-[#111827] border border-slate-700 rounded-xl flex flex-col overflow-hidden ${className}`}>
-      
-            {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between bg-[#0f172a]">
+    <div className={`bg-[#111827] border border-slate-700 rounded-xl flex flex-col ${className}`}>
+
+      {toolHint && (
+  <div style={{ position: "absolute", top: "8px", left: "3px", zIndex: 20 }}>
+    {toolHint}
+  </div>
+)}
+
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 bg-[#0f172a] rounded-t-xl flex items-center justify-between shrink-0">
         <p className="text-sm text-slate-300 font-bold uppercase tracking-wide">{title}</p>
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold" style={{ color: dynamicColor }}>
@@ -196,7 +203,7 @@ function DynamicChart({ title, height = 280, color, gradientId, seed, points = 7
       </div>
 
       {/* SVG Container */}
-      <div className="relative w-full bg-[#0f172a]" style={{ height }}>
+      <div className="relative w-full bg-[#0f172a] rounded-b-xl overflow-hidden" style={{ height }}>
         {isRefreshing ? (
           <ChartBodySkeleton />
         ) : (
@@ -249,9 +256,9 @@ function DynamicChart({ title, height = 280, color, gradientId, seed, points = 7
 
               {/* Last Point Dot */}
               {!isHovering && (
-                 <>
-                   <circle cx={lastX} cy={normalizeY(lastPt)} r="4" fill={dynamicColor} stroke="#0f172a" strokeWidth="2" />
-                 </>
+                <>
+                  <circle cx={lastX} cy={normalizeY(lastPt)} r="4" fill={dynamicColor} stroke="#0f172a" strokeWidth="2" />
+                </>
               )}
 
               {/* Hover Crosshair */}
@@ -309,6 +316,7 @@ function DynamicChart({ title, height = 280, color, gradientId, seed, points = 7
           </svg>
         </div>
       </div>
+
     </div>
   );
 }
@@ -342,16 +350,13 @@ export default function Gold() {
 
  /* ===============================  MEMBER CHECK  ================================ */
   useEffect(() => {
-    // 1. ถ้าเป็นโหมดทดลอง (Free Access) ให้สิทธิ์ใช้งานทันที
     if (isFreeAccess) {
       setIsMember(true);
       return;
     }
 
-    // 2. ⚠️ แก้คำว่า 'ชื่อแพ็กเกจ' ตรงนี้ ให้ตรงกับเครื่องมือของหน้านั้นๆ (เช่น 'gold')
     const toolId = 'gold'; 
 
-    // 3. เช็คสิทธิ์จาก Firebase
     if (accessData && accessData[toolId]) {
       const expireTimestamp = accessData[toolId];
       let expireDate;
@@ -366,14 +371,13 @@ export default function Gold() {
         expireDate = new Date(0);
       }
 
-      // เช็คว่าหมดอายุหรือยัง
       if (expireDate.getTime() > new Date().getTime()) {
-        setIsMember(true); // ยังไม่หมดอายุ
+        setIsMember(true);
       } else {
-        setIsMember(false); // หมดอายุแล้ว
+        setIsMember(false);
       }
     } else {
-      setIsMember(false); // ไม่มีแพ็กเกจนี้
+      setIsMember(false);
     }
   }, [accessData, isFreeAccess]);
 
@@ -579,13 +583,9 @@ export default function Gold() {
             </p>
           </div>
 
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
 
-          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
               
@@ -641,13 +641,9 @@ export default function Gold() {
             </p>
           </div>
 
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
 
-          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <button
               onClick={() => setEnteredTool(true)}
@@ -667,7 +663,6 @@ export default function Gold() {
 
   /* ==========================================================
      CASE 3 : FULL PRODUCTION GOLD DASHBOARD
-     ✅ เปลี่ยน: min-h-screen → h-screen overflow-hidden flex flex-col
   ========================================================== */
 
   return (
@@ -678,6 +673,12 @@ export default function Gold() {
         <DynamicChart
           chartId="chart-gold"
           title="Gold (COMEX)"
+          toolHint={
+            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+               เจาะลึกทองคำด้วยกลไกตลาดโลก ​เครื่องมือวิเคราะห์ทองคำที่เหนือกว่าแค่การดูราคา 
+
+            </ToolHint>
+          }
           height={260}
           gradientId="goldMainArea"
           seed={123 + refreshKey}
