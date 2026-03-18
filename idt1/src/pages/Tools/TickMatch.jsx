@@ -10,6 +10,8 @@ import LinkOffOutlinedIcon from "@mui/icons-material/LinkOffOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import ToolHint from "@/components/ToolHint.jsx";
+
 // ✨ เพิ่ม Recharts
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -464,7 +466,7 @@ function FitText({ value, className }) {
   /* ===============================
       3. COMPONENT: AnalysisPanel (เฉพาะของ TickMatch)
   ================================ */
-const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
+const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "", toolHint }) => {
 
   // ========== STATES ==========
   const [hasSearched, setHasSearched] = useState(false);
@@ -558,6 +560,13 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 
       {/* ========== FIXED HEADER SECTION ========== */}
       <div className="shrink-0">
+  {/* --- ToolHint --- */}
+  {toolHint && (
+    <div style={{ position: "absolute", top: "3px", left: "1px", zIndex: 20 }}>
+      {toolHint}
+    </div>
+  )}
+
         {/* --- SECTION 1: Header & Inputs --- */}
         <div className="grid grid-cols-12 gap-2 p-3 pb-2 items-end bg-[#111827]">
           {/* SYNC Button */}
@@ -1334,17 +1343,21 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "" }) => {
 const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="w-full h-screen bg-[#0B1221] text-white p-2 md:p-4 animate-fade-in flex flex-col gap-2 md:gap-4 overflow-hidden">
+    <div className="w-full h-screen bg-[#0B1221] text-white p-2 md:p-4 animate-fade-in flex flex-col gap-2 md:gap-4 ">
 
       {/* Main Grid Layout (2 Panels ของ TickMatch) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
         
-        {/* Left Panel: เริ่มมาหน้าว่างเปล่า (Select) */}
-        <AnalysisPanel defaultSymbol="" defaultDate={todayStr} />
-
-        {/* Right Panel: เริ่มมาหน้าว่างเปล่า (Select) */}
-        <AnalysisPanel defaultSymbol="" defaultDate={todayStr} />
-
+      <AnalysisPanel
+  defaultSymbol=""
+  defaultDate={todayStr}
+  toolHint={
+    <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+      วิเคราะห์ Tick-by-Tick เจาะลึก "เงินใหญ่" ผ่าน Net Accumulated Volume และ Flip Signal
+    </ToolHint>
+  }
+/>
+<AnalysisPanel defaultSymbol="" defaultDate={todayStr} />
       </div>
     </div>
   );

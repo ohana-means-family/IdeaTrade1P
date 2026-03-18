@@ -6,6 +6,7 @@ import { useSubscription } from "../../context/SubscriptionContext";
 import BidAskDashboard from "./components/BidAskDashboard.jsx";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
+import ToolHint from "@/components/ToolHint.jsx";
 
 const scrollbarHideStyle = {
   msOverflowStyle: 'none',
@@ -444,9 +445,15 @@ export default function BidAsk() {
             - Mobile: stack vertically, each panel has fixed height
             - Desktop (xl): side-by-side, fill remaining height
         */}
-        <div className="flex-1 xl:min-h-0 grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-          <ReplayPanel />
-          <ReplayPanel />
+        <div className="flex-1 xl:min-h-0 grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 overflow-visible pt-4">
+          <ReplayPanel
+  toolHint={
+    <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+      วิเคราะห์ Order Flow เจาะลึก "เงินใหญ่" ผ่านข้อมูล Bid/Ask แบบ Tick-by-Tick
+    </ToolHint>
+  }
+/>
+<ReplayPanel />
         </div>
 
       </div>
@@ -485,7 +492,7 @@ function ChartCard({ title }) {
   );
 }
 
-function ReplayPanel() {
+function ReplayPanel({ toolHint }) {
   const [symbol, setSymbol] = useState("");
   const [isSearched, setIsSearched] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -603,11 +610,14 @@ function ReplayPanel() {
       Mobile:  fixed height 600px, scrollable internally
       Desktop (xl): flex flex-col h-full min-h-0 (fills grid cell)
     */
-    <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden flex flex-col h-[600px] xl:h-full xl:min-h-0">
-
-      {/* HEADER */}
-      <div className="p-3 md:p-4 border-b border-slate-700 bg-[#0f172a] shrink-0">
-
+    <div className="bg-[#111827] border border-slate-700 rounded-xl flex flex-col h-[600px] xl:h-full xl:min-h-0 relative">
+{/* ToolHint — ลอยบนขอบบนซ้าย */}
+  {toolHint && (
+    <div style={{ position: "absolute", top: "-11px", left: "-11px", zIndex: 20 }}>
+      {toolHint}
+    </div>
+  )}
+ <div className="p-3 md:p-4 border-b border-slate-700 bg-[#0f172a] shrink-0 relative">
         {/* Row 1: Symbol | Start Date | End Date */}
         <div className="grid grid-cols-3 gap-2 md:gap-3 mb-2 md:mb-3 text-xs text-slate-500">
 
