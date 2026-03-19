@@ -1353,7 +1353,7 @@ const todayStr = new Date().toISOString().split('T')[0];
   defaultDate={todayStr}
   toolHint={
     <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-      วิเคราะห์ Tick-by-Tick เจาะลึก "เงินใหญ่" ผ่าน Net Accumulated Volume และ Flip Signal
+      Match tick-by-tick data patterns, recognize trading flow correlations, detect relationships between assets, and analyze pattern-based insights
     </ToolHint>
   }
 />

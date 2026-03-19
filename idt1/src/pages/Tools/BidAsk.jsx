@@ -447,19 +447,19 @@ export default function BidAsk() {
         */}
         <div className="flex-1 xl:min-h-0 grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 overflow-visible pt-4">
           <ReplayPanel
-  toolHint={
-    <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-      วิเคราะห์ Order Flow เจาะลึก "เงินใหญ่" ผ่านข้อมูล Bid/Ask แบบ Tick-by-Tick
-    </ToolHint>
-  }
-/>
-<ReplayPanel />
-        </div>
+            toolHint={
+              <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+                Replay market tick-by-tick data, analyze bid/ask pressure, and visualize order flow intelligence to decipher "big money" moves
+              </ToolHint>
+            }
+          />
+          <ReplayPanel />
+                  </div>
 
-      </div>
-    </div>
-  );
-}
+                </div>
+              </div>
+            );
+          }
 
 // Sub-components
 function Badge({ label, value, color }) {

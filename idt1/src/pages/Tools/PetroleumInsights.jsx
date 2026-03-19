@@ -887,7 +887,7 @@ export default function PetroleumInsights() {
           <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
             <div className="flex flex-wrap items-center gap-3">
             <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-              วิเคราะห์น้ำมันดิบ WTI, Brent และสินค้าพลังงานด้วย Flow Analysis
+              Multi-asset oil price tracking, monitor fuel type variations, analyze exchange refinery rates, track market margins, and display historical price data
             </ToolHint>
               <div className="relative w-56" onClick={(e) => e.stopPropagation()}>
                 <div className= " relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center "> 

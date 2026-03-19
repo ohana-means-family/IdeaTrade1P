@@ -1228,7 +1228,7 @@ const resolveFilters = (currentFilters, changedKey, newValue) => {
       <div className="flex items-center gap-3 mb-6">
         {/* ✨ เพิ่ม ToolHint ที่นี่ */}
         <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-          วิเคราะห์แนวโน้มหุ้นด้วย Flow Analysis ตรวจจับสัญญาณซื้อขายเชิงลึก
+          Predict stock price trends with AI analytics, track short interest levels, monitor peak value milestones, and analyze historical prediction patterns
         </ToolHint>
 
         <div className="relative w-80">

@@ -1104,8 +1104,8 @@ export default function FlowIntraday() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3 flex-shrink-0">
           <div className="flex items-center gap-3">
             <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-          ห้อง"War Room"จับกระแสเงิน Real-time เปลี่ยนหน้าจอเทรดให้เป็นระบบเฝ้าระวังอัจฉริยะ 
-        </ToolHint>
+              Analyze intraday order flow with interactive grid charts, sync multiple symbols, track buy/sell/net flow patterns, and set custom price/flow alerts
+            </ToolHint>
             <div className="flex items-center gap-3 bg-[#111827] border border-slate-700 px-4 py-2 rounded-lg">
               <span className="text-sm text-slate-400">Select Layout :</span>
               <div className="flex gap-2">

@@ -802,7 +802,7 @@ export default function RubberThai() {
         <div className="flex items-center gap-4 mb-6 shrink-0">
           {/* ToolHint */}
           <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
-            Compare Thai rubber stocks against global commodity prices, identify supercycle phases, and detect mispricing divergences.
+            Real-time Thai rubber price tracking, symbol selection, analyze 24-hour close prices, and view comprehensive price dashboard
           </ToolHint>
 
           <div className="relative w-64">

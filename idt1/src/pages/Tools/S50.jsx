@@ -685,8 +685,8 @@ const user = localStorage.getItem("token");
             onRefresh={handleRefresh}
             toolHint={  // ✅ เพิ่มตรงนี้
                   <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-                        วิเคราะห์ SET50 Index Futures ติดตาม Flow และแนวโน้มตลาด
-                                  </ToolHint> }
+                      Monitor SET50 Index in multiple timeframes, analyze trend with flow analysis, confirm bullish/bearish momentum, and sync charts for comparative analysis
+                  </ToolHint> }
           />
           <ChartCard 
             title="2. Confirm Up/Down S50" 

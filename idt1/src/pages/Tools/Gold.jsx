@@ -675,8 +675,7 @@ export default function Gold() {
           title="Gold (COMEX)"
           toolHint={
             <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-               เจาะลึกทองคำด้วยกลไกตลาดโลก ​เครื่องมือวิเคราะห์ทองคำที่เหนือกว่าแค่การดูราคา 
-
+               Track smart gold flow signals, monitor VIX-gold correlation, analyze DXY dollar strength impact, and watch US 10-year yield for capital rotation signals
             </ToolHint>
           }
           height={260}
