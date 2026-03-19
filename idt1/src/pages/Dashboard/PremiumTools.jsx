@@ -87,7 +87,7 @@ const projects = [
   },
   {
     id: "bidask",
-    name: "BidAsk Analysis",
+    name: "BidAsk",
     desc: "Visualize buy/sell pressure and detect hidden liquidity walls in the order book.",
     premium: true,
     icon: <img src={bidaskIcon} alt="bidask" className="w-5 h-5 brightness-0 invert" />
@@ -101,7 +101,7 @@ const projects = [
   },
   {
     id: "dr",
-    name: "DR (Global)",
+    name: "DR",
     desc: "Track Depositary Receipts movements to access global markets via local exchange.",
     premium: true,
     icon: <img src={drIcon} alt="dr" className="w-5 h-5 brightness-0 invert" />
