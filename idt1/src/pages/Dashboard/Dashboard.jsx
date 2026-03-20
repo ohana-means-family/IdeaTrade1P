@@ -14,6 +14,8 @@ import ToolAccessGuard from "@/components/ToolAccessGuard";
 
 import logoImage from "@/assets/images/logo.png";
 
+import RealFlow from "@/pages/Hidden/RealFlow";
+
 // --- Tools Components ---
 import StockFortuneTeller from "@/pages/Tools/StockFortuneTeller";
 import PetroleumInsights from "@/pages/Tools/PetroleumInsights";
@@ -61,6 +63,8 @@ const TOOL_CONFIG = {
   "DRInsight": { component: DRInsight, id: "dr", name: "DR Insight", isPremium: true },
 
   "chartflipid": { component: ChartFlipId, id: "chartflipid", name: "Chart Flip ID", isPremium: false },
+
+  "real-flow": { component: RealFlow, id: "real-flow", name: "Real Flow", isPremium: false },
 };
 
 const FULL_WIDTH_PAGES = []; 
@@ -131,6 +135,7 @@ export default function Dashboard({ initialPage }) {
       else if (path === "premium-tools" || path === "premiumtools") setActivePage("premiumtools");
 
       else if (path === "chartflipid" || path === "chartflipid") setActivePage("chartflipid");
+      else if (path === "real-flow") setActivePage("real-flow");
 
       else setActivePage("preview-projects"); // Fallback ถ้าหาไม่เจอจริงๆ
     }
@@ -158,6 +163,8 @@ export default function Dashboard({ initialPage }) {
     
     if (activePage === "preview-projects" || activePage === "whatsnew") return <PreviewProjects />;
     if (activePage === "premiumtools") return <PremiumTools />;
+
+    if (activePage === "real-flow") return <RealFlow />;
 
     const normalizedPage = activePage.toLowerCase(); 
     const toolConfig = TOOL_CONFIG[normalizedPage] || TOOL_CONFIG[activePage];

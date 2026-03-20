@@ -67,6 +67,7 @@ export default function AppRoutes() {
       <Route path="/shortcuts" element={<Navigate to="/preview-projects" replace />} />
 
       <Route path="/chartid" element={<Navigate to="/chartflipid" replace />} />
+      <Route path="/real-flow" element={<Dashboard initialPage="real-flow" />} />
       
       {/* === Fallback (กันหลง) === */}
       <Route path="*" element={<Navigate to="/" replace />} />

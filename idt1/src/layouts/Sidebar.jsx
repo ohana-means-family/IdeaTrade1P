@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ลบ useLocation ออกไป เพราะไม่จำเป็นแล้ว
+import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
 import { useSubscription } from "@/context/SubscriptionContext"; 
@@ -38,17 +38,19 @@ import signupIcon from "@/assets/icons/signup.svg";
 
 /* ================= ICON MAP ================= */
 const sidebarIcons = {
-  preview: { default: preview, active: apreview },
-  mit: { default: mit, active: amit },
-  fortune: { default: fortune, active: afortune },
+  preview:   { default: preview,   active: apreview   },
+  mit:       { default: mit,       active: amit       },
+  fortune:   { default: fortune,   active: afortune   },
   petroleum: { default: petroleum, active: apetroleum },
-  rubber: { default: rubber, active: arubber },
-  flow: { default: flow, active: aflow },
-  s50: { default: s50, active: as50 },
-  gold: { default: gold, active: agold },
-  bidask: { default: bidask, active: abidask },
+  rubber:    { default: rubber,    active: arubber    },
+  flow:      { default: flow,      active: aflow      },
+  // Real Flow reuses the same flow icon (swap with a dedicated icon when available)
+  realflow:  { default: flow,      active: aflow      },
+  s50:       { default: s50,       active: as50       },
+  gold:      { default: gold,      active: agold      },
+  bidask:    { default: bidask,    active: abidask    },
   tickmatch: { default: tickmatch, active: atickmatch },
-  dr: { default: dr, active: adr },
+  dr:        { default: dr,        active: adr        },
 };
 
 const getIcon = (key, active) =>
@@ -56,27 +58,27 @@ const getIcon = (key, active) =>
 
 /* ================= PROJECTS CONFIGURATION ================= */
 const projects = [
-  { id: "fortune", name: "Stock Fortune Teller", iconKey: "fortune" },
-  { id: "petroleum", name: "Petroleum", iconKey: "petroleum" },
-  { id: "rubber", name: "Rubber Thai", iconKey: "rubber" },
-  { id: "flow", name: "Flow Intraday", iconKey: "flow" },
-  { id: "s50", name: "S50", iconKey: "s50" },
-  { id: "gold", name: "Gold", iconKey: "gold" },
-  { id: "bidask", name: "BidAsk", iconKey: "bidask" },
-  { id: "tickmatch", name: "TickMatch", iconKey: "tickmatch" },
-  { id: "dr", name: "DR", iconKey: "dr" },
+  { id: "fortune",   name: "Stock Fortune Teller", iconKey: "fortune"   },
+  { id: "petroleum", name: "Petroleum",             iconKey: "petroleum" },
+  { id: "rubber",    name: "Rubber Thai",           iconKey: "rubber"    },
+  { id: "flow",      name: "Flow Intraday",         iconKey: "flow"      },
+  { id: "s50",       name: "S50",                   iconKey: "s50"       },
+  { id: "gold",      name: "Gold",                  iconKey: "gold"      },
+  { id: "bidask",    name: "BidAsk",                iconKey: "bidask"    },
+  { id: "tickmatch", name: "TickMatch",             iconKey: "tickmatch" },
+  { id: "dr",        name: "DR",                    iconKey: "dr"        },
 ];
 
 const PROJECT_PREVIEWS = {
-  fortune: "stock-fortune",
+  fortune:   "stock-fortune",
   petroleum: "petroleum-preview",
-  rubber: "RubberThai",
-  flow: "FlowIntraday",
-  s50: "S50",
-  gold: "Gold",
-  bidask: "BidAsk",
+  rubber:    "RubberThai",
+  flow:      "FlowIntraday",
+  s50:       "S50",
+  gold:      "Gold",
+  bidask:    "BidAsk",
   tickmatch: "TickMatch",
-  dr: "DRInsight"
+  dr:        "DRInsight",
 };
 
 /* ================= INLINE ICONS ================= */
@@ -113,7 +115,7 @@ const FloatingTooltip = ({ visible, top, text }) => {
   return (
     <div
       style={{ top: top, left: 85 }} 
-      className="fixed z-[10000] -translate-y-1/2 px-3 py-1.5 bg-[#333333] text-white text-[13px] rounded-md border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] pointer-events-none whitespace-nowrap animate-fade-in"
+      className="fixed z-[10000] -translate-y-1/2 px-3 py-1.5 bg-[#333333] text-white text-[13px] rounded-md border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] pointer-events-none whitespace-nowrap"
     >
       <div className="absolute top-1/2 -left-1.5 -mt-1.5 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-[#333333]"></div>
       {text}
@@ -141,23 +143,21 @@ const SidebarContent = ({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [tooltipState, setTooltipState] = useState({ visible: false, top: 0, text: "" });
 
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    setIsLoggedIn(!!user);
-    
-    // เช็กว่าใน accessData (ที่ดึงมาจาก Firestore) มีข้อมูลการซื้อไหม
-    const hasPackages = Object.keys(accessData).length > 0;
-    
-    if (hasPackages) {
-      setIsMember(true);
-    } else {
-      // ถ้าไม่มีข้อมูลใน Firestore ค่อยไปดูใน localStorage (เผื่อโหมด Demo)
-      const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
-      setIsMember(savedProfile.role === "member" || savedProfile.role === "membership");
-    }
-  });
-  return () => unsubscribe();
-}, [accessData]); // 👈 ใส่ accessData เป็นตัวกระตุ้นให้เช็กใหม่เมื่อข้อมูลเปลี่ยน
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      
+      const hasPackages = Object.keys(accessData).length > 0;
+      
+      if (hasPackages) {
+        setIsMember(true);
+      } else {
+        const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+        setIsMember(savedProfile.role === "member" || savedProfile.role === "membership");
+      }
+    });
+    return () => unsubscribe();
+  }, [accessData]);
 
   const isToolUnlocked = (id) => {
     const expireTimestamp = accessData[id];
@@ -169,7 +169,7 @@ useEffect(() => {
     } catch (error) {
       expireDate = new Date(0); 
     }
-    return expireDate > new Date(); // ตรวจสอบว่ายังไม่เลยวันปัจจุบัน
+    return expireDate > new Date();
   };
 
   /* ================= AUTH ACTIONS ================= */
@@ -194,12 +194,10 @@ useEffect(() => {
   const handleNavigation = (id, projectItem = null) => {
     let targetId = id;
     
-    // ถ้ายังไม่ได้ปลดล็อก ให้บังคับให้ targetId เป็นหน้า Preview แทน
     if (PROJECT_PREVIEWS[id] && !isToolUnlocked(id)) {
       targetId = PROJECT_PREVIEWS[id];
     }
 
-    // โยนชื่อหน้าเว็บไปให้ Dashboard.jsx เป็นคนสั่งเปลี่ยน URL (navigate)
     if (projectItem && openProject) {
       openProject({ ...projectItem, id: targetId });
     } else {
@@ -380,7 +378,7 @@ useEffect(() => {
         {/* Project List */}
         {filteredProjects.length > 0 ? (
           filteredProjects.map((p) => {
-            const unlocked = isToolUnlocked(p.id); // ดึงสถานะ Unlocked ให้ตรงกับ Context 100%
+            const unlocked = isToolUnlocked(p.id);
             const active = activePage === p.id || PROJECT_PREVIEWS[p.id] === activePage;
 
             return (
@@ -425,6 +423,40 @@ useEffect(() => {
         ) : (
           !isCollapsed && <div className="text-gray-500 text-[12px] text-center mt-4">No projects found</div>
         )}
+
+        {/* ================= HIDDEN PAGE SECTION ================= */}
+        {isCollapsed
+          ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" />
+          : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">hidden page</div>
+        }
+
+        {/* Real Flow Button */}
+        <button
+          onClick={() => handleNavigation("real-flow")}
+          onMouseEnter={(e) => handleMouseEnter(e, "Real Flow")}
+          onMouseLeave={handleMouseLeave}
+          className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
+          ${activePage === "real-flow" ? "bg-slate-800" : "hover:bg-white/5"}
+          ${isCollapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
+        >
+          <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
+            ${activePage === "real-flow" ? "text-white" : "text-gray-400"}
+            ${isCollapsed ? "justify-center w-full" : ""}`}
+          >
+            <img
+              src={getIcon("realflow", activePage === "real-flow")}
+              className="w-5"
+              alt="Real Flow"
+              style={activePage === "real-flow" ? { filter: "brightness(0) invert(1)" } : {}}
+            />
+            {!isCollapsed && <span>Real Flow</span>}
+          </div>
+          {!isCollapsed && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 pointer-events-none">
+              NEW
+            </span>
+          )}
+        </button>
 
         {/* ================= ACCOUNT SECTION ================= */}
         {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
@@ -501,8 +533,6 @@ useEffect(() => {
       {/* ================= FOOTER ================= */}
       <div className="px-2 pb-2 w-full flex justify-center shrink-0">
         <button
-          // 🔴 ลบของเดิมทิ้ง: onClick={() => handleNavigation("preview-projects")} 
-          // 🟢 ใส่ของใหม่เข้าไปแทน: สั่งเปลี่ยน URL ไปที่ /premium-tools และปิดเมนูมือถือ
           onClick={() => { 
             navigate("/premium-tools"); 
             onMobileClose?.(); 
