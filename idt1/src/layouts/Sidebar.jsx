@@ -205,6 +205,22 @@ const SidebarContent = ({
     }
     
     onMobileClose?.(); 
+
+    // ✅ ท่าไม้ตาย: บังคับเลื่อนหน้าขึ้นบนสุด (สแกนหาทุกกล่องที่มี Scrollbar)
+    setTimeout(() => {
+      // 1. เลื่อน window
+      window.scrollTo(0, 0);
+      
+      // 2. ค้นหาทุกกล่อง (div, main, section) ในจอ
+      const allElements = document.querySelectorAll('div, main, section');
+      allElements.forEach((el) => {
+        const style = window.getComputedStyle(el);
+        // ถ้ากล่องไหนมีระบบ Scroll ให้ยัดค่า scrollTop = 0 ทันที
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          el.scrollTop = 0;
+        }
+      });
+    }, 100); // ดีเลย์ 100ms เพื่อให้หน้าใหม่โหลดเสร็จก่อนค่อยเลื่อน
   };
 
   const handleMouseEnter = (e, text) => {
