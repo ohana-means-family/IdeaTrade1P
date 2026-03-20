@@ -62,7 +62,8 @@ const TOOL_CONFIG = {
   dr: { component: DRInsight, id: "dr", name: "DR Insight", isPremium: true },
   "DRInsight": { component: DRInsight, id: "dr", name: "DR Insight", isPremium: true },
 
-  "chartflipid": { component: ChartFlipId, id: "chartflipid", name: "Chart Flip ID", isPremium: false },
+  // ✅ แก้ key จาก "chartflipid" → "chart-flip-id" ให้ตรงกับ Sidebar และ AppRoutes
+  "chart-flip-id": { component: ChartFlipId, id: "chart-flip-id", name: "Chart Flip ID", isPremium: false },
 
   "real-flow": { component: RealFlow, id: "real-flow", name: "Real Flow", isPremium: false },
 };
@@ -133,8 +134,8 @@ export default function Dashboard({ initialPage }) {
       else if (path === "subscription") setActivePage("subscription");
       else if (path === "preview-projects") setActivePage("preview-projects");
       else if (path === "premium-tools" || path === "premiumtools") setActivePage("premiumtools");
-
-      else if (path === "chartflipid" || path === "chartflipid") setActivePage("chartflipid");
+      // ✅ แก้ให้ตรงกับ key ใหม่ "chart-flip-id"
+      else if (path === "chart-flip-id") setActivePage("chart-flip-id");
       else if (path === "real-flow") setActivePage("real-flow");
 
       else setActivePage("preview-projects"); // Fallback ถ้าหาไม่เจอจริงๆ
@@ -234,7 +235,6 @@ export default function Dashboard({ initialPage }) {
           } else if (page === "fortune") {
             navigate("/stock-fortune");
           } else if (page === "premiumtools") { 
-            // 🟢 เพิ่มบรรทัดนี้: เติมขีดกลางให้ตรงกับ AppRoutes
             navigate("/premium-tools"); 
           } else {
             navigate(`/${page}`);
