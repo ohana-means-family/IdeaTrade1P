@@ -35,6 +35,8 @@ import dr from "@/assets/icons/dr.svg";
 import adr from "@/assets/icons/adr.svg";
 import signinIcon from "@/assets/icons/signin.svg";
 import signupIcon from "@/assets/icons/signup.svg";
+import realflow1 from "@/assets/icons/realflow1.svg";
+import realflowGray from "@/assets/icons/realflow_gray.svg";
 
 /* ================= ICON MAP ================= */
 const sidebarIcons = {
@@ -44,8 +46,8 @@ const sidebarIcons = {
   petroleum: { default: petroleum, active: apetroleum },
   rubber:    { default: rubber,    active: arubber    },
   flow:      { default: flow,      active: aflow      },
+  realflow:  { default: realflowGray, active: realflow1 },
   // Real Flow reuses the same flow icon (swap with a dedicated icon when available)
-  realflow:  { default: flow,      active: aflow      },
   s50:       { default: s50,       active: as50       },
   gold:      { default: gold,      active: agold      },
   bidask:    { default: bidask,    active: abidask    },
@@ -53,8 +55,11 @@ const sidebarIcons = {
   dr:        { default: dr,        active: adr        },
 };
 
-const getIcon = (key, active) =>
-  active ? sidebarIcons[key].active : sidebarIcons[key].default;
+const getIcon = (key, active) => {
+  const icons = sidebarIcons[key];
+  if (!icons) return null;
+  return active ? icons.active : icons.default;
+};
 
 /* ================= PROJECTS CONFIGURATION ================= */
 const projects = [
@@ -205,22 +210,6 @@ const SidebarContent = ({
     }
     
     onMobileClose?.(); 
-
-    // ✅ ท่าไม้ตาย: บังคับเลื่อนหน้าขึ้นบนสุด (สแกนหาทุกกล่องที่มี Scrollbar)
-    setTimeout(() => {
-      // 1. เลื่อน window
-      window.scrollTo(0, 0);
-      
-      // 2. ค้นหาทุกกล่อง (div, main, section) ในจอ
-      const allElements = document.querySelectorAll('div, main, section');
-      allElements.forEach((el) => {
-        const style = window.getComputedStyle(el);
-        // ถ้ากล่องไหนมีระบบ Scroll ให้ยัดค่า scrollTop = 0 ทันที
-        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-          el.scrollTop = 0;
-        }
-      });
-    }, 100); // ดีเลย์ 100ms เพื่อให้หน้าใหม่โหลดเสร็จก่อนค่อยเลื่อน
   };
 
   const handleMouseEnter = (e, text) => {
@@ -463,7 +452,11 @@ const SidebarContent = ({
               src={getIcon("realflow", activePage === "real-flow")}
               className="w-5"
               alt="Real Flow"
-              style={activePage === "real-flow" ? { filter: "brightness(0) invert(1)" } : {}}
+            style={
+              activePage === "real-flow"
+              ? { filter: "brightness(0) invert(1)" }          // active = ขาว
+              : { filter: "brightness(0) invert(1) opacity(0.4)" }  // default = เทา
+                  }
             />
             {!isCollapsed && <span>Real Flow</span>}
           </div>
