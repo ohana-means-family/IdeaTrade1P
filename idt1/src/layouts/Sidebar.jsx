@@ -116,6 +116,32 @@ const LogoutIconSVG = () => (
   </svg>
 );
 
+const DWIconSVG = ({ active }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke={active ? "#ffffff" : "#9ca3af"}
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+  >
+    <polyline points="3 17 7 11 11 14 15 8 21 12" />
+    <line x1="3" y1="20" x2="21" y2="20" />
+    <line x1="7" y1="11" x2="7" y2="20" strokeDasharray="2 2" strokeOpacity="0.4" />
+    <line x1="15" y1="8" x2="15" y2="20" strokeDasharray="2 2" strokeOpacity="0.4" />
+  </svg>
+);
+
+/* ── HisRealFlow inline icon ── */
+const HisRealFlowIconSVG = ({ active }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke={active ? "#ffffff" : "#9ca3af"}
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+  >
+    <polyline points="2 20 6 10 10 14 14 6 18 10 22 4" />
+    <circle cx="6"  cy="10" r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
+    <circle cx="14" cy="6"  r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
+    <circle cx="22" cy="4"  r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
+    <line x1="2" y1="22" x2="22" y2="22" strokeOpacity="0.3" />
+  </svg>
+);
+
 /* ================= FLOATING TOOLTIP ================= */
 const FloatingTooltip = ({ visible, top, text }) => {
   if (!visible) return null;
@@ -212,6 +238,20 @@ const SidebarContent = ({
     }
     
     onMobileClose?.(); 
+  };
+
+  /* ─── DW navigation ── */
+  const handleDWNavigation = () => {
+    navigate("/dw");
+    setActivePage("dw");
+    onMobileClose?.();
+  };
+
+  /* ─── HisRealFlow navigation ── */
+  const handleHisRealFlowNavigation = () => {
+    navigate("/hisrealflow");
+    setActivePage("his-real-flow");
+    onMobileClose?.();
   };
 
   const handleMouseEnter = (e, text) => {
@@ -471,7 +511,7 @@ const SidebarContent = ({
 
         {/* ── Chart Flip ID Button ── */}
         <button
-          onClick={() => handleNavigation("chart-flip-id")}
+          onClick={() => handleNavigation("chartflipid")}
           onMouseEnter={(e) => handleMouseEnter(e, "Chart Flip ID")}
           onMouseLeave={handleMouseLeave}
           className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
@@ -490,8 +530,26 @@ const SidebarContent = ({
             />
             {!isCollapsed && <span>ChartFlip</span>}
           </div>
-          
         </button>
+
+        {/* ── DW Button ── */}
+        <button
+          onClick={handleDWNavigation}
+          onMouseEnter={(e) => handleMouseEnter(e, "DW View")}
+          onMouseLeave={handleMouseLeave}
+          className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
+          ${activePage === "dw" ? "bg-slate-800" : "hover:bg-white/5"}
+          ${isCollapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 gap-3"}`}
+        >
+          <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
+            ${activePage === "dw" ? "text-white" : "text-gray-400"}
+            ${isCollapsed ? "justify-center w-full" : ""}`}
+          >
+            <DWIconSVG active={activePage === "dw"} />
+            {!isCollapsed && <span>DW</span>}
+          </div>
+        </button>
+
 
         {/* ACCOUNT SECTION */}
         {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
