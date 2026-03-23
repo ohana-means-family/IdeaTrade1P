@@ -27,6 +27,8 @@ import BidAsk from "@/pages/Tools/BidAsk";
 import TickMatch from "@/pages/Tools/TickMatch";
 import DRInsight from "@/pages/Tools/DRInsight";
 import ChartFlipId from "@/pages/Hidden/Chartid";
+import HisRealFlow from "@/pages/Hidden/hisrealflow";
+import DWViewCharts from "@/pages/Hidden/DW";
 
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
@@ -66,6 +68,10 @@ const TOOL_CONFIG = {
   "chart-flip-id": { component: ChartFlipId, id: "chart-flip-id", name: "Chart Flip ID", isPremium: false },
 
   "real-flow": { component: RealFlow, id: "real-flow", name: "Real Flow", isPremium: false },
+
+  "hisrealflow": { component: HisRealFlow, id: "hisrealflow", name: "Historical Real Flow", isPremium: false },
+
+  "dw":            { component: DWViewCharts,   id: "dw",             name: "DW",             isPremium: false },
 };
 
 const FULL_WIDTH_PAGES = []; 
@@ -137,6 +143,8 @@ export default function Dashboard({ initialPage }) {
       // ✅ แก้ให้ตรงกับ key ใหม่ "chart-flip-id"
       else if (path === "chart-flip-id") setActivePage("chart-flip-id");
       else if (path === "real-flow") setActivePage("real-flow");
+      else if (path === "hisrealflow") setActivePage("hisrealflow");
+      else if (path === "dw") setActivePage("dw"); 
 
       else setActivePage("preview-projects"); // Fallback ถ้าหาไม่เจอจริงๆ
     }
