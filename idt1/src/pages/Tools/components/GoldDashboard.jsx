@@ -1,9 +1,7 @@
 // src/pages/tools/components/GoldDashboard.jsx
 import { useState, useEffect, useRef } from "react";
-import {
-  AreaChart, Area, XAxis, YAxis, ResponsiveContainer,
-  CartesianGrid, Tooltip,
-} from "recharts";
+const toTS = (arr) => arr.map((p,i) => ({ time: `2024-0${1+Math.floor(i/31)}-${String(1+(i%31)).padStart(2,'0')}`, value: p.v }));
+import { AreaLWC } from '../../../components/LWChart';
 
 /* ─────────────────────────────────────────────
    WAVE GENERATOR (deterministic)
@@ -126,30 +124,7 @@ function SubPanel({ c, data, animated, tickOffset = 0 }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 2, right: 48, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id={`g${c.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={c.col} stopOpacity="0.28" />
-                <stop offset="100%" stopColor={c.col} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="0" />
-            <YAxis domain={c.yd} ticks={yTicks} orientation="right"
-              tick={{ fontSize: 7.5, fill: "#2a3a4a", fontFamily: "monospace" }}
-              axisLine={false} tickLine={false} width={44}
-              tickFormatter={v => c.f(v)} />
-            <XAxis dataKey="i"
-              tick={{ fontSize: 7, fill: "#2a3a4a", fontFamily: "monospace" }}
-              axisLine={{ stroke: "rgba(255,255,255,0.04)" }}
-              tickLine={false} height={13}
-              ticks={[0, 20, 40, 60, 79]}
-              tickFormatter={i => DATE_LABELS[(i + tickOffset) % DATE_LABELS.length]} />
-            <Tooltip content={<Tip f={c.f} />} />
-            <Area type="monotone" dataKey="v" stroke={c.col} strokeWidth={1.8}
-              fill={`url(#g${c.key})`} dot={false} isAnimationActive={!animated} />
-          </AreaChart>
-        </ResponsiveContainer>
+        <AreaLWC data={toTS(data)} color={c.col} height={100} />
         <div style={{ position: "absolute", right: 2, top: "38%", transform: "translateY(-50%)", zIndex: 10, pointerEvents: "none" }}>
           <div style={{ background: c.col, borderRadius: 3, padding: "1px 5px", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>
             {c.f(lastVal)}
@@ -230,29 +205,7 @@ export default function GoldDashboard() {
             </div>
           </div>
           <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={gd} margin={{ top: 4, right: 52, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.22" />
-                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.03)" strokeDasharray="0" />
-                <YAxis domain={[2030, 2098]} ticks={goldYTicks} orientation="right"
-                  tick={{ fontSize: 7.5, fill: "#2a3a4a", fontFamily: "monospace" }}
-                  axisLine={false} tickLine={false} width={48} tickFormatter={v => v.toFixed(2)} />
-                <XAxis dataKey="i"
-                  tick={{ fontSize: 7, fill: "#2a3a4a", fontFamily: "monospace" }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.04)" }}
-                  tickLine={false} height={14}
-                  ticks={goldTicks}
-                  tickFormatter={i => DATE_LABELS[i % DATE_LABELS.length]} />
-                <Tooltip content={<Tip f={v => `$${(+v).toFixed(2)}`} />} />
-                <Area type="monotone" dataKey="v" stroke="#22c55e" strokeWidth={1.8}
-                  fill="url(#gg)" dot={false} isAnimationActive={!animated} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <AreaLWC data={toTS(gd)} color="#22c55e" height={180} />
             <div style={{ position: "absolute", right: 2, top: "40%", transform: "translateY(-50%)", zIndex: 10, pointerEvents: "none" }}>
               <div style={{ background: "#22c55e", borderRadius: 3, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>
                 {goldLast.toFixed(2)}

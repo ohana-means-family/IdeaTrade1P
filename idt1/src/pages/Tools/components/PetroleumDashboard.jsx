@@ -1,58 +1,55 @@
 import React, { useState } from 'react';
-import {
-  AreaChart, Area, LineChart, Line,
-  CartesianGrid, Tooltip, ResponsiveContainer,
-  XAxis, YAxis, ReferenceLine
-} from 'recharts';
+import { AreaLWC, LineLWC } from '../../../components/LWChart';
 import { ChevronDown, X, TrendingUp } from 'lucide-react';
 
 // --- Mock Data (matching screenshot shape) ---
+
 const dataRefin = [
-  { name: '1/08/24',  value: 15.2 },
-  { name: '26/08/24', value: 14.9 },
-  { name: '02/09/24', value: 15.0 },
-  { name: '09/09/24', value: 14.7 },
-  { name: '16/09/24', value: 15.3 },
-  { name: '23/09/24', value: 15.8 },
-  { name: '30/09/24', value: 16.2 },
-  { name: '07/10/24', value: 15.9 },
-  { name: '14/10/24', value: 15.7 },
-  { name: '21/10/24', value: 16.0 },
-  { name: '28/10/24', value: 16.4 },
-  { name: '04/11/24', value: 16.6 },
-  { name: '11/11',    value: 16.83 },
+  { time: '2024-08-01',  value: 15.2 },
+  { time: '2024-08-26', value: 14.9 },
+  { time: '2024-09-02', value: 15.0 },
+  { time: '2024-09-09', value: 14.7 },
+  { time: '2024-09-16', value: 15.3 },
+  { time: '2024-09-23', value: 15.8 },
+  { time: '2024-09-30', value: 16.2 },
+  { time: '2024-10-07', value: 15.9 },
+  { time: '2024-10-14', value: 15.7 },
+  { time: '2024-10-21', value: 16.0 },
+  { time: '2024-10-28', value: 16.4 },
+  { time: '2024-11-04', value: 16.6 },
+  { time: '2024-11-11', value: 16.83 },
 ];
 
 const dataMargin = [
-  { name: '1/08/24',  value: 0.55 },
-  { name: '26/08/24', value: 0.58 },
-  { name: '02/09/24', value: 0.62 },
-  { name: '09/09/24', value: 0.65 },
-  { name: '16/09/24', value: 0.68 },
-  { name: '23/09/24', value: 0.67 },
-  { name: '30/09/24', value: 0.64 },
-  { name: '07/10/24', value: 0.61 },
-  { name: '14/10/24', value: 0.58 },
-  { name: '21/10/24', value: 0.56 },
-  { name: '28/10/24', value: 0.57 },
-  { name: '04/11/24', value: 0.60 },
-  { name: '11/11',    value: 0.62 },
+  { time: '2024-08-01',  value: 0.55 },
+  { time: '2024-08-26', value: 0.58 },
+  { time: '2024-09-02', value: 0.62 },
+  { time: '2024-09-09', value: 0.65 },
+  { time: '2024-09-16', value: 0.68 },
+  { time: '2024-09-23', value: 0.67 },
+  { time: '2024-09-30', value: 0.64 },
+  { time: '2024-10-07', value: 0.61 },
+  { time: '2024-10-14', value: 0.58 },
+  { time: '2024-10-21', value: 0.56 },
+  { time: '2024-10-28', value: 0.57 },
+  { time: '2024-11-04', value: 0.60 },
+  { time: '2024-11-11', value: 0.62 },
 ];
 
 const dataFund = [
-  { name: '1/08/24',  value: 11.10 },
-  { name: '26/08/24', value: 11.10 },
-  { name: '02/09/24', value: 11.10 },
-  { name: '09/09/24', value: 11.10 },
-  { name: '16/09/24', value: 15.00 },
-  { name: '23/09/24', value: 15.00 },
-  { name: '30/09/24', value: 15.00 },
-  { name: '07/10/24', value: 15.00 },
-  { name: '14/10/24', value: 15.00 },
-  { name: '21/10/24', value: 11.10 },
-  { name: '28/10/24', value: 11.10 },
-  { name: '04/11/24', value: 11.10 },
-  { name: '11/11',    value: 18.00 },
+  { time: '2024-08-01',  value: 11.10 },
+  { time: '2024-08-26', value: 11.10 },
+  { time: '2024-09-02', value: 11.10 },
+  { time: '2024-09-09', value: 11.10 },
+  { time: '2024-09-16', value: 15.00 },
+  { time: '2024-09-23', value: 15.00 },
+  { time: '2024-09-30', value: 15.00 },
+  { time: '2024-10-07', value: 15.00 },
+  { time: '2024-10-14', value: 15.00 },
+  { time: '2024-10-21', value: 11.10 },
+  { time: '2024-10-28', value: 11.10 },
+  { time: '2024-11-04', value: 11.10 },
+  { time: '2024-11-11', value: 18.00 },
 ];
 
 const ACCENT = '#00e676';
@@ -159,72 +156,10 @@ function ChartPanel({ title, data, isStep = false }) {
 
       {/* Chart area */}
       <div style={{ flex: 1, paddingTop: 36, paddingBottom: 8, paddingRight: 52, position: 'relative', zIndex: 5 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {isStep ? (
-            <LineChart data={data} margin={{ top: 8, right: 0, left: 12, bottom: 0 }}>
-              <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={ACCENT} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#12202e" vertical={false} />
-              <XAxis
-                dataKey="name"
-                axisLine={false} tickLine={false}
-                tick={{ fill: TEXT_DIM, fontSize: 9 }}
-                dy={8}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                orientation="right"
-                domain={[minV - pad, maxV + pad]}
-                axisLine={false} tickLine={false}
-                tick={<RightTick />}
-                width={0}
-                tickCount={6}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: ACCENT, strokeWidth: 1, strokeDasharray: '4 2' }} />
-              <Line
-                type="stepAfter" dataKey="value"
-                stroke={ACCENT} strokeWidth={2} dot={false}
-                activeDot={{ r: 4, fill: BG_CARD, stroke: ACCENT, strokeWidth: 2 }}
-              />
-            </LineChart>
-          ) : (
-            <AreaChart data={data} margin={{ top: 8, right: 0, left: 12, bottom: 0 }}>
-              <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={ACCENT} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={ACCENT} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#12202e" vertical={false} />
-              <XAxis
-                dataKey="name"
-                axisLine={false} tickLine={false}
-                tick={{ fill: TEXT_DIM, fontSize: 9 }}
-                dy={8}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                orientation="right"
-                domain={[minV - pad, maxV + pad]}
-                axisLine={false} tickLine={false}
-                tick={<RightTick />}
-                width={0}
-                tickCount={6}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: ACCENT, strokeWidth: 1, strokeDasharray: '4 2' }} />
-              <Area
-                type="monotone" dataKey="value"
-                stroke={ACCENT} strokeWidth={2}
-                fill={`url(#${gradId})`}
-                activeDot={{ r: 4, fill: BG_CARD, stroke: ACCENT, strokeWidth: 2 }}
-              />
-            </AreaChart>
-          )}
-        </ResponsiveContainer>
+        {isStep
+          ? <LineLWC series={[{ data, color: ACCENT, lineWidth: 2 }]} height={220} />
+          : <AreaLWC data={data} color={ACCENT} height={220} />
+        }
       </div>
 
       {/* Right side Y-axis labels + badge */}
