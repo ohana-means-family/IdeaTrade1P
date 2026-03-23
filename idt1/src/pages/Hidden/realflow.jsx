@@ -1230,7 +1230,8 @@ export default function RealFlow() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 ml-auto lg:ml-0">
+          {/* Category buttons container */}
+          <div className="flex flex-wrap gap-2 flex-1 lg:flex-none">
             {CATEGORIES.map(cat => {
               const isActive = activeCategory === cat;
               return (
@@ -1243,6 +1244,20 @@ export default function RealFlow() {
                 </button>
               );
             })}
+          </div>
+
+          {/* Your new button on the right */}
+          <div className="ml-auto">
+            <button
+            onClick={() => navigate('/hisrealflow')}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all border bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white focus:outline-none flex items-center gap-2"
+            title="View History">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            History
+          </button>
           </div>
         </header>
 
