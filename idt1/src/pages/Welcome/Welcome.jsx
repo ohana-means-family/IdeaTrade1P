@@ -62,8 +62,10 @@ export default function Welcome() {
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
-        role: "member",
+        email: email || "guest@example.com", // ควรใส่อีเมลเผื่อไว้เหมือน setFreeAccess
+        role: "free", // 🟢 เปลี่ยนจาก "member" เป็น "free" ครับ
         unlockedItems: [],
+        lastLogin: new Date().toISOString()
       })
     );
     navigate("/dashboard", {
