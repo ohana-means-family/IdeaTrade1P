@@ -34,6 +34,18 @@ const STOCK_LIST = [
   "1DIV","PQS","JMART","JMT","SINGER","PLANB","MAJOR","RS","WORK",
 ];
 
+function useWindowWidth() {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1280
+  );
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+}
+
 function createRng(seed) {
   let s = seed >>> 0;
   return () => {
@@ -313,13 +325,11 @@ function ChartSkeleton({ delay = 0 }) {
           100% { transform: translateX(100%); }
         }
       `}</style>
-
       <div className="absolute inset-0 flex flex-col justify-between p-3">
         <div className="flex items-center justify-between">
           <div className="h-2 rounded-full bg-slate-800 w-20" />
           <div className="h-2 rounded-full bg-slate-800 w-12" />
         </div>
-
         <div className="flex-1 my-3 rounded bg-slate-800/60 relative overflow-hidden">
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
             {[0.2, 0.4, 0.6, 0.8].map((y, i) => (
@@ -330,14 +340,12 @@ function ChartSkeleton({ delay = 0 }) {
             ))}
           </svg>
         </div>
-
         <div className="flex gap-2 justify-between">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-2 rounded-full bg-slate-800 flex-1" />
           ))}
         </div>
       </div>
-
       <div
         className="absolute inset-0"
         style={{
@@ -371,7 +379,6 @@ function InteractiveGridChart({
   hlineMode = false,
   onChartClick,
 }) {
-  // ── ALL HOOKS FIRST — no early returns before this block ──
   const series = useMemo(() => generateFlowSeries(symbol), [symbol]);
 
   const scrollRef    = useRef(null);
@@ -401,7 +408,6 @@ function InteractiveGridChart({
     return () => { delete chartRefs.current[chartId]; };
   }, [chartId, chartRefs, series]);
 
-  // ── Early returns AFTER all hooks ──
   if (isLoading) {
     return (
       <div ref={containerRef} className="w-full h-full p-2 bg-[#141b2d]">
@@ -449,7 +455,6 @@ function InteractiveGridChart({
   const flowTicks  = [0,1,2,3,4].map((i) => { const v = flowScale.max  - i * (flowScale.max  - flowScale.min)  / 4; return { v, y: nyFlow(v)  }; });
   const priceTicks = [0,1,2,3,4].map((i) => { const v = priceScale.max - i * (priceScale.max - priceScale.min) / 4; return { v, y: nyPrice(v) }; });
 
-  // ── H-line from hlineAlert prop ──
   let hliveY = null, hliveColor = "#a78bfa", hliveLabel = "";
   if (hlineAlert) {
     const isPrice = hlineAlert.type === "price";
@@ -510,7 +515,6 @@ function InteractiveGridChart({
     >
       <style>{`@keyframes hlive-march { to { stroke-dashoffset: -20; } }`}</style>
 
-      {/* H-line mode banner */}
       {hlineMode && (
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center pointer-events-none" style={{ height: PT + 2 }}>
           <span className="text-[9px] font-black text-cyan-300 tracking-widest uppercase animate-pulse">
@@ -554,7 +558,6 @@ function InteractiveGridChart({
               <text key={i} x={PL + i * pointGap} y={height - PB + 14} fill="#4a5568" fontSize="8" textAnchor="middle">{LABELS[i % LABELS.length]}</text>
             ))}
 
-            {/* H-live horizontal line (marching ants) */}
             {hliveY !== null && (() => {
               const labelX = svgScrollLeft + 4;
               const pillW = 52, pillH = 16;
@@ -572,7 +575,6 @@ function InteractiveGridChart({
               );
             })()}
 
-            {/* Hover preview line while in hline placement mode */}
             {hlineMode && hoverY !== null && hoverY >= PT && hoverY <= height - PB && (
               <line x1={0} y1={hoverY} x2={chartWidth} y2={hoverY}
                 stroke="#22d3ee" strokeWidth="1" strokeDasharray="6 4" opacity="0.5"/>
@@ -596,7 +598,6 @@ function InteractiveGridChart({
             )}
           </svg>
 
-          {/* Hover tooltip */}
           {isHovering && (() => {
             const scrollLeft = scrollRef.current?.scrollLeft ?? 0;
             const screenX = hoverX - scrollLeft;
@@ -639,7 +640,6 @@ function InteractiveGridChart({
               <text x="22" y="0" fill="#111827" fontSize="9" textAnchor="middle" dominantBaseline="central" fontWeight="bold">{lastPrice.toFixed(2)}</text>
             </g>
 
-            {/* H-live value tick on right axis */}
             {hliveY !== null && (() => {
               const clampedY = Math.max(PT + 8, Math.min(height - PB - 8, hliveY));
               return (
@@ -745,6 +745,8 @@ export default function FlowIntraday() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
   const { accessData, isFreeAccess, currentUser } = useSubscription();
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth < 640;
 
   const [isMember,         setIsMember]         = useState(false);
   const [enteredTool,      setEnteredTool]      = useState(false);
@@ -801,7 +803,6 @@ export default function FlowIntraday() {
     setHlineModeIndex(-1);
   }, [hlineModeIndex]);
 
-  // Monitor alerts every 5s
   useEffect(() => {
     const interval = setInterval(() => {
       if (alerts.length === 0) return;
@@ -841,6 +842,17 @@ export default function FlowIntraday() {
   const selectedSymbols = useMemo(() => [...new Set(symbols.filter((s) => s.trim() !== ""))], [symbols]);
   const boxCount = parseInt(layout);
   const boxes = Array.from({ length: boxCount });
+
+  // ── Compute grid columns via inline style (avoids Tailwind JIT purge) ──
+  const gridCols = useMemo(() => {
+    if (isMobile) return 1;
+    if (layout === "12") return windowWidth >= 1280 ? 4 : windowWidth >= 1024 ? 3 : 2;
+    if (layout === "6")  return windowWidth >= 1024 ? 3 : windowWidth >= 640 ? 2 : 1;
+    return windowWidth >= 640 ? 2 : 1;
+  }, [isMobile, layout, windowWidth]);
+
+  // Row height adapts to mobile
+  const rowHeight = isMobile ? 260 : 220;
 
   const handleRefresh = (index, isFullscreen = false) => {
     const key = isFullscreen ? "fullscreen-chart" : `grid-chart-${index}`;
@@ -948,9 +960,6 @@ export default function FlowIntraday() {
     { title: "Customizable Layout",      desc: "Switch layouts and adapt to your trading style." },
   ];
 
-  /* ==========================================================
-      SHARED JSX — Features Scroll & Preview Section
-  ========================================================== */
   const featuresSectionJSX = (
     <div className="w-full max-w-5xl mb-12">
       <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">3 Main Features</h2>
@@ -958,7 +967,7 @@ export default function FlowIntraday() {
         <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
         </button>
-        <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar" style={scrollbarHideStyle}>
+        <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-6 py-4 px-1" style={scrollbarHideStyle}>
           {features.map((item, i) => (
             <div key={i} className="w-[350px] md:w-[400px] flex-shrink-0 group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl hover:border-cyan-500/30 transition duration-300">
               <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">{item.title}</h3>
@@ -989,7 +998,6 @@ export default function FlowIntraday() {
     </div>
   );
 
-
   /* ==========================================================
       CASE 1 : PREVIEW VERSION (Not Member)
   =========================================================== */
@@ -997,12 +1005,7 @@ export default function FlowIntraday() {
     return (
       <div className="relative w-full min-h-screen text-white overflow-x-hidden animate-fade-in pb-20">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-
-        <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-
-          {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
@@ -1013,17 +1016,10 @@ export default function FlowIntraday() {
               Turn your trading screen into an elite surveillance system
             </p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              
               {!currentUser && (
                 <button
                   onClick={() => navigate("/login")}
@@ -1032,7 +1028,6 @@ export default function FlowIntraday() {
                   Sign In
                 </button>
               )}
-
               <button
                 onClick={() => navigate("/member-register")}
                 className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
@@ -1041,7 +1036,6 @@ export default function FlowIntraday() {
               </button>
             </div>
           </div>
-
         </div>
       </div>
     );
@@ -1054,12 +1048,7 @@ export default function FlowIntraday() {
     return (
       <div className="relative w-full min-h-screen text-white overflow-x-hidden animate-fade-in pb-20">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-
-        <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-
-          {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
@@ -1070,14 +1059,8 @@ export default function FlowIntraday() {
               Turn your trading screen into an elite surveillance system
             </p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Button */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <button
               onClick={() => setEnteredTool(true)}
@@ -1089,26 +1072,25 @@ export default function FlowIntraday() {
               </svg>
             </button>
           </div>
-
         </div>
       </div>
     );
   }
 
-  // ── Case 3 DASHBOARD ─────────────────────────────────────────────────
+  // ── Case 3: DASHBOARD ────────────────────────────────────────
   return (
     <div className="w-full h-screen bg-[#0b111a] text-white px-3 py-3 flex flex-col overflow-hidden">
       <div className="w-full flex flex-col flex-1 min-h-0">
 
-        {/* Top Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 flex-shrink-0">
-          <div className="flex items-center gap-3">
+        {/* ── Top Controls ── */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
               Analyze intraday order flow with interactive grid charts, sync multiple symbols, track buy/sell/net flow patterns, and set custom price/flow alerts
             </ToolHint>
-            <div className="flex items-center gap-3 bg-[#111827] border border-slate-700 px-4 py-2 rounded-lg">
-              <span className="text-sm text-slate-400">Select Layout :</span>
-              <div className="flex gap-2">
+            <div className="flex items-center gap-2 bg-[#111827] border border-slate-700 px-3 py-2 rounded-lg">
+              <span className="text-xs text-slate-400 hidden sm:inline">Layout:</span>
+              <div className="flex gap-1.5">
                 {["12","6","4"].map((col) => (
                   <button key={col} onClick={() => setLayout(col)} className={`w-7 h-7 rounded text-xs flex items-center justify-center transition ${layout === col ? "bg-purple-600 text-white" : "bg-[#1f2937] text-slate-400 hover:text-white"}`}>
                     {col === "12" ? "▦" : col === "6" ? "▤" : "☰"}
@@ -1116,21 +1098,22 @@ export default function FlowIntraday() {
                 ))}
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-3 text-sm text-slate-400">
-              <span>Price</span><div className="w-8 h-[2px] bg-white"/><span>Value</span>
-              <div className="flex gap-1"><div className="w-3 h-[2px] bg-green-400"/><div className="w-3 h-[2px] bg-red-400"/></div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+              <span>Price</span><div className="w-7 h-[2px] bg-white"/><span>Value</span>
+              <div className="flex gap-1 ml-1"><div className="w-3 h-[2px] bg-green-400"/><div className="w-3 h-[2px] bg-red-400"/></div>
             </div>
           </div>
 
-          <div className="relative flex items-center gap-3" data-watchpanel>
-            <button onClick={() => setShowWatchPanel((v) => !v)} className="flex items-center gap-2 bg-[#111827] border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-lg text-sm transition-all">
-              <span className="text-slate-400">♥ Watchlists</span>
+          <div className="relative flex items-center gap-2" data-watchpanel>
+            <button onClick={() => setShowWatchPanel((v) => !v)} className="flex items-center gap-1.5 bg-[#111827] border border-slate-700 hover:border-slate-500 px-3 py-2 rounded-lg text-xs transition-all">
+              <span className="text-slate-400">♥</span>
+              <span className="text-slate-400 hidden sm:inline">Watchlists</span>
               {watchlists.length > 0 && <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{watchlists.length}</span>}
               <svg className={`w-3 h-3 text-slate-400 transition-transform ${showWatchPanel ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
 
             {showWatchPanel && (
-              <div className="absolute right-[90px] top-full mt-2 w-72 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="absolute right-[72px] top-full mt-2 w-72 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
                   <span className="text-sm font-bold text-white">My Watchlists</span>
                   <button onClick={() => setShowWatchPanel(false)} className="text-slate-500 hover:text-white text-lg">✕</button>
@@ -1161,7 +1144,7 @@ export default function FlowIntraday() {
               </div>
             )}
 
-            <button onClick={handleOpenAddModal} className="bg-red-500 hover:bg-red-600 active:scale-95 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5">
+            <button onClick={handleOpenAddModal} className="bg-red-500 hover:bg-red-600 active:scale-95 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1">
               <span>♥</span><span>ADD</span>
             </button>
           </div>
@@ -1190,65 +1173,73 @@ export default function FlowIntraday() {
           </div>
         )}
 
-        {/* Grid */}
-        <div
-          className={`grid gap-3 flex-1 min-h-0 transition-all duration-300 ${layout === "12" ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" : layout === "6" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
-          style={{ gridAutoRows: "1fr" }}
-        >
-          {boxes.map((_, index) => {
-            const sym         = symbols[index];
-            const isHlineMode = hlineModeIndex === index;
-            const hasHline    = !!hlineAlerts[index];
+        {/* ── Grid — uses inline style for reliable responsive columns ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto" style={scrollbarHideStyle}>
+          <div
+            className="grid gap-3 pb-3"
+            style={{
+              gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+              gridAutoRows: `${rowHeight}px`,
+            }}
+          >
+            {boxes.map((_, index) => {
+              const sym         = symbols[index];
+              const isHlineMode = hlineModeIndex === index;
+              const hasHline    = !!hlineAlerts[index];
 
-            return (
-              <div key={index} className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition flex flex-col min-h-0">
-                {/* Card Header */}
-                <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 flex-shrink-0">
-                  <SymbolInput value={sym} onChange={(v) => handleSymbolChange(index, v)}/>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <select className="bg-[#1f2937] px-2 py-0.5 rounded text-xs outline-none cursor-pointer"><option>Flow</option><option>Price</option></select>
-                    {/* Bell — H-Line placement */}
-                    <button
-                      onClick={() => handleBellClick(index, sym)}
-                      title={hasHline ? "คลิกเพื่อลบ H-Line" : isHlineMode ? "คลิกเพื่อยกเลิก" : "คลิกเพื่อวาง H-Line"}
-                      className={`relative flex items-center rounded-lg px-1.5 py-0.5 transition-all
-                        ${!sym ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
-                        ${isHlineMode ? "text-cyan-300 animate-pulse" : hasHline ? "text-cyan-400" : "text-slate-400 hover:text-cyan-400"}`}
-                    >
-                      <NotificationsNoneIcon sx={{ fontSize: 18 }}/>
-                      {hasHline && !isHlineMode && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-purple-400 rounded-full"/>
+              return (
+                <div
+                  key={index}
+                  className="bg-[#111827] border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition flex flex-col"
+                  style={{ minHeight: rowHeight }}
+                >
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 flex-shrink-0">
+                    <SymbolInput value={sym} onChange={(v) => handleSymbolChange(index, v)}/>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <select className="bg-[#1f2937] px-1.5 py-0.5 rounded text-xs outline-none cursor-pointer"><option>Flow</option><option>Price</option></select>
+                      <button
+                        onClick={() => handleBellClick(index, sym)}
+                        title={hasHline ? "คลิกเพื่อลบ H-Line" : isHlineMode ? "คลิกเพื่อยกเลิก" : "คลิกเพื่อวาง H-Line"}
+                        className={`relative flex items-center rounded-lg px-1 py-0.5 transition-all
+                          ${!sym ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+                          ${isHlineMode ? "text-cyan-300 animate-pulse" : hasHline ? "text-cyan-400" : "text-slate-400 hover:text-cyan-400"}`}
+                      >
+                        <NotificationsNoneIcon sx={{ fontSize: 16 }}/>
+                        {hasHline && !isHlineMode && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full"/>
+                        )}
+                      </button>
+                      {sym && (
+                        <ZoomInIcon
+                          onClick={() => setFullscreenIndex(index)}
+                          sx={{ fontSize: 16, color: "#94a3b8", cursor: "pointer", transition: "all 0.2s ease", "&:hover": { color: "#00d4ff" } }}
+                        />
                       )}
-                    </button>
-                    {sym && (
-                      <ZoomInIcon
-                        onClick={() => setFullscreenIndex(index)}
-                        sx={{ fontSize: 18, color: "#94a3b8", cursor: "pointer", transition: "all 0.2s ease", "&:hover": { color: "#00d4ff", transform: "scale(1.1)" } }}
-                      />
-                    )}
-                    <button onClick={() => handleRefresh(index)} className="hover:text-cyan-400 transition text-slate-400" title="Go to latest">
-                      <RefreshIcon sx={{ fontSize: 18 }}/>
-                    </button>
+                      <button onClick={() => handleRefresh(index)} className="hover:text-cyan-400 transition text-slate-400" title="Go to latest">
+                        <RefreshIcon sx={{ fontSize: 16 }}/>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Chart */}
+                  <div className="flex-1 min-h-0">
+                    <InteractiveGridChart
+                      symbol={sym}
+                      chartId={`grid-chart-${index}`}
+                      refreshKey={refreshKeys[index]}
+                      globalHoverIndex={globalHoverIndex}
+                      setGlobalHoverIndex={setGlobalHoverIndex}
+                      chartRefs={chartRefs}
+                      isLoading={!!loadingMap[index]}
+                      hlineMode={isHlineMode}
+                      hlineAlert={hlineAlerts[index] ?? null}
+                      onChartClick={(info) => handleChartClick(index, sym, info)}
+                    />
                   </div>
                 </div>
-                {/* Chart */}
-                <div className="flex-1 min-h-0">
-                  <InteractiveGridChart
-                    symbol={sym}
-                    chartId={`grid-chart-${index}`}
-                    refreshKey={refreshKeys[index]}
-                    globalHoverIndex={globalHoverIndex}
-                    setGlobalHoverIndex={setGlobalHoverIndex}
-                    chartRefs={chartRefs}
-                    isLoading={!!loadingMap[index]}
-                    hlineMode={isHlineMode}
-                    hlineAlert={hlineAlerts[index] ?? null}
-                    onChartClick={(info) => handleChartClick(index, sym, info)}
-                  />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1285,7 +1276,7 @@ export default function FlowIntraday() {
           const typeLabel = { price: "ราคา", buy: "Buy Flow", sell: "Sell Flow", net: "Net Flow" }[alert.type] ?? alert.type;
           return (
             <div key={alert.id + "-" + i}
-              className="pointer-events-auto bg-[#0d1526] border border-cyan-500/50 rounded-2xl shadow-2xl px-5 py-4 w-80"
+              className="pointer-events-auto bg-[#0d1526] border border-cyan-500/50 rounded-2xl shadow-2xl px-5 py-4 w-72"
               style={{ animation: "slideInRight 0.4s ease-out" }}>
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-xl flex-shrink-0">🔔</div>
