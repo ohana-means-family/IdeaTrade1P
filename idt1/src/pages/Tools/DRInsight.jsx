@@ -3,10 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
 import drIcon from "@/assets/icons/dr.svg";
-import { Fullscreen, Settings as SettingsIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import ToolHint from "@/components/ToolHint.jsx";
-
 import DRInsightDashboard from "./components/DRInsightDashboard.jsx";
+import { createChart, AreaSeries } from 'lightweight-charts';
 
 const scrollbarHideStyle = {
   msOverflowStyle: "none",
@@ -158,27 +158,95 @@ const dotColors = ["bg-blue-500", "bg-orange-500", "bg-green-500", "bg-red-500",
 const generateMockStockData = (basePrice, points = 100) => {
   let price = basePrice;
   const data = [];
-  for (let i = 0; i < points; i++) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = points; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
     price += (Math.random() - 0.48) * (basePrice * 0.02);
-    data.push(price);
+    data.push({ time: `${yyyy}-${mm}-${dd}`, value: price });
   }
   return data;
 };
 
-const buildSvgPath = (data, min, max) => {
-  if (!data || data.length === 0) return "M0,50 L300,50";
-  const range = max - min || 1;
-  const points = data.map((val, idx) => {
-    const x = (idx / (data.length - 1)) * 300;
-    const y = 100 - ((val - min) / range) * 100;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  });
-  return `M ${points[0]} ` + points.slice(1).map(p => `L ${p}`).join(" ");
-};
+/* ===============================
+    TVCHART COMPONENT
+================================ */
+function TVChart({ data, themeColor = "#3b82f6" }) {
+  const chartContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current || !data || data.length === 0) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      autoSize: true,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#64748b',
+      },
+      // ล็อคกราฟไม่ให้เลื่อนหรือซูม
+      handleScroll: false,
+      handleScale: false,
+      grid: {
+        vertLines: { visible: false },
+        horzLines: { color: 'rgba(51, 65, 85, 0.1)' },
+      },
+      rightPriceScale: { 
+        borderVisible: false,
+        autoScale: true,
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+        entireTextOnly: true, 
+      },
+      timeScale: { 
+        visible: false, 
+        borderVisible: false,
+      },
+      crosshair: {
+        vertLine: { visible: false },
+        horzLine: { visible: false },
+        mode: 1,
+      },
+    });
+
+    const series = chart.addSeries(AreaSeries, {
+      lineColor: themeColor,
+      topColor: themeColor + '40',
+      bottomColor: 'rgba(0, 0, 0, 0)',
+      lineWidth: 3,
+      priceLineVisible: false,
+      lastValueVisible: false,
+    });
+
+    series.setData(data);
+    chart.timeScale().fitContent();
+
+    return () => chart.remove();
+  }, [data, themeColor]);
+
+  return (
+    // เพิ่ม class "tv-chart-container" เพื่อใช้เป็นตัวอ้างอิง
+    <div className="relative w-full h-full tv-chart-container">
+      
+      {/* บังคับซ่อน Tag <a> ทั้งหมดที่อยู่ใน container นี้ (ซึ่งก็คือตัวโลโก้) */}
+      <style>{`
+        .tv-chart-container a { 
+          display: none !important; 
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+      `}</style>
+      
+      <div ref={chartContainerRef} className="absolute inset-0 w-full h-full min-h-[150px]" />
+    </div>
+  );
+}
 
 /* ===============================
     MOBILE: CountrySection
-    flat row + expandable inline stock list
 ================================ */
 function CountrySection({ title, stocks, selectedSymbol, onStockClick, globalFilter, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -186,13 +254,10 @@ function CountrySection({ title, stocks, selectedSymbol, onStockClick, globalFil
     s.dr.toLowerCase().includes(globalFilter.toLowerCase()) ||
     s.name.toLowerCase().includes(globalFilter.toLowerCase())
   );
-
-  // Auto-open if filter matches something inside
   const hasFilterMatch = globalFilter.length > 0 && filtered.length > 0;
 
   return (
     <div className="border-b border-slate-800">
-      {/* Country Row */}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3.5 bg-[#181e2a] text-sm font-semibold text-white hover:bg-[#1e2535] active:bg-[#232b3e] transition-colors"
@@ -206,15 +271,14 @@ function CountrySection({ title, stocks, selectedSymbol, onStockClick, globalFil
         </svg>
       </button>
 
-      {/* Stock List */}
       {(open || hasFilterMatch) && (
         <div className="bg-[#0d1220]">
           {filtered.length === 0 ? (
             <div className="px-4 py-3 text-xs text-slate-600 text-center">No results</div>
           ) : (
-            filtered.map((stock, idx) => (
+            filtered.map((stock) => (
               <button
-                key={idx}
+                key={stock.dr}
                 onClick={() => onStockClick(stock.dr)}
                 className={`w-full flex items-center justify-between px-5 py-2.5 border-b border-slate-800/40 transition-colors text-left ${
                   selectedSymbol === stock.dr
@@ -223,7 +287,7 @@ function CountrySection({ title, stocks, selectedSymbol, onStockClick, globalFil
                 }`}
               >
                 <div className="flex items-center gap-2.5 overflow-hidden">
-                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[idx % dotColors.length]}`} />
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500" />
                   <span className={`text-xs font-bold tracking-wide shrink-0 ${
                     selectedSymbol === stock.dr ? "text-cyan-400" : "text-slate-200"
                   }`}>
@@ -242,132 +306,72 @@ function CountrySection({ title, stocks, selectedSymbol, onStockClick, globalFil
 }
 
 /* ===============================
-    CHART CARD COMPONENT
+    CHART CARD COMPONENT (Mobile)
 ================================ */
-function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, chartMinMax, hoverPos, setHoverPos, themeColor, onFullscreen, onStockSelect }) {
+function ChartCard({ chartKey, chartSelections, setChartSelections, chartData, themeColor, onFullscreen, onStockSelect }) {
   const stockName = chartSelections[chartKey];
-  const index = ['chart1', 'chart2', 'chart3'].indexOf(chartKey);
-
   const data = chartData[chartKey];
-  const { min, max } = chartMinMax[chartKey];
-  const range = max - min || 1;
-  const pathD = buildSvgPath(data, min, max);
-
-  let currentYPercent = null;
-  let hoverValue = null;
-  let actualXPercent = hoverPos;
-
-  if (hoverPos !== null && data.length > 0) {
-    const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
-    hoverValue = data[dataIndex];
-    currentYPercent = 100 - ((hoverValue - min) / range) * 100;
-    actualXPercent = (dataIndex / (data.length - 1)) * 100;
-  }
 
   return (
-      <div className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
-          <select
-            value={stockName}
-            onChange={(e) => {
-              onStockSelect(e.target.value);
-              setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value }));
-            }}
-            className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center',
-              paddingRight: '28px'
-            }}
-          >
-            <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
-            {allStockOptions.map(s => (
-              <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">
-                {s.dr} - {s.name}
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center gap-3 text-slate-600">
-            <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-slate-400" title="Fullscreen">⛶</button>
-            <button className="hover:text-cyan-400 transition text-slate-400">
-              <SettingsIcon sx={{ fontSize: 16, color: "inherit" }} />
-            </button>
-          </div>
+    <div className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433] shrink-0 z-10">
+        <select
+          value={stockName}
+          onChange={(e) => {
+            onStockSelect(e.target.value);
+            setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value }));
+          }}
+          className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
+            paddingRight: '28px'
+          }}
+        >
+          <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
+          {allStockOptions.map(s => (
+            <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">
+              {s.dr} - {s.name}
+            </option>
+          ))}
+        </select>
+        <div className="flex items-center gap-3 text-slate-600">
+          <button onClick={() => onFullscreen(chartKey)} className="hover:text-cyan-400 transition text-slate-400" title="Fullscreen">⛶</button>
+          <button className="hover:text-cyan-400 transition text-slate-400">
+            <SettingsIcon sx={{ fontSize: 16, color: "inherit" }} />
+          </button>
         </div>
+      </div>
 
-      <div
-        className="relative bg-[#0B1221] cursor-crosshair"
-        style={{ height: "180px" }}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          setHoverPos(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
-        }}
-        onTouchMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          setHoverPos(Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left) / rect.width) * 100)));
-        }}
-        onMouseLeave={() => setHoverPos(null)}
-        onTouchEnd={() => setHoverPos(null)}
-      >
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)',
-          backgroundSize: '30px 30px'
-        }}></div>
-
+      <div className="relative bg-[#0B1221] flex-1" style={{ height: "180px" }}>
         {!stockName && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <span className="text-slate-600 text-xs">Select a symbol to display chart</span>
           </div>
         )}
-
-        {stockName && (
-          <>
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id={`mob-grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={themeColor} stopOpacity="0.25" />
-                  <stop offset="100%" stopColor={themeColor} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={pathD} fill="none" stroke={themeColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              <path d={pathD + " V 100 H 0 Z"} fill={`url(#mob-grad-${index})`} stroke="none" />
-            </svg>
-            <div className="absolute right-2 top-2 bottom-2 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none z-10">
-              <span>{max.toFixed(2)}</span>
-              <span>{(min + range * 0.5).toFixed(2)}</span>
-              <span>{min.toFixed(2)}</span>
-            </div>
-            {hoverPos !== null && currentYPercent !== null && (
-              <>
-                <div className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80"
-                  style={{ left: `${actualXPercent}%` }}></div>
-                <div className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80"
-                  style={{ top: `${currentYPercent}%` }}></div>
-                <div className="absolute z-30 pointer-events-none w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: `${actualXPercent}%`, top: `${currentYPercent}%`, backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
-                <div className="absolute right-0 z-30 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 text-white text-[9px] rounded shadow-md border border-slate-600 pointer-events-none mr-2"
-                  style={{ top: `${currentYPercent}%` }}>
-                  {hoverValue?.toFixed(2)}
-                </div>
-              </>
-            )}
-          </>
+        {stockName && data?.length > 0 && (
+          <TVChart data={data} themeColor={themeColor} />
         )}
       </div>
     </div>
   );
 }
 
+/* ===============================
+    WAVE SKELETON
+================================ */
+const shimmerKeyframes = `
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+`;
+
 function WaveSkeleton({ delay = 0 }) {
   return (
     <div className="w-full h-[180px] bg-[#0f172a] rounded-lg overflow-hidden relative">
-      <style>{`
-        @keyframes shimmer {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
+      <style>{shimmerKeyframes}</style>
       <div className="absolute inset-0 flex flex-col justify-between p-3">
         <div className="flex gap-2">
           <div className="h-2 rounded-full bg-slate-800 w-1/3" />
@@ -383,8 +387,7 @@ function WaveSkeleton({ delay = 0 }) {
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.08) 40%, rgba(125,211,252,0.18) 50%, rgba(56,189,248,0.08) 60%, transparent 100%)",
+          background: "linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.08) 40%, rgba(125,211,252,0.18) 50%, rgba(56,189,248,0.08) 60%, transparent 100%)",
           animation: "shimmer 1.8s ease-in-out infinite",
           animationDelay: `${delay}s`,
         }}
@@ -407,19 +410,13 @@ export default function DRInsight() {
   const [enteredTool, setEnteredTool] = useState(false);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
-  const [hoverPos, setHoverPos] = useState(null);
   const [chartData, setChartData] = useState({ chart1: [], chart2: [], chart3: [] });
-  const [chartMinMax, setChartMinMax] = useState({
-    chart1: { min: 0, max: 100 },
-    chart2: { min: 0, max: 100 },
-    chart3: { min: 0, max: 100 }
-  });
   const [globalFilter, setGlobalFilter] = useState("");
   const [chartSelections, setChartSelections] = useState({ chart1: "", chart2: "", chart3: "" });
   const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [isLoadingCharts, setIsLoadingCharts] = useState(false);
 
   const { accessData, isFreeAccess, currentUser } = useSubscription();
-  const [isLoadingCharts, setIsLoadingCharts] = useState(false);
 
   useEffect(() => {
     if (isFreeAccess) { setIsMember(true); return; }
@@ -428,38 +425,34 @@ export default function DRInsight() {
       const expireTimestamp = accessData[toolId];
       let expireDate;
       try {
-        expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
+        expireDate = typeof expireTimestamp.toDate === 'function'
+          ? expireTimestamp.toDate()
+          : new Date(expireTimestamp);
       } catch (e) { expireDate = new Date(0); }
       setIsMember(expireDate.getTime() > new Date().getTime());
-    } else { setIsMember(false); }
+    } else {
+      setIsMember(false);
+    }
   }, [accessData, isFreeAccess]);
 
   const handleStockClick = (symbol) => {
-  setIsLoadingCharts(true);
-  setChartSelections({ chart1: symbol, chart2: symbol, chart3: symbol });
-  setSelectedSymbol(symbol);
-
-  setTimeout(() => {
-    setIsLoadingCharts(false);
-  }, 700);
-};
+    setIsLoadingCharts(true);
+    setChartSelections({ chart1: symbol, chart2: symbol, chart3: symbol });
+    setSelectedSymbol(symbol);
+    setTimeout(() => setIsLoadingCharts(false), 700);
+  };
 
   useEffect(() => {
-    const newData = { ...chartData };
-    const newMinMax = { ...chartMinMax };
-    Object.keys(chartSelections).forEach((key) => {
-      const stockName = chartSelections[key];
-      if (stockName) {
-        const basePrice = (stockName.length * 15) + 50;
-        const data = generateMockStockData(basePrice, 80);
-        newData[key] = data;
-        newMinMax[key] = { min: Math.min(...data), max: Math.max(...data) };
-      } else {
-        newData[key] = [];
-      }
+    setChartData(() => {
+      const newData = {};
+      Object.keys(chartSelections).forEach((key) => {
+        const stockName = chartSelections[key];
+        newData[key] = stockName
+          ? generateMockStockData((stockName.length * 15) + 50, 80)
+          : [];
+      });
+      return newData;
     });
-    setChartData(newData);
-    setChartMinMax(newMinMax);
   }, [chartSelections]);
 
   const checkScroll = () => {
@@ -502,14 +495,14 @@ export default function DRInsight() {
 
   const themeColors = ["#3b82f6", "#ef4444", "#22c55e"];
 
-  /* ==========================================================
-      SHARED JSX — Features Scroll & Preview Section
-  ========================================================== */
   const featuresSectionJSX = (
     <div className="w-full max-w-5xl mb-12">
       <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">4 Main Features</h2>
       <div className="relative group w-full" onMouseEnter={() => isPaused.current = true} onMouseLeave={() => isPaused.current = false}>
-        <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <button
+          onClick={() => scroll("left")}
+          className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+        >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
         <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-6 py-4 px-1" style={scrollbarHideStyle}>
@@ -520,7 +513,10 @@ export default function DRInsight() {
             </div>
           ))}
         </div>
-        <button onClick={() => scroll("right")} className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+        <button
+          onClick={() => scroll("right")}
+          className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+        >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
@@ -543,9 +539,7 @@ export default function DRInsight() {
     </div>
   );
 
-  /* ==========================================================
-      CASE 1 : PREVIEW / NOT MEMBER
-  =========================================================== */
+  /* CASE 1: Not a member */
   if (!isMember) {
     return (
       <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
@@ -557,14 +551,8 @@ export default function DRInsight() {
             </h1>
             <p className="text-slate-400 text-lg md:text-xl font-light">Your Gateway to Global Equity</p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
               {!currentUser && (
@@ -588,9 +576,7 @@ export default function DRInsight() {
     );
   }
 
-  /* ==========================================================
-      CASE 2 : START SCREEN (Member but not entered)
-  ========================================================== */
+  /* CASE 2: Member, not yet entered */
   if (isMember && !enteredTool) {
     return (
       <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
@@ -602,14 +588,8 @@ export default function DRInsight() {
             </h1>
             <p className="text-slate-400 text-lg md:text-xl font-light">Your Gateway to Global Equity</p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Button */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <button
               onClick={() => setEnteredTool(true)}
@@ -626,19 +606,13 @@ export default function DRInsight() {
     );
   }
 
-  /* ==========================================================
-      CASE 3 : FULL DASHBOARD
-  =========================================================== */
+  /* CASE 3: Full dashboard */
   return (
     <div className="w-full bg-[#0B1221] text-white font-sans">
 
-      {/* =============================================
-          MOBILE LAYOUT (< md)
-          Layout: scroll page = symbol list on top + charts below
-      ============================================= */}
+      {/* MOBILE LAYOUT */}
       <div className="md:hidden flex flex-col min-h-screen">
 
-        {/* Search Bar — sticky at top */}
         <div className="sticky top-0 z-40 bg-[#0B1221] px-3 pt-3 pb-2 border-b border-slate-800">
           <div className="flex items-center gap-2 bg-[#1a1f2b] border border-slate-700/60 rounded-xl px-3 py-2.5">
             <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -661,7 +635,6 @@ export default function DRInsight() {
           </div>
         </div>
 
-        {/* Country Sections — inline, no drawer */}
         <div className="bg-[#0d1118]">
           <CountrySection title="USA"    stocks={usaStocks}    selectedSymbol={selectedSymbol} onStockClick={handleStockClick} globalFilter={globalFilter} />
           <CountrySection title="Europe" stocks={europeStocks} selectedSymbol={selectedSymbol} onStockClick={handleStockClick} globalFilter={globalFilter} />
@@ -672,10 +645,9 @@ export default function DRInsight() {
             onStockClick={handleStockClick}
             globalFilter={globalFilter}
           />
-          <CountrySection title="ETC"    stocks={etcStocks}    selectedSymbol={selectedSymbol} onStockClick={handleStockClick} globalFilter={globalFilter} />
+          <CountrySection title="ETC" stocks={etcStocks} selectedSymbol={selectedSymbol} onStockClick={handleStockClick} globalFilter={globalFilter} />
         </div>
 
-        {/* Legend Bar */}
         <div className="mx-3 mt-3 mb-2 flex justify-between items-center bg-[#1a1f2b] border border-slate-800 rounded-full px-4 py-2">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <div className="w-6 h-0.5 bg-blue-500 rounded"></div>
@@ -691,58 +663,47 @@ export default function DRInsight() {
           </div>
         </div>
 
-        {/* Charts */}
         <div className="flex flex-col gap-3 px-3 pb-6">
-        {isLoadingCharts ? (
-          ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
-            <div key={chartKey} className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
-                <select
-                  disabled
-                  value={chartSelections[chartKey]}
-                  className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs opacity-50 cursor-not-allowed"
-                >
-                  <option>Select a symbol...</option>
-                </select>
-                <div className="flex items-center gap-3 text-slate-600 opacity-50">
-                  <span className="text-sm">⛶</span>
-                  <span className="text-sm">⚙</span>
+          {isLoadingCharts ? (
+            ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+              <div key={chartKey} className="bg-[#1a1f2b] border border-slate-700/60 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800 bg-[#1e2433]">
+                  <select disabled className="flex-1 mr-3 bg-[#0f151e] text-slate-300 border border-slate-700/50 rounded px-2 py-1.5 text-xs opacity-50 cursor-not-allowed">
+                    <option>Select a symbol...</option>
+                  </select>
+                  <div className="flex items-center gap-3 text-slate-600 opacity-50">
+                    <span className="text-sm">⛶</span>
+                    <span className="text-sm">⚙</span>
+                  </div>
                 </div>
+                <WaveSkeleton delay={index * 0.2} />
               </div>
-              <WaveSkeleton delay={index * 0.2} />
-            </div>
-          ))
-        ) : (
-          ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
-            <ChartCard
-              key={chartKey}
-              chartKey={chartKey}
-              chartSelections={chartSelections}
-              setChartSelections={setChartSelections}
-              chartData={chartData}
-              chartMinMax={chartMinMax}
-              hoverPos={hoverPos}
-              setHoverPos={setHoverPos}
-              themeColor={themeColors[index]}
-              onFullscreen={setFullscreenChart}
-              onStockSelect={handleStockClick}
-            />
-          ))
-        )}
-      </div>
-
+            ))
+          ) : (
+            ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+              <ChartCard
+                key={chartKey}
+                chartKey={chartKey}
+                chartSelections={chartSelections}
+                setChartSelections={setChartSelections}
+                chartData={chartData}
+                themeColor={themeColors[index]}
+                onFullscreen={setFullscreenChart}
+                onStockSelect={handleStockClick}
+              />
+            ))
+          )}
+        </div>
       </div>
       {/* END MOBILE LAYOUT */}
 
-      {/* =============================================
-          DESKTOP LAYOUT (>= md) — unchanged
-      ============================================= */}
+      {/* DESKTOP LAYOUT */}
       <div className="hidden md:flex md:flex-col h-screen p-3 overflow-hidden animate-fade-in">
 
         <div className="flex items-center justify-center gap-6 mb-4 shrink-0">
-        <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-          ​Map every Thai DR to its global parent stock, track arbitrage opportunities, monitor real-time valuations, and analyze multi-market trends
-        </ToolHint>
+          <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+            Map every Thai DR to its global parent stock, track arbitrage opportunities, monitor real-time valuations, and analyze multi-market trends
+          </ToolHint>
 
           <div className="bg-[#111827] border border-slate-800 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
             <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -755,17 +716,15 @@ export default function DRInsight() {
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="bg-transparent text-xs text-slate-300 focus:outline-none placeholder-slate-600 w-40"
             />
-          {globalFilter && (
-    <button
-      onClick={() => setGlobalFilter("")}
-      className="text-slate-500 hover:text-white transition shrink-0"
-    >
-      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  )}
-</div>
+            {globalFilter && (
+              <button onClick={() => setGlobalFilter("")} className="text-slate-500 hover:text-white transition shrink-0">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
           {[{ label: "ราคาน้ำมัน", color: "bg-blue-500" }, { label: "PE Ratio", color: "bg-red-500" }, { label: "Last", color: "bg-green-500" }].map(item => (
             <div key={item.label} className="bg-[#111827] px-5 py-2 rounded-full text-[11px] text-slate-400 border border-slate-800 flex items-center gap-3 shadow-sm whitespace-nowrap">
               <span>{item.label}</span>
@@ -776,213 +735,167 @@ export default function DRInsight() {
 
         <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
 
+          {/* Left panel: USA / Europe / ETC */}
           <div className="col-span-3 flex flex-col gap-4 h-full overflow-hidden">
-          {[
-            // บรรทัดที่ประมาณ 800+ แทน emoji 🌎 🌍 🌐
-          { title: "USA", stocks: usaStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[4]" },
-          { title: "Europe", stocks: europeStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[3]" },
-          { title: "ETC", stocks: etcStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
-          ].map(({ title, stocks, icon, flex }) => {
-            const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
-            return (
-              <div key={title} className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flex}`}>
-                <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
-                  <span className="font-bold text-[12px] text-white">{title}</span>
-                  <span className="text-cyan-500 text-[10px] font-bold">{icon}</span>
-                </div>
-                <div className="flex justify-between text-[8px] text-slate-500 px-2 py-1 font-semibold uppercase tracking-wider sticky top-0 bg-[#111827] border-b border-slate-800/60 z-20">
-                  <span>DR/DRx</span>
-                  <span>TradingView</span>
-                </div>
-                <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
-                  {filtered.map((stock, idx) => (
-                    <div key={idx} onClick={() => handleStockClick(stock.dr)}
-                      className={`flex justify-between items-center text-[9px] p-1.5 rounded cursor-pointer transition-colors group ${selectedSymbol === stock.dr ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/60'}`}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
-                        <span className="text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
+            {[
+              { title: "USA",    stocks: usaStocks,    flex: "flex-[4]" },
+              { title: "Europe", stocks: europeStocks, flex: "flex-[3]" },
+              { title: "ETC",    stocks: etcStocks,    flex: "flex-[2]" },
+            ].map(({ title, stocks, flex }) => {
+              const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
+              return (
+                <div key={title} className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flex}`}>
+                  <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
+                    <span className="font-bold text-[12px] text-white">{title}</span>
+                    <img src={drIcon} alt="dr" className="w-4 h-4" />
+                  </div>
+                  <div className="flex justify-between text-[8px] text-slate-500 px-2 py-1 font-semibold uppercase tracking-wider sticky top-0 bg-[#111827] border-b border-slate-800/60 z-20">
+                    <span>DR/DRx</span>
+                    <span>TradingView</span>
+                  </div>
+                  <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
+                    {filtered.map((stock, idx) => (
+                      <div
+                        key={stock.dr}
+                        onClick={() => handleStockClick(stock.dr)}
+                        className={`flex justify-between items-center text-[9px] p-1.5 rounded cursor-pointer transition-colors group ${selectedSymbol === stock.dr ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/60'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
+                          <span className="text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
+                        </div>
+                        <span className="text-slate-500 truncate max-w-[80px] text-right">{stock.real}</span>
                       </div>
-                      <span className="text-slate-500 truncate max-w-[80px] text-right">{stock.real}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Center panel: Charts */}
+          <div className="col-span-6 flex flex-col gap-4 h-full overflow-hidden">
+            {isLoadingCharts ? (
+              ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
+                <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
+                  <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
+                    <select disabled className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 opacity-50 cursor-not-allowed">
+                      <option>Select a symbol...</option>
+                    </select>
+                    <div className="flex gap-3 text-slate-600 opacity-50">
+                      <button disabled>⛶</button>
+                      <button disabled>⚙</button>
                     </div>
-                  ))}
+                  </div>
+                  <WaveSkeleton delay={index * 0.2} />
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-         <div className="col-span-6 flex flex-col gap-4 h-full overflow-hidden">
-  {isLoadingCharts ? (
-    ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
-      <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
-        <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
-          <select
-            disabled
-            value={chartSelections[chartKey]}
-            className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 opacity-50 cursor-not-allowed"
-          >
-            <option>Select a symbol...</option>
-          </select>
-          <div className="flex gap-3 text-slate-600 opacity-50">
-            <button disabled>⛶</button>
-            <button disabled>⚙</button>
-          </div>
-        </div>
-        <WaveSkeleton delay={index * 0.2} />
-      </div>
-    ))
-  ) : (
-    ['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
-      const stockName = chartSelections[chartKey];
-      const lineColor = themeColors[index];
-      const data = chartData[chartKey];
-      const { min, max } = chartMinMax[chartKey];
-      const range = max - min || 1;
-      const pathD = buildSvgPath(data, min, max);
-
-      let currentYPercent = null;
-      let hoverValue = null;
-      let actualXPercent = hoverPos;
-
-      if (hoverPos !== null && data.length > 0) {
-        const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
-        hoverValue = data[dataIndex];
-        currentYPercent = 100 - ((hoverValue - min) / range) * 100;
-        actualXPercent = (dataIndex / (data.length - 1)) * 100;
-      }
-
-      return (
-        <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
-          <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
-            <select
-              value={stockName}
-              onChange={(e) => setChartSelections({ ...chartSelections, [chartKey]: e.target.value })}
-              className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px'
-              }}
-            >
-              <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
-              {allStockOptions.map(s => (
-                <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>
-              ))}
-            </select>
-            <div className="flex gap-3 text-slate-600">
-              <div className="flex gap-3 text-white">
-                <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
-                <button className="hover:text-cyan-400 transition">
-                  <SettingsIcon sx={{ fontSize: 18 }} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            className="flex-1 w-full bg-[#0B1221] border border-slate-800/40 rounded-lg relative overflow-hidden flex items-end cursor-crosshair"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setHoverPos(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
-            }}
-            onMouseLeave={() => setHoverPos(null)}
-          >
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-            {!stockName && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <span className="text-slate-500 text-sm">Select a symbol to display chart</span>
-              </div>
-            )}
-            {stockName && (
-              <>
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id={`grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
-                      <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                  <path d={pathD + " V 100 H 0 Z"} fill={`url(#grad-${index})`} stroke="none" />
-                </svg>
-                <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[8px] text-slate-600 text-right pointer-events-none z-10">
-                  {[max, min + range * 0.75, min + range * 0.5, min + range * 0.25, min].map((v, i) => (
-                    <span key={i}>{v.toFixed(2)}</span>
-                  ))}
-                </div>
-                {hoverPos !== null && currentYPercent !== null && (
-                  <>
-                    <div className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80" style={{ left: `${actualXPercent}%` }}></div>
-                    <div className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80" style={{ top: `${currentYPercent}%` }}></div>
-                    <div className="absolute z-30 pointer-events-none w-2.5 h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
-                      style={{ left: `${actualXPercent}%`, top: `${currentYPercent}%`, backgroundColor: lineColor, boxShadow: `0 0 10px ${lineColor}` }}></div>
-                    <div className="absolute right-0 z-30 -translate-y-1/2 px-1.5 py-0.5 bg-slate-800 text-white text-[9px] rounded shadow-md border border-slate-600 pointer-events-none"
-                      style={{ top: `${currentYPercent}%` }}>{hoverValue?.toFixed(2)}</div>
-                  </>
-                )}
-              </>
+              ))
+            ) : (
+              ['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
+                const stockName = chartSelections[chartKey];
+                const lineColor = themeColors[index];
+                const data = chartData[chartKey];
+                return (
+                  <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl p-4 flex flex-col flex-1 overflow-hidden min-h-0 relative">
+                    <div className="flex justify-between items-start shrink-0 z-40 relative mb-3">
+                      <select
+                        value={stockName}
+                        onChange={(e) => setChartSelections({ ...chartSelections, [chartKey]: e.target.value })}
+                        className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px'
+                        }}
+                      >
+                        <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
+                        {allStockOptions.map(s => (
+                          <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-3 text-white">
+                        <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition" title="Fullscreen">⛶</button>
+                        <button className="hover:text-cyan-400 transition">
+                          <SettingsIcon sx={{ fontSize: 18 }} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-1 w-full bg-[#0B1221] border border-slate-800/40 rounded-lg relative overflow-hidden flex items-end">
+                      {!stockName && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                          <span className="text-slate-500 text-sm">Select a symbol to display chart</span>
+                        </div>
+                      )}
+                      {stockName && data?.length > 0 && (
+                        <TVChart data={data} themeColor={lineColor} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
-        </div>
-      );
-    })
-  )}
-</div>
 
+          {/* Right panel: Asia */}
           <div className="col-span-3 flex flex-col h-full bg-[#111827] border border-slate-800/80 rounded-xl p-4 shadow-xl overflow-hidden">
             <div className="text-center pb-3 mb-4 border-b border-slate-800/60 shrink-0">
               <span className="font-bold text-base text-white tracking-wide">Asia</span>
             </div>
             <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
               <div className="flex flex-col gap-4 h-full overflow-hidden">
-              {[
-                { title: "Japan", stocks: japanStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[4]" },
-                { title: "Singapore", stocks: singaporeStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
-                { title: "Vietnam", stocks: vietnamStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[2]" },
-              ].map(({ title, stocks, icon, flex }) => {
-                const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
-                return (
-                  <div key={title} className="bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 flex-1">
-                    <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
-                      <span className="font-bold text-[13px] text-white">{title}</span>
-                      <span className="text-cyan-500 text-[11px] font-bold">{icon}</span>
-                    </div>
-                    <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
-                      {filtered.map((stock, idx) => (
-                        <div key={idx} onClick={() => handleStockClick(stock.dr)}
-                          className={`w-full flex items-center justify-between px-5 py-2.5 border-b border-slate-800/40 transition-colors text-left ${
-                          selectedSymbol === stock.dr
-                            ? "bg-cyan-500/15 border-l-2 border-l-cyan-400"
-                            : "hover:bg-[#1a2030] active:bg-[#1e2638]"
-                        }`}
-                      >
-                          <div className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
-                            {/* ✅ เพิ่ม text-[10px] ที่นี่ */}
-                            <span className="text-[10px] text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
+                {[
+                  { title: "Japan",     stocks: japanStocks     },
+                  { title: "Singapore", stocks: singaporeStocks },
+                  { title: "Vietnam",   stocks: vietnamStocks   },
+                ].map(({ title, stocks }) => {
+                  const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
+                  return (
+                    <div key={title} className="bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 flex-1">
+                      <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
+                        <span className="font-bold text-[13px] text-white">{title}</span>
+                        <img src={drIcon} alt="dr" className="w-4 h-4" />
+                      </div>
+                      <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
+                        {filtered.map((stock, idx) => (
+                          <div
+                            key={stock.dr}
+                            onClick={() => handleStockClick(stock.dr)}
+                            className={`w-full flex items-center justify-between px-2 py-1.5 border-b border-slate-800/40 transition-colors cursor-pointer ${
+                              selectedSymbol === stock.dr
+                                ? "bg-cyan-500/15 border-l-2 border-l-cyan-400"
+                                : "hover:bg-[#1a2030]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
+                              <span className="text-[10px] text-slate-200 font-bold tracking-wide">{stock.dr}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 truncate max-w-[55px] text-right">{stock.real}</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 truncate max-w-[55px] text-right">{stock.real}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
               <div className="flex flex-col gap-4 h-full overflow-hidden">
                 {[
-                  { title: "China", stocks: chinaStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-[3]" },
-                  { title: "Taiwan", stocks: taiwanStocks, icon: <img src={drIcon} alt="dr" className="w-4 h-4" />, flex: "flex-1" },
-                ].map(({ title, stocks, icon, flex }) => {
+                  { title: "China",  stocks: chinaStocks,  flex: "flex-[3]" },
+                  { title: "Taiwan", stocks: taiwanStocks, flex: "flex-1"   },
+                ].map(({ title, stocks, flex }) => {
                   const filtered = stocks.filter(s => s.dr.toLowerCase().includes(globalFilter.toLowerCase()));
                   return (
                     <div key={title} className={`bg-[#111827] border border-slate-800/80 rounded-xl flex flex-col overflow-hidden shadow-lg min-h-0 ${flex}`}>
                       <div className="px-3 py-2.5 flex justify-between items-center border-b border-slate-800/60 bg-[#141b2a]">
                         <span className="font-bold text-[13px] text-white">{title}</span>
-                        <span className="text-cyan-500 text-[11px] font-bold">{icon}</span>
+                        <img src={drIcon} alt="dr" className="w-4 h-4" />
                       </div>
                       <div className="overflow-y-auto flex-1 bg-[#0B1221] p-2" style={scrollbarHideStyle}>
                         {filtered.map((stock, idx) => (
-                          <div key={idx} onClick={() => handleStockClick(stock.dr)}
-                            className={`flex justify-between items-center text-[10px] p-1.5 rounded cursor-pointer transition-colors group ${selectedSymbol === stock.dr ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/60'}`}>
+                          <div
+                            key={stock.dr}
+                            onClick={() => handleStockClick(stock.dr)}
+                            className={`flex justify-between items-center text-[10px] p-1.5 rounded cursor-pointer transition-colors group ${selectedSymbol === stock.dr ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/60'}`}
+                          >
                             <div className="flex items-center gap-2">
                               <div className={`w-1.5 h-1.5 rounded-full ${dotColors[idx % dotColors.length]}`}></div>
                               <span className="text-slate-200 group-hover:text-white font-bold tracking-wide">{stock.dr}</span>
@@ -1003,120 +916,38 @@ export default function DRInsight() {
       {/* END DESKTOP LAYOUT */}
 
       {/* FULLSCREEN MODAL */}
-{fullscreenChart && (
-  <div className="fixed inset-0 bg-[#0d1117] z-[80] flex flex-col">
-    
-    {/* Header — เหมือน FlowIntraday */}
-    <div className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0">
-      
-      {/* Back Button */}
-      <button
-        onClick={() => setFullscreenChart(null)}
-        className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all flex-shrink-0"
-      >
-        ← Back
-      </button>
-
-      {/* Refresh Button */}
-      <button
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-400 text-white transition-all flex-shrink-0"
-      >
-        🔄
-      </button>
-
-      {/* Title — Center */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <h2 className="text-lg font-bold text-white tracking-widest">
-          {chartSelections[fullscreenChart]}
-        </h2>
-        <span className="text-[11px] text-slate-500">
-          {allStockOptions.find(s => s.dr === chartSelections[fullscreenChart])?.name || ""}
-        </span>
-      </div>
-
-      {/* Spacer for balance */}
-      <div style={{ width: '140px' }} />
-    </div>
-
-    {/* Chart Container */}
-    <div className="flex-1 min-h-0 bg-[#0d1117] relative overflow-hidden cursor-crosshair"
-      onMouseMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setHoverPos(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
-      }}
-      onTouchMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setHoverPos(Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left) / rect.width) * 100)));
-      }}
-      onMouseLeave={() => setHoverPos(null)}
-      onTouchEnd={() => setHoverPos(null)}
-    >
-      {/* Grid Background */}
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)',
-        backgroundSize: '30px 30px'
-      }} />
-
-      {(() => {
-        const index = ['chart1', 'chart2', 'chart3'].indexOf(fullscreenChart);
-        const lineColor = themeColors[index];
-        const data = chartData[fullscreenChart];
-        const { min, max } = chartMinMax[fullscreenChart];
-        const range = max - min || 1;
-        const pathD = buildSvgPath(data, min, max);
-
-        return (
-          <>
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id={`fullscreen-grad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
-                  <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              <path d={pathD + " V 100 H 0 Z"} fill={`url(#fullscreen-grad-${index})`} stroke="none" />
-            </svg>
-
-            {/* Y-axis Labels */}
-            <div className="absolute right-2 top-3 bottom-3 flex flex-col justify-between text-[10px] text-slate-600 text-right pointer-events-none z-10">
-              {[max, min + range * 0.75, min + range * 0.5, min + range * 0.25, min].map((v, i) => (
-                <span key={i} className="font-semibold">{v.toFixed(2)}</span>
-              ))}
+      {fullscreenChart && (
+        <div className="fixed inset-0 bg-[#0d1117] z-[80] flex flex-col">
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0">
+            <button
+              onClick={() => setFullscreenChart(null)}
+              className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all flex-shrink-0"
+            >
+              ← Back
+            </button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-400 text-white transition-all flex-shrink-0">
+              🔄
+            </button>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <h2 className="text-lg font-bold text-white tracking-widest">
+                {chartSelections[fullscreenChart]}
+              </h2>
+              <span className="text-[11px] text-slate-500">
+                {allStockOptions.find(s => s.dr === chartSelections[fullscreenChart])?.name || ""}
+              </span>
             </div>
-
-            {/* Hover Indicators */}
-            {hoverPos !== null && (() => {
-              const dataIndex = Math.min(data.length - 1, Math.max(0, Math.round((hoverPos / 100) * (data.length - 1))));
-              const hoverValue = data[dataIndex];
-              const currentYPercent = 100 - ((hoverValue - min) / range) * 100;
-              const actualXPercent = (dataIndex / (data.length - 1)) * 100;
-              return (
-                <>
-                  <div className="absolute top-0 bottom-0 z-20 pointer-events-none border-l border-dashed border-slate-400 opacity-80" 
-                    style={{ left: `${actualXPercent}%` }} />
-                  <div className="absolute left-0 right-0 z-20 pointer-events-none border-t border-dashed border-slate-400 opacity-80" 
-                    style={{ top: `${currentYPercent}%` }} />
-                  <div className="absolute z-30 pointer-events-none w-3 h-3 rounded-full -translate-x-1/2 -translate-y-1/2"
-                    style={{ 
-                      left: `${actualXPercent}%`, 
-                      top: `${currentYPercent}%`, 
-                      backgroundColor: lineColor, 
-                      boxShadow: `0 0 15px ${lineColor}` 
-                    }} />
-                  <div className="absolute right-0 z-30 -translate-y-1/2 px-2 py-1 bg-slate-800 text-white text-[11px] rounded shadow-md border border-slate-600 pointer-events-none font-semibold mr-2"
-                    style={{ top: `${currentYPercent}%` }}>
-                    {hoverValue?.toFixed(2)}
-                  </div>
-                </>
-              );
+            <div style={{ width: '140px' }} />
+          </div>
+          <div className="flex-1 min-h-0 bg-[#0d1117] relative overflow-hidden">
+            {(() => {
+              const index = ['chart1', 'chart2', 'chart3'].indexOf(fullscreenChart);
+              const lineColor = themeColors[index] ?? themeColors[0];
+              const data = chartData[fullscreenChart];
+              return <TVChart data={data} themeColor={lineColor} />;
             })()}
-          </>
-        );
-      })()}
-    </div>
-  </div>
-)}
+          </div>
+        </div>
+      )}
 
     </div>
   );
