@@ -11,7 +11,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import ToolHint from "@/components/ToolHint.jsx";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { HistogramLWC } from '../../components/LWChart';
 
 // Style ซ่อน Scrollbar และเปิดใช้ Smooth Scroll บน Mobile
 const scrollbarHideStyle = {
@@ -889,36 +889,17 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "", toolHint }) => {
             </div>
 
             <div className="h-[200px] bg-[#111827] p-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.charts}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="price" 
-                    stroke="#94a3b8" 
-                    tick={{ fill: '#94a3b8', fontSize: 8 }}
-                    height={20}
-                  />
-                  <YAxis 
-                    stroke="#94a3b8" 
-                    tick={{ fill: '#94a3b8', fontSize: 8 }}
-                    width={30}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '4px',
-                      fontSize: '10px'
-                    }}
-                  />
-                  <Bar dataKey="buy" fill="#10b981" />
-                  <Bar dataKey="sell" fill="#ef4444" />
-                </BarChart>
-              </ResponsiveContainer>
+              <HistogramLWC
+                data={(data.charts || []).map((d, i) => ({
+                  time: `2024-01-${String(i + 1).padStart(2, '0')}`,
+                  buy: d.buy,
+                  sell: d.sell
+                }))}
+                height={200}
+              />
             </div>
           </div>
         )}
-      </div>
 
       {/* ✨ Chart Modal - Fullscreen Design */}
       {isChartModalOpen && (
@@ -967,40 +948,24 @@ const AnalysisPanel = ({ defaultSymbol = "", defaultDate = "", toolHint }) => {
 
           <div className="flex-1 min-h-0 bg-[#0d1117] flex items-center justify-center p-6">
             <div className="w-full h-full bg-[#111827] border border-slate-700 rounded-xl p-6">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.charts}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="price" 
-                    stroke="#94a3b8" 
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    stroke="#94a3b8" 
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ fontSize: '12px' }}
-                  />
-                  <Bar dataKey="buy" fill="#10b981" name="Buy Volume" />
-                  <Bar dataKey="sell" fill="#ef4444" name="Sell Volume" />
-                </BarChart>
-              </ResponsiveContainer>
+              <HistogramLWC
+                data={(data.charts || []).map((d, i) => ({
+                  time: `2024-01-${String(i + 1).padStart(2, '0')}`,
+                  buy: d.buy,
+                  sell: d.sell
+                }))}
+                height={400}
+              />
             </div>
           </div>
         </div>
       )}
+
+      </div>
     </div>
   );
 };
+
 
 /* ==========================================================
       CASE 1 : PREVIEW VERSION (Not Member)
