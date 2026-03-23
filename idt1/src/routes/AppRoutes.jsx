@@ -27,6 +27,9 @@ export default function AppRoutes() {
       {/* ✅ chart-flip-id — ใช้ "chart-flip-id" ให้ตรงกับ Sidebar */}
       <Route path="/chart-flip-id" element={<Dashboard initialPage="chart-flip-id" />} />
       <Route path="/chartflipid"   element={<Navigate to="/chart-flip-id" replace />} />
+      
+      <Route path="/hisrealflow" element={<Dashboard initialPage="hisrealflow" />} />
+      <Route path="/dw" element={<Dashboard initialPage="dw" />} />
 
       {/* 2. MIT */}
       <Route path="/mit" element={<Dashboard initialPage="mit" />} />
