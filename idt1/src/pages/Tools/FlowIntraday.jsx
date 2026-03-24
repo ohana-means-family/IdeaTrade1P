@@ -493,10 +493,13 @@ export default function FlowIntraday() {
   const [activeWatchlist, setActiveWatchlist] = useState(null);
   const [loadingMap,      setLoadingMap]      = useState(Array(12).fill(false));
 
-  const [hlineMap,      setHlineMap]      = useState({});
-  const [drawingIndex,  setDrawingIndex]  = useState(null);
-  const [fsHline,       setFsHline]       = useState(null);
-  const [fsDrawing,     setFsDrawing]     = useState(false);
+  const [hlineMap,        setHlineMap]        = useState({});
+  const [drawingIndex,    setDrawingIndex]    = useState(null);
+  const [fsHline,         setFsHline]         = useState(null);
+  const [fsDrawing,       setFsDrawing]       = useState(false);
+
+  // State for Rotate Device Warning Modal
+  const [showRotateModal, setShowRotateModal] = useState(false);
 
   const chartInstanceRefs = useRef(new Map());
 
@@ -549,7 +552,6 @@ export default function FlowIntraday() {
   }, [isMobile, layout, windowWidth]);
   const gridRows = Math.ceil(boxCount / gridCols);
   
-  // ให้หน้าจอมือถือมีความสูงต่อกล่องที่พอดีมากขึ้น ไม่แคบเกินไป
   const minRowHeight = isMobile ? '280px' : '260px';
 
   const handleCrosshairMove = useCallback((time) => { setExternalTime(time ?? null); }, []);
@@ -616,6 +618,7 @@ export default function FlowIntraday() {
   }, [isMember, enteredTool, checkScroll]);
 
   useEffect(() => { checkScroll(); window.addEventListener("resize", checkScroll); return () => window.removeEventListener("resize", checkScroll); }, [checkScroll]);
+  
   useEffect(() => {
     const fn = e => {
       if (e.key === "Escape") {
@@ -628,6 +631,7 @@ export default function FlowIntraday() {
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, []);
+  
   useEffect(() => { if (!showWatchPanel) return; const fn = e => { if (!e.target.closest("[data-watchpanel]")) setShowWatchPanel(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, [showWatchPanel]);
   useEffect(() => { return () => { Object.values(loadingTimeoutsRef.current).forEach(clearTimeout); }; }, []);
 
@@ -662,7 +666,7 @@ export default function FlowIntraday() {
         <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full md:rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
         </button>
-        <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-4 md:gap-6 py-4 px-1" style={scrollbarHideStyle}>
+        <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-4 md:gap-6 py-4 px-1" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
           {features.map((item, i) => (
             <div key={i} className="w-[300px] md:w-[400px] flex-shrink-0 group/card bg-[#0f172a]/60 border border-slate-700/50 p-6 md:p-8 rounded-xl hover:border-cyan-500/30 transition duration-300">
               <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3 group-hover/card:text-cyan-400 transition-colors">{item.title}</h3>
@@ -739,7 +743,7 @@ export default function FlowIntraday() {
 {/* Top Controls - Responsive Wrap */}
         <div className="flex flex-row items-center justify-between gap-2 mb-3 flex-shrink-0">
           
-          {/* ฝั่งซ้าย: ToolHint + Layout + Legend */}
+          {/* Left: ToolHint + Layout + Legend */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
@@ -760,7 +764,7 @@ export default function FlowIntraday() {
               </div>
             </div>
 
-            {/* Legend - ปรับให้แสดงบนมือถือด้วย แต่ย่อขนาดลง */}
+            {/* Legend */}
             <div className="hidden sm:flex items-center gap-3 sm:gap-6 text-[11px] sm:text-[13px] font-medium text-blue-200/80">
               <span className="flex items-center gap-1.5 sm:gap-2">
                 Price
@@ -783,7 +787,7 @@ export default function FlowIntraday() {
           </div>
         
           
-          {/* ฝั่งขวา: Watchlist + ADD */}
+          {/* Right: Watchlist + ADD */}
           <div className="flex items-center gap-2">
             <div className="relative" data-watchpanel>
               <button onClick={() => setShowWatchPanel(v => !v)} className="flex items-center gap-1.5 bg-[#111827] border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg text-xs transition-all">
@@ -806,7 +810,7 @@ export default function FlowIntraday() {
                   </div>
                   {watchlists.length === 0
                     ? <div className="px-4 py-6 text-center text-slate-500 text-sm">No watchlists yet.<br/>Select symbols and press ♥ ADD.</div>
-                    : <ul className="max-h-72 overflow-y-auto" style={scrollbarHideStyle}>
+                    : <ul className="max-h-72 overflow-y-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
                       {watchlists.map(wl => (
                         <li key={wl.id} className="border-b border-slate-800 last:border-0">
                           <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#1e293b] cursor-pointer transition" onClick={() => setActiveWatchlist(activeWatchlist === wl.id ? null : wl.id)}>
@@ -857,8 +861,9 @@ export default function FlowIntraday() {
             </div>
           </div>
         )}
+
         {/* ── Chart Grid ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto" style={scrollbarHideStyle}>
+        <div className="flex-1 min-h-0 overflow-y-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
           <div className="grid gap-2 sm:gap-3 min-h-full pb-2" style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`, 
             gridTemplateRows: `repeat(${gridRows}, minmax(${minRowHeight}, 1fr))` 
@@ -884,7 +889,7 @@ export default function FlowIntraday() {
                       {/* Bell */}
                       <button
                         onClick={() => handleBellClick(index, sym)}
-                        title={isDrawing ? "คลิกที่กราฟเพื่อวาง HLine" : hline != null ? "คลิกเพื่อลบ HLine" : "คลิกเพื่อวาง HLine"}
+                        title={isDrawing ? "Click on chart to place HLine" : hline != null ? "Click to remove HLine" : "Click to place HLine"}
                         className={`relative flex items-center rounded p-1 sm:p-0.5 transition-all
                           ${!sym ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
                           ${isDrawing ? "animate-pulse" : ""}`}
@@ -901,7 +906,18 @@ export default function FlowIntraday() {
 
                       {/* Zoom */}
                       <button
-                        onClick={() => { if (sym) { setFullscreenIndex(index); setFullscreenMode(mode); setFsHline(hline); setFsDrawing(false); } }}
+                        onClick={() => { 
+                          if (sym) { 
+                            setFullscreenIndex(index); 
+                            setFullscreenMode(mode); 
+                            setFsHline(hline); 
+                            setFsDrawing(false); 
+                            // Show rotate modal on mobile
+                            if (isMobile) {
+                              setShowRotateModal(true);
+                            }
+                          } 
+                        }}
                         title="Fullscreen"
                         className={`flex items-center rounded p-1 sm:p-0.5 transition-all ${!sym ? "opacity-30 cursor-not-allowed" : "text-slate-400 hover:text-cyan-400 cursor-pointer"}`}>
                         <ZoomInIcon sx={{ fontSize: isMobile ? 18 : 16 }}/>
@@ -918,7 +934,7 @@ export default function FlowIntraday() {
                   {isDrawing && (
                     <div className="flex items-center justify-center gap-1.5 px-3 py-1 bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-400 text-[10px] sm:text-xs font-semibold flex-shrink-0">
                       <span>✛</span>
-                      <span>คลิกบนกราฟเพื่อวาง HLine</span>
+                      <span>Click on chart to place HLine</span>
                     </div>
                   )}
 
@@ -943,7 +959,7 @@ export default function FlowIntraday() {
         </div>
       </div>
 
-      {/* Fullscreen Modal - Responsive Wrap สำหรับเมนูด้านบน */}
+      {/* Fullscreen Modal - Responsive Wrap */}
       {fullscreenIndex !== null && symbols[fullscreenIndex] && (
         <div className="fixed inset-0 bg-[#0d1117] z-[999] flex flex-col">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0 shadow-lg">
@@ -956,13 +972,13 @@ export default function FlowIntraday() {
             
             <h2 className="hidden md:block text-lg font-bold text-white tracking-widest uppercase flex-1 text-center truncate">{symbols[fullscreenIndex]}</h2>
             
-            <div className="flex-1 md:hidden"></div> {/* ดันของบนมือถือให้ไปชิดขวาถ้ามีพื้นที่ */}
+            <div className="flex-1 md:hidden"></div> {/* Push content to right on mobile */}
 
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {/* Fullscreen bell */}
               <button
                 onClick={handleFsBell}
-                title={fsDrawing ? "คลิกที่กราฟ" : fsHline != null ? "ลบ HLine" : "วาง HLine"}
+                title={fsDrawing ? "Click chart" : fsHline != null ? "Remove HLine" : "Place HLine"}
                 className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-semibold transition-all ${
                   fsDrawing
                     ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400 animate-pulse"
@@ -975,7 +991,7 @@ export default function FlowIntraday() {
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                <span className="hidden sm:inline">{fsDrawing ? "คลิกกราฟ..." : fsHline != null ? `HLine: ${Math.round(fsHline).toLocaleString()}` : "HLine"}</span>
+                <span className="hidden sm:inline">{fsDrawing ? "Click chart..." : fsHline != null ? `HLine: ${Math.round(fsHline).toLocaleString()}` : "HLine"}</span>
               </button>
 
               <ChartModeDropdown value={fullscreenMode} onChange={v => setFullscreenMode(v)} />
@@ -993,7 +1009,7 @@ export default function FlowIntraday() {
           {/* Fullscreen drawing hint */}
           {fsDrawing && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-400 text-[10px] sm:text-xs font-semibold flex-shrink-0">
-              <span>✛</span><span>คลิกบนกราฟเพื่อวาง HLine — {isMobile ? "กดปุ่มอีกครั้ง" : "กด Esc"} เพื่อยกเลิก</span>
+              <span>✛</span><span>Click on chart to place HLine — {isMobile ? "Press button again" : "Press Esc"} to cancel</span>
             </div>
           )}
 
@@ -1010,6 +1026,43 @@ export default function FlowIntraday() {
               drawingMode={fsDrawing}
               onChartClick={fsDrawing ? handleFsChartClick : null}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ── Rotate Device Warning Modal (Animated Rotation) ── */}
+      {showRotateModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+          <div className="bg-[#1c1c1e] border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden m-4 animate-fade-in">
+            <div className="flex justify-end px-4 pt-4">
+              <button onClick={() => setShowRotateModal(false)} className="w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">✕</button>
+            </div>
+            <div className="flex flex-col items-center px-6 pb-6 pt-1">
+              
+              {/* Animated Phone Icon */}
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-5 overflow-hidden">
+                <style>{`
+                  @keyframes tiltPhone {
+                    0%, 20% { transform: rotate(0deg); }
+                    40%, 60% { transform: rotate(-90deg); }
+                    80%, 100% { transform: rotate(0deg); }
+                  }
+                  .animate-tilt { animation: tiltPhone 2.5s ease-in-out infinite; }
+                `}</style>
+                <svg className="w-8 h-8 text-amber-400 animate-tilt" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-2">Rotate Device</h3>
+              <p className="text-slate-400 text-sm text-center mb-6 leading-relaxed">
+                For the best fullscreen chart experience, <br/>please rotate your phone to <span className="text-white font-semibold">Landscape mode</span>.
+              </p>
+              <button onClick={() => setShowRotateModal(false)} className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-sm transition-all flex items-center justify-center">
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       )}
