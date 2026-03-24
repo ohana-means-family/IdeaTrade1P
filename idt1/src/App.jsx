@@ -42,22 +42,24 @@ function MainLayout() {
   // เช็คว่า path ปัจจุบันอยู่ในรายการที่ต้องซ่อน Sidebar หรือไม่
   const shouldHideSidebar = hideSidebarPaths.some(path => location.pathname.includes(path));
 
-  return (
-    <div className="flex h-screen bg-[#0c0f14] text-white overflow-hidden">
+return (
+    // สีพื้นหลังหลักของทั้งเว็บเป็นสีดำ (#0c0f14) เพื่อให้กลืนกับกล่องด้านขวา
+    <div className="flex h-[100dvh] w-full text-white overflow-hidden bg-[#0c0f14]">
       
-      {/* Sidebar (Render เฉพาะหน้าที่ไม่อยู่ใน list ข้างบน) */}
+      {/* Sidebar - สาดสีเทาเข้ม (#151921) แล้วดันเนื้อหาหลบขอบจอด้านซ้าย */}
       {!shouldHideSidebar && (
-        <Sidebar 
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          activePage={activePage}
-          setActivePage={setActivePage}
-        />
+        <div className="h-full bg-[#151921] pl-[env(safe-area-inset-left)] pb-[env(safe-area-inset-bottom)]">
+          <Sidebar 
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            activePage={activePage}
+            setActivePage={setActivePage}
+          />
+        </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 h-screen overflow-y-auto relative transition-all duration-300">
-
+      {/* Main Content - ดันเนื้อหาหลบขอบจอด้านขวา */}
+      <main className="flex-1 h-full overflow-y-auto relative transition-all duration-300 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
         <div className="w-full h-full">
            <AppRoutes />
         </div>
