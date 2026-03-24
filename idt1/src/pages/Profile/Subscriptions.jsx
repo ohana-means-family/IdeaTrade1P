@@ -1,6 +1,6 @@
 // src/pages/ManageSubscription.jsx
 import React, { useState, useEffect } from 'react';
-import './Subscriptions.css';
+import './Subscriptions.css'; // สมมติว่าไฟล์นี้คุม style พื้นฐาน
 import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db, auth } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth"; 
@@ -107,6 +107,7 @@ const ManageSubscription = () => {
     return () => unsubscribe();
   }, []);
 
+  // กริกคอลัมน์ใช้สำหรับ Desktop Table เท่านั้น
   const gridCols = "grid-cols-[2.5fr_1.5fr_2.5fr_1.5fr_1.5fr_2fr]";
 
   const handleActionClick = (item) => {
@@ -173,7 +174,6 @@ const ManageSubscription = () => {
       btnDesktop = <button onClick={() => handleActionClick(item)} className="px-5 py-1.5 rounded-md border border-yellow-500/50 text-yellow-500 text-[13px] hover:text-white hover:bg-yellow-900/40 hover:border-yellow-500 transition-all">{actionText}</button>;
       btnMobile = <button onClick={() => handleActionClick(item)} className="w-full py-3 rounded-lg font-bold bg-transparent border border-yellow-500/50 text-yellow-500 hover:text-white hover:bg-yellow-900/40 transition-all">{actionText}</button>;
 
-      //ปุ่มของตัวที่ ACTIVE
     } else {
       statusColor = 'text-green-500';
       statusIcon = <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />;
@@ -189,8 +189,9 @@ const ManageSubscription = () => {
     return (
       <div key={item.key} className={`${bgClass} border ${cardBorder} rounded-xl mb-4 p-5 md:py-4 md:px-6 hover:border-gray-600 transition-all backdrop-blur-sm`}>
         
-        {/* === Mobile Card Layout === */}
-        <div className="md:hidden flex flex-col gap-4">
+        {/* === Mobile/iPad Portrait Card Layout === */}
+        {/* ✅ FIXED: เปลี่ยน md:hidden เป็น lg:hidden เพื่อให้ iPad แนวตั้งใช้ Card Layout */}
+        <div className="lg:hidden flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-[#4db8ff] text-xl tracking-tight">{item.name}</h3>
             <span className="text-white text-[13px] font-semibold capitalize">{item.cycle}</span>
@@ -230,12 +231,13 @@ const ManageSubscription = () => {
           </div>
         </div>
 
-        {/* === Desktop Table Layout === */}
-        <div className={`hidden md:grid ${gridCols} gap-4 items-center`}>
-           <div className="font-bold text-[#4db8ff] text-[15px] text-left truncate">{item.name}</div>
-           
-           <div className="text-white text-[14px] text-left capitalize">{item.cycle}</div>
-           
+        {/* === Desktop/iPad Landscape Table Layout === */}
+        {/* ✅ FIXED: เปลี่ยน md:grid เป็น lg:grid เพื่อซ่อนตารางใน iPad แนวตั้ง */}
+        <div className={`hidden lg:grid ${gridCols} gap-4 items-center`}>
+            <div className="font-bold text-[#4db8ff] text-[15px] text-left truncate">{item.name}</div>
+            
+            <div className="text-white text-[14px] text-left capitalize">{item.cycle}</div>
+            
           <div className="flex items-start gap-3 text-left">
              <div className="mt-0.5">{statusIcon}</div>
              <div className="flex flex-col">
@@ -247,21 +249,21 @@ const ManageSubscription = () => {
              </div>
            </div>
 
-           <div className="font-bold text-white text-[15px] text-left">
-             {item.priceValue.toLocaleString()} <span className="font-normal text-gray-400">฿</span>
-           </div>
-           
-           <div className="text-center">
-             {btnDesktop}
-           </div>
+            <div className="font-bold text-white text-[15px] text-left">
+              {item.priceValue.toLocaleString()} <span className="font-normal text-gray-400">฿</span>
+            </div>
+            
+            <div className="text-center">
+              {btnDesktop}
+            </div>
 
-           <div className="flex flex-col items-end gap-1">
-             <div className="text-gray-400 text-[13px] text-right truncate">{item.paymentMethod || 'Bank Transfer'}</div>
-             <div className="flex gap-1 opacity-20 hover:opacity-100 transition-opacity">
-               <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
-               <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
-             </div>
-           </div>
+            <div className="flex flex-col items-end gap-1">
+              <div className="text-gray-400 text-[13px] text-right truncate">{item.paymentMethod || 'Bank Transfer'}</div>
+              <div className="flex gap-1 opacity-20 hover:opacity-100 transition-opacity">
+                <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
+                <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
+              </div>
+            </div>
         </div>
 
       </div>
@@ -282,7 +284,7 @@ const ManageSubscription = () => {
   const filteredEnded = filterBySearch(endedSubs);
 
   return (
-    <div className="w-full min-h-screen bg-transparent p-4 md:p-10 animate-fade-in">
+    <div className="w-full min-h-screen bg-transparent p-4 lg:p-10 animate-fade-in">
       <div className="max-w-[1000px] mx-auto w-full text-white">
         
         {/* Header */}
@@ -325,7 +327,8 @@ const ManageSubscription = () => {
         </div>
 
         {/* Desktop Header Row */}
-        <div className="hidden md:block mb-4 px-6 border-b border-gray-800/80 pb-3">
+        {/* ✅ FIXED: เปลี่ยน md:block เป็น lg:block เพื่อซ่อน Header ตารางใน iPad แนวตั้ง */}
+        <div className="hidden lg:block mb-4 px-6 border-b border-gray-800/80 pb-3">
           <div className={`grid ${gridCols} gap-4 items-center`}>
             <div className="text-[12px] font-bold text-gray-400 text-left">Tool name</div>
             <div className="text-[12px] font-bold text-gray-400 text-left">Cycle</div>
