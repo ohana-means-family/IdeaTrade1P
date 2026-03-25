@@ -1170,6 +1170,11 @@ export default function DRInsight() {
         chartSelections={chartSelections}
         chartData={chartData}
         themeColors={themeColors}
+        onRefresh={() => {
+          if (!selectedSymbol) return;
+          setIsLoadingCharts(true);
+          setTimeout(() => setIsLoadingCharts(false), 700);
+        }}
       />
 
     </div>
@@ -1179,15 +1184,22 @@ export default function DRInsight() {
 /* ===============================
     FULLSCREEN MODAL COMPONENT
 ================================ */
-function FullscreenModal({ fullscreenChart, onClose, chartSelections, chartData, themeColors }) {
+function FullscreenModal({ fullscreenChart, onClose, chartSelections, chartData, themeColors, onRefresh }) {
   if (!fullscreenChart) return null;
 
-  const [isSyncing, setIsSyncing] = useState(false); 
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const index = ['chart1', 'chart2', 'chart3'].indexOf(fullscreenChart);
   const lineColor = themeColors[index] ?? themeColors[0];
   const data = chartData[fullscreenChart];
   const symbol = chartSelections[fullscreenChart];
+
+  const handleRefresh = () => {
+    if (!symbol) return;
+    setIsSyncing(true);
+    onRefresh?.();
+    setTimeout(() => setIsSyncing(false), 700);
+  };
 
   return (
     <div className="fixed inset-0 bg-[#0d1117] z-[80] flex flex-col">
@@ -1199,25 +1211,13 @@ function FullscreenModal({ fullscreenChart, onClose, chartSelections, chartData,
           ← Back
         </button>
         <button
-          onClick={() => { 
-            if (!selectedSymbol) return;
-            setIsSyncing(true);
-            setGlobalHoverIndex(null);
-            setTimeout(() => {
-              setDataVersion((prev) => prev + 1);
-              setIsSyncing(false);
-            }, 700);
-          }}
+          onClick={handleRefresh}
           className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 transition-all flex-shrink-0 group"
           title="รีเฟรชข้อมูล"
         >
-          <RefreshIcon 
-            sx={{ 
-              fontSize: 16, 
-              color: isSyncing ? "#3b82f6" : "#ffffff",
-              transition: "color 0.3s ease"
-            }} 
-            className={`${isSyncing ? "animate-spin" : "group-hover:text-cyan-400"}`} 
+<RefreshIcon
+            sx={{ fontSize: 16, color: isSyncing ? "#3b82f6" : "#ffffff" }}
+            className={isSyncing ? "animate-spin" : "group-hover:text-cyan-400"}
           />
         </button>
         <div className="flex-1 flex flex-col items-center justify-center">

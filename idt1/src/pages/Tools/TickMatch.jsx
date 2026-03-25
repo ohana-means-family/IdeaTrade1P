@@ -778,12 +778,10 @@ export default function TickMatch() {
             ← Back
           </button>
           <button
-            onClick={() => { 
-              if (!selectedSymbol) return;
+            onClick={() => {
+              if (!activeSymbol) return;
               setIsSyncing(true);
-              setGlobalHoverIndex(null);
               setTimeout(() => {
-                setDataVersion((prev) => prev + 1);
                 setIsSyncing(false);
               }, 700);
             }}
