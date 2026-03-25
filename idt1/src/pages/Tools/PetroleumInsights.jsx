@@ -12,13 +12,9 @@ const scrollbarHideStyle = {
   scrollbarWidth: "none",
 };
 
-// ====================================================
-// ScaledDashboardPreview
-// ====================================================
-function ScaledDashboardPreview({ dashboardWidth = 1280 }) {
+function ScaledDashboardPreview({ dashboardWidth = 1280, dashboardHeight = 780 }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
-  const [scaledHeight, setScaledHeight] = useState(0);
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -30,35 +26,25 @@ function ScaledDashboardPreview({ dashboardWidth = 1280 }) {
       const s = w / dashboardWidth;
       inner.style.transform = `scale(${s})`;
       inner.style.transformOrigin = "top left";
-
-      // วัดความสูงจริงหลัง render
-      const actualHeight = inner.getBoundingClientRect().height / s;
-      inner.style.width = `${dashboardWidth}px`;
-      setScaledHeight(actualHeight * s);
+      outer.style.height = `${dashboardHeight * s}px`;
     };
 
-    // ต้อง delay นิดนึงให้ inner render ก่อน
-    const timer = setTimeout(applyScale, 50);
+    applyScale();
     const ro = new ResizeObserver(applyScale);
     ro.observe(outer);
-    return () => { clearTimeout(timer); ro.disconnect(); };
-  }, [dashboardWidth]);
+    return () => ro.disconnect();
+  }, [dashboardWidth, dashboardHeight]);
 
   return (
-    <div
-      ref={outerRef}
-      className="w-full bg-[#0e1118]"
-      style={{ overflow: "hidden", position: "relative", height: scaledHeight || "auto" }}
-    >
-      <div
-        ref={innerRef}
-        style={{
-          width: dashboardWidth,
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
+    <div ref={outerRef} className="w-full bg-[#0e1118]" style={{ overflow: "hidden", position: "relative" }}>
+      <div ref={innerRef} style={{ width: dashboardWidth, height: dashboardHeight, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
+        <div className="bg-[#0f172a] px-4 py-3 flex items-center border-b border-slate-700/50">
+          <div className="flex gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500/80" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+            <div className="w-3 h-3 rounded-full bg-green-500/80" />
+          </div>
+        </div>
         <PetroleumDashboard />
       </div>
     </div>
@@ -804,9 +790,8 @@ export default function PetroleumInsights() {
           <div className="relative group w-full max-w-6xl mb-16">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
             <div className="relative bg-[#0e1118] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-              {windowChrome}
-              <ScaledDashboardPreview dashboardWidth={1280} />
-            </div>
+  <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={780} />
+</div>
           </div>
           {featuresSection}
           
@@ -852,11 +837,10 @@ export default function PetroleumInsights() {
             </h1>
             <p className="text-slate-400 text-lg md:text-xl font-light">Stop relying on crude oil prices alone</p>
           </div>
-          <div className="relative group w-full max-w-5xl mb-16">
+          <div className="relative group w-full max-w-6xl mb-16">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
             <div className="relative bg-[#0e1118] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-              {windowChrome}
-              <ScaledDashboardPreview dashboardWidth={1280} />
+              <ScaledDashboardPreview dashboardWidth={1280} dashboardHeight={780} />
             </div>
           </div>
           {featuresSection}
