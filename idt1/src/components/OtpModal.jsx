@@ -4,7 +4,6 @@ import { signInWithCustomToken } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 
 // ดึง URL ของ Backend จาก Environment Variable
-// ถ้าไม่มี (เช่น รันในเครื่อง) จะใช้ localhost:5000 แทนอัตโนมัติ
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function OtpModal({ open, onClose, onSuccess, email }) { 
@@ -41,7 +40,7 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
   const verifyOtp = async (code) => {
     setStatus("loading");
     try {
-      // 🟢 แก้ไข: ใช้ Template Literal เชื่อม API_URL เข้ากับ Path
+      // 🟢 แก้ไข: ใช้ Path /api/verify-otp ให้ตรงกับ Backend
       const response = await fetch(`${API_URL}/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,8 +94,8 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     setResent(true);
     hiddenInputRef.current?.focus();
     try {
-      // 🟢 แก้ไข: ใส่ API_URL นำหน้า Path เช่นกัน
-      await fetch(`${API_URL}/ideatrade-9548f/us-central1/requestOTP`, {
+      // 🟢 แก้ไข: เปลี่ยนจาก Path Firebase เดิม เป็น /api/request-otp ของ Render
+      await fetch(`${API_URL}/api/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
