@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import mitIcon from "@/assets/icons/amit.svg"; 
-import ToolsCard from "@/components/toolscard.jsx";
+import ToolsCard from "@/components/ToolsCard.jsx";
 
 // ✅ 1. Import Context เข้ามาใช้เป็นศูนย์กลางข้อมูลสิทธิ์
 import { useSubscription } from "@/context/SubscriptionContext";
