@@ -920,7 +920,7 @@ export default function FlowIntraday() {
                         }}
                         title="Fullscreen"
                         className={`flex items-center rounded p-1 sm:p-0.5 transition-all ${!sym ? "opacity-30 cursor-not-allowed" : "text-slate-400 hover:text-cyan-400 cursor-pointer"}`}>
-                        <ZoomInIcon sx={{ fontSize: isMobile ? 18 : 16 }}/>
+                        <span className="text-lg" style={{ lineHeight: '1' }}>⛶</span>
                       </button>
 
                       {/* Refresh */}

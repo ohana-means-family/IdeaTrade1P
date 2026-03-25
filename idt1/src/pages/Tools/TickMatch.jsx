@@ -1019,7 +1019,7 @@ export default function TickMatch() {
                     <span className="text-[10px] font-semibold">Sell Volume</span>
                   </div>
                   <button onClick={() => setIsChartModalOpen(true)} className="p-1.5 hover:bg-slate-700 rounded transition" title="ซูม Chart">
-                    <SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+                    <span className="text-lg" style={{ lineHeight: '1' }}>⛶</span>
                   </button>
                 </div>
                 <div className="h-[200px]">
