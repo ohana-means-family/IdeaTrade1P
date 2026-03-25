@@ -10,22 +10,23 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import Rocket from "@/assets/icons/rocket-lunch 1.svg";
 import Crown from "@/assets/icons/crown 1.svg";
 import OtpModal from "@/components/OtpModal";
-import axios from "axios"; // 🔴 อย่าลืมติดตั้ง axios ถ้ายังไม่มี (npm install axios)
+import axios from "axios"; 
+
+// 🟢 แก้ไขจุดที่ 1: ดึง URL จาก Environment Variable มาเตรียมไว้
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Welcome() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  // เพิ่ม state สำหรับ password
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const [popupType, setPopupType] = useState("");
   const [openForgot, setOpenForgot] = useState(false);
-  const [openOtp, setOpenOtp] = useState(false); // ถ้าไม่ได้ใช้ OTP แล้ว อาจจะเอาออกได้ในอนาคต
+  const [openOtp, setOpenOtp] = useState(false);
 
-  // ดึงอีเมลที่เคยจำไว้มาแสดง
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) {
@@ -34,17 +35,11 @@ export default function Welcome() {
     }
   }, []);
 
-  /* ======================
-      EMAIL VALIDATION
-  ====================== */
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  /* ======================
-      LOGIN ACTIONS
-  ====================== */
   const setFreeAccess = (userEmail) => {
     localStorage.setItem(
       "userProfile",
@@ -62,8 +57,8 @@ export default function Welcome() {
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
-        email: email || "guest@example.com", // ควรใส่อีเมลเผื่อไว้เหมือน setFreeAccess
-        role: "free", // 🟢 เปลี่ยนจาก "member" เป็น "free" ครับ
+        email: email || "guest@example.com",
+        role: "free",
         unlockedItems: [],
         lastLogin: new Date().toISOString()
       })
@@ -84,15 +79,13 @@ export default function Welcome() {
     }
   };
 
-const handleSignIn = async () => {
-    // ❌ ยังไม่กรอกอีเมล
+  const handleSignIn = async () => {
     if (!email) {
       setPopupType("emailRequired");
       setOpenForgot(true);
       return;
     }
 
-    // ❌ อีเมลผิดรูปแบบ
     if (!isValidEmail(email)) {
       setPopupType("emailInvalid");
       setOpenForgot(true);
@@ -101,36 +94,27 @@ const handleSignIn = async () => {
 
     setIsLoading(true);
     try {
-      // 🟢 1. สแกนหาอีเมลในฐานข้อมูล (Firestore) 
       const formattedEmail = email.trim().toLowerCase();
       const usersRef = collection(db, "users"); 
       const q = query(usersRef, where("email", "==", formattedEmail));
       
-      // ⚠️ ถ้าโค้ดพังตรงนี้ แสดงว่า Firestore ไม่เปิดสิทธิ์ให้คนนอกอ่านข้อมูล
       const querySnapshot = await getDocs(q);
 
-      // ถ้าผลลัพธ์ว่างเปล่า (หาไม่เจอ)
       if (querySnapshot.empty) {
         setPopupType("emailNotFound"); 
         setOpenForgot(true);
         setIsLoading(false);
-        return; // หยุดการทำงาน ไม่ส่ง OTP
+        return;
       }
 
-      // ✅ 2. ถ้าเจออีเมลในระบบ ส่ง OTP
-      // 🔴 นำ URL เต็มกลับมาใส่ (ใช้บรรทัดใดบรรทัดหนึ่งตามระบบของคุณครับ)
-      
-      // แบบที่ 1: สำหรับรัน Firebase Emulator ในเครื่อง
-      const API_URL = "/ideatrade-9548f/us-central1/requestOTP";
-      
-      // แบบที่ 2: สำหรับขึ้นระบบจริง (Production)
-      // const API_URL = "https://us-central1-ideatrade-9548f.cloudfunctions.net/requestOTP";
-
-      const response = await fetch(API_URL, {
+      // 🟢 แก้ไขจุดที่ 2: ใช้ BASE_API_URL ต่อกับ Path ของ Function
+      // วิธีนี้จะทำให้ยิงไปหา Render (https://ideatrade1p.onrender.com) ได้ถูกต้อง
+      const response = await fetch(`${BASE_API_URL}/api/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formattedEmail })
       });
+
       const data = await response.json();
 
       if (response.ok && data.success) {
@@ -145,223 +129,66 @@ const handleSignIn = async () => {
       }
     } catch (error) {
       console.error("Error requesting OTP:", error);
-      // 🔴 แก้ให้โชว์ Error ของจริงออกมา เพื่อให้เรารู้ว่าติดที่ระบบไหน
       alert("⚠️ เกิดข้อผิดพลาด: " + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- ส่วน JSX ด้านล่างคงเดิมทั้งหมดตามที่คุณเขียนมา ---
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-700 px-4">
-      {/* Card */}
-      <div className="
-        w-full
-        max-w-sm
-        sm:max-w-md
-        md:max-w-2xl
-        lg:max-w-6xl
-        mx-auto
-        rounded-2xl lg:rounded-[3rem]
-        overflow-hidden
-        bg-gradient-to-br from-slate-900 to-slate-800
-        shadow-2xl
-      ">
-
-        {/* Top content */}
-        <div className="
-          grid
-          grid-cols-1
-          lg:grid-cols-2
-          px-6 sm:px-8 md:px-12 lg:px-16
-          py-8 sm:py-10 md:py-12 lg:py-14
-          gap-8 md:gap-10 lg:gap-16
-        ">
-
-          {/* LEFT */}
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-6xl mx-auto rounded-2xl lg:rounded-[3rem] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 px-6 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-10 md:py-12 lg:py-14 gap-8 md:gap-10 lg:gap-16">
           <div className="flex flex-col items-center justify-center text-center h-full">
-
-            {/* Welcome to → แสดงเฉพาะ desktop */}
-            <h2 className="hidden lg:block text-4xl font-semibold text-blue-400 mb-6">
-              Welcome to
-            </h2>
-
-            {/* Logo */}
-            <img
-              src={logo}
-              alt="Idea Trade"
-              className="w-40 sm:w-52 md:w-64 lg:w-72 mb-4 md:mb-6"
-            />
-
-            {/* Special Features */}
-            <p className="
-                text-blue-400 font-semibold
-                hidden sm:block
-                text-lg md:text-2xl
-            ">
-              Special Features for our customers
-            </p>
-
+            <h2 className="hidden lg:block text-4xl font-semibold text-blue-400 mb-6">Welcome to</h2>
+            <img src={logo} alt="Idea Trade" className="w-40 sm:w-52 md:w-64 lg:w-72 mb-4 md:mb-6" />
+            <p className="text-blue-400 font-semibold hidden sm:block text-lg md:text-2xl">Special Features for our customers</p>
           </div>
 
-          {/* RIGHT */}
           <div className="flex flex-col justify-center gap-5 text-white">
-            {/* Email Input */}
             <div className="relative w-full">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="
-                  peer w-full bg-transparent
-                  border border-blue-300/40
-                  rounded-md px-4 py-3 text-white
-                  focus:border-blue-500 outline-none
-                "
+                className="peer w-full bg-transparent border border-blue-300/40 rounded-md px-4 py-3 text-white focus:border-blue-500 outline-none"
               />
-              <label
-                className={`
-                  absolute left-4
-                  px-2 py-0.5 rounded-full
-                  text-sm transition-all duration-200
-                  ${
-                    email
-                      ? "-top-3 text-xs text-sky-400 bg-slate-800"
-                      : "top-3 text-sm text-blue-300 bg-transparent"
-                  }
-                  peer-focus:-top-3
-                  peer-focus:text-xs
-                  peer-focus:text-sky-400
-                  peer-focus:bg-slate-800
-                `}
-              >
+              <label className={`absolute left-4 px-2 py-0.5 rounded-full text-sm transition-all duration-200 ${email ? "-top-3 text-xs text-sky-400 bg-slate-800" : "top-3 text-sm text-blue-300 bg-transparent"} peer-focus:-top-3 peer-focus:text-xs peer-focus:text-sky-400 peer-focus:bg-slate-800`}>
                 EMAIL
               </label>
             </div>
 
-            {/* 🔴 ตัวอย่างช่องใส่รหัสผ่าน (ถ้ามี)
-            <div className="relative w-full">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="
-                  peer w-full bg-transparent
-                  border border-blue-300/40
-                  rounded-md px-4 py-3 text-white
-                  focus:border-blue-500 outline-none
-                "
-              />
-              <label
-                className={`
-                  absolute left-4
-                  px-2 py-0.5 rounded-full
-                  text-sm transition-all duration-200
-                  ${
-                    password
-                      ? "-top-3 text-xs text-sky-400 bg-slate-800"
-                      : "top-3 text-sm text-blue-300 bg-transparent"
-                  }
-                  peer-focus:-top-3
-                  peer-focus:text-xs
-                  peer-focus:text-sky-400
-                  peer-focus:bg-slate-800
-                `}
-              >
-                PASSWORD
-              </label>
-            </div>
-             */}
-
-            {/* Options */}
             <div className="flex justify-between items-center text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 Remember me
               </label>
             </div>
 
-            {/* Sign in Button */}
-            <button
-              onClick={handleSignIn}
-              disabled={isLoading}
-              className={`mt-2 py-3 rounded-lg text-lg font-semibold transition-all ${
-                isLoading ? "bg-slate-600 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-500"
-              }`}
-            >
+            <button onClick={handleSignIn} disabled={isLoading} className={`mt-2 py-3 rounded-lg text-lg font-semibold transition-all ${isLoading ? "bg-slate-600 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-500"}`}>
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
 
             <p className="text-sm text-center text-gray-400">
               Don&apos;t have an account?{" "}
-              <span
-                onClick={() => navigate("/register")}
-                className="text-white cursor-pointer hover:underline"
-              >
-                Sign up here
-              </span>
+              <span onClick={() => navigate("/register")} className="text-white cursor-pointer hover:underline">Sign up here</span>
             </p>
           </div>
         </div>
 
-        {/* Bottom CTA */}
-        <div className="
-          bg-slate-700/50
-          px-6 md:px-12 lg:px-16
-          py-6 md:py-8
-          flex flex-col
-          md:flex-col
-          lg:flex-row
-          gap-4 md:gap-6
-          justify-between
-        ">
-
-          <button
-            onClick={() => setFreeAccess()}
-            className="
-              flex-1
-              py-4 md:py-5
-              rounded-xl md:rounded-2xl
-              bg-emerald-400 hover:bg-emerald-500
-              active:scale-95
-              transition-all duration-200
-              text-lg md:text-xl
-              font-semibold
-              flex items-center justify-center gap-3
-              shadow-lg hover:shadow-emerald-400/40
-            "
-          >
+        <div className="bg-slate-700/50 px-6 md:px-12 lg:px-16 py-6 md:py-8 flex flex-col lg:flex-row gap-4 md:gap-6 justify-between">
+          <button onClick={() => setFreeAccess()} className="flex-1 py-4 md:py-5 rounded-xl md:rounded-2xl bg-emerald-400 hover:bg-emerald-500 active:scale-95 transition-all duration-200 text-lg md:text-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-emerald-400/40">
             <img src={Rocket} alt="rocket" className="w-5 h-5 md:w-6 md:h-6" />
             TRY FREE VERSION
           </button>
-
-          <button
-            onClick={setMembership}
-            className="
-              flex-1
-              py-4 md:py-5
-              rounded-xl md:rounded-2xl
-              bg-sky-600 hover:bg-sky-700
-              active:scale-95
-              transition-all duration-200
-              text-lg md:text-xl
-              font-semibold
-              flex items-center justify-center gap-3
-              shadow-lg hover:shadow-sky-500/40
-            "
-          >
+          <button onClick={setMembership} className="flex-1 py-4 md:py-5 rounded-xl md:rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-95 transition-all duration-200 text-lg md:text-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-sky-500/40">
             <img src={Crown} alt="crown" className="w-5 h-5 md:w-6 md:h-6" />
             JOIN MEMBERSHIP
           </button>
-
         </div>
       </div>
 
-      {/* OTP Modal */}
       <OtpModal
         open={openOtp}
         email={email}
@@ -372,44 +199,30 @@ const handleSignIn = async () => {
         }}
       />
 
-{/* ================= POPUP ERRORS ================= */}
       {openForgot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" // เพิ่ม backdrop-blur-sm ให้พื้นหลังเบลอสวยขึ้น
-            onClick={() => setOpenForgot(false)}
-          />
-          {/* 🟢 แก้บรรทัดล่างนี้: เปลี่ยน w-full เป็น w-[90%] เพื่อไม่ให้ชิดขอบจอในมือถือ */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpenForgot(false)} />
           <div className="relative z-10 w-[90%] max-w-md mx-auto rounded-2xl bg-slate-800 text-white p-6 shadow-xl">
-            
             {popupType === "emailRequired" && (
               <>
                 <h3 className="text-xl font-semibold mb-2 text-red-400">Please enter your email</h3>
                 <p className="text-sm text-gray-300 mb-5">You need to provide an email before signing in.</p>
               </>
             )}
-            
             {popupType === "emailInvalid" && (
               <>
                 <h3 className="text-xl font-semibold mb-2 text-red-400">Invalid email address</h3>
                 <p className="text-sm text-gray-300 mb-5">Please check your email format and try again.</p>
               </>
             )}
-
             {popupType === "emailNotFound" && (
               <>
                 <h3 className="text-xl font-semibold mb-2 text-yellow-400">Email Not Found</h3>
                 <p className="text-sm text-gray-300 mb-5">ไม่พบอีเมลนี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าใช้งาน</p>
               </>
             )}
-
             <div className="flex justify-end">
-              <button
-                onClick={() => setOpenForgot(false)}
-                className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all font-medium"
-              >
-                Close
-              </button>
+              <button onClick={() => setOpenForgot(false)} className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all font-medium">Close</button>
             </div>
           </div>
         </div>

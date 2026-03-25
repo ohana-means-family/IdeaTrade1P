@@ -42,7 +42,7 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     setStatus("loading");
     try {
       // 🟢 แก้ไข: ใช้ Template Literal เชื่อม API_URL เข้ากับ Path
-      const response = await fetch(`${API_URL}/ideatrade-9548f/us-central1/verifyOTP`, {
+      const response = await fetch(`${API_URL}/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
