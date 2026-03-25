@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from "react";
+import ToolHint from "@/components/ToolHint.jsx";
+import { useNavigate } from "react-router-dom";
 
 /* ================= CONSTANTS ================= */
 const CATEGORIES = ["SET100", "NON-SET100", "MAI", "WARRANT"];
@@ -52,26 +54,14 @@ function mkSeries(seed, count = 20, points = 50, isUp = true) {
   });
 }
 
-function mkLabels(points = 50) {
+function mkDayLabels(dateKey) {
   const slots = [];
-  const base = new Date("2025-01-06");
-  let day = 0;
-  while (slots.length < points) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + day);
-    if (d.getDay() !== 0 && d.getDay() !== 6) {
-      const dd = String(d.getDate()).padStart(2, "0");
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const yy = String(d.getFullYear()).slice(2);
-      for (let h = 9; h <= 16; h++) {
-        for (let m = 0; m < 60; m += 15) {
-          if (h === 16 && m > 30) continue;
-          slots.push(`${dd}/${mm}/${yy}\n${h}:${m.toString().padStart(2, "0")}`);
-          if (slots.length >= points) return slots;
-        }
-      }
+  for (let h = 9; h <= 16; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      if (h === 9 && m < 30) continue;
+      if (h === 16 && m > 30) continue;
+      slots.push(`${dateKey}\n${h}:${String(m).padStart(2,"0")}`);
     }
-    day++;
   }
   return slots;
 }
@@ -102,7 +92,7 @@ function useAnimatedValue(target, duration = 400) {
   return display;
 }
 
-const AnimatedCell = ({ value, flash }) => {
+const AnimatedCell = memo(({ value, flash }) => {
   const display = useAnimatedValue(value, 400);
   const [color, setColor] = useState("#e2e8f0");
   const timerRef = useRef(null);
@@ -117,16 +107,13 @@ const AnimatedCell = ({ value, flash }) => {
 
   return (
     <span style={{
-      fontFamily: "monospace",
-      fontSize: 12,
-      color,
-      transition: "color 1.2s ease",
-      fontWeight: flash ? 700 : 400,
+      fontFamily: "monospace", fontSize: 12, color,
+      transition: "color 1.2s ease", fontWeight: flash ? 700 : 400,
     }}>
       {display}
     </span>
   );
-};
+});
 
 /* ================= LIVE UPDATE HOOK ================= */
 function useLiveData(initialData, cardKey) {
@@ -138,7 +125,6 @@ function useLiveData(initialData, cardKey) {
   liveRef.current = liveData;
 
   const scheduleNext = useCallback(() => {
-    const demoDelay = (10 + Math.random() * 5) * 1000;
     timerRef.current = setTimeout(() => {
       const current = liveRef.current;
       const count = Math.floor(Math.random() * 3) + 1;
@@ -147,7 +133,6 @@ function useLiveData(initialData, cardKey) {
         const idx = Math.floor(Math.random() * current.length);
         if (!indices.includes(idx)) indices.push(idx);
       }
-
       const newFlash = {};
       const updated = current.map((row, i) => {
         if (!indices.includes(i)) return row;
@@ -158,22 +143,22 @@ function useLiveData(initialData, cardKey) {
         const clamped = Math.max(-15, Math.min(15, newChange));
         newFlash[i] = delta > 0 ? "up" : "down";
         return {
-          ...row,
-          value: newVal.toFixed(2),
-          change: clamped.toFixed(2),
+          ...row, value: newVal.toFixed(2), change: clamped.toFixed(2),
           isUp: clamped > 0.05 ? true : clamped < -0.05 ? false : null,
         };
       });
-
       setLiveData(updated);
       setFlashMap(newFlash);
       setRecentMap(newFlash);
-
       setTimeout(() => setFlashMap({}), 3000);
       setTimeout(() => setRecentMap({}), 8000);
-      scheduleNext();
-    }, demoDelay);
+      scheduleNextRef.current();
+    }, (10 + Math.random() * 5) * 1000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const scheduleNextRef = useRef(scheduleNext);
+  scheduleNextRef.current = scheduleNext;
 
   useEffect(() => {
     setLiveData(initialData);
@@ -214,7 +199,7 @@ function buildPath(pts, scale, h, padL, padTop, padBot, gap) {
 }
 
 /* ================= INFO TOOLTIP ================= */
-const InfoTooltip = ({ children, lines = [], linkText = "", linkHref = "#" }) => {
+const InfoTooltip = memo(({ children, lines = [], linkText = "", linkHref = "#" }) => {
   const [visible, setVisible] = useState(false);
   const t = useRef(null);
   const show = () => { clearTimeout(t.current); setVisible(true); };
@@ -225,7 +210,8 @@ const InfoTooltip = ({ children, lines = [], linkText = "", linkHref = "#" }) =>
       <div onMouseEnter={show} onMouseLeave={hide}>{children}</div>
       {visible && (
         <div onMouseEnter={show} onMouseLeave={hide}
-          className="absolute left-full top-0 ml-3 z-[9999] w-64 rounded-xl shadow-2xl px-4 py-3 pointer-events-auto" style={{background:"#140f00",border:"1px solid rgba(217,119,6,0.3)"}}>
+          className="absolute left-full top-0 ml-3 z-[9999] w-64 rounded-xl shadow-2xl px-4 py-3 pointer-events-auto"
+          style={{background:"#140f00",border:"1px solid rgba(217,119,6,0.3)"}}>
           <div className="absolute -left-[7px] w-0 h-0 border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent border-r-[7px] border-r-[#1a2235]" style={{ top: "calc(18px - 7px)" }} />
           <div className="absolute -left-[9px] w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-r-[8px] border-r-slate-600/70" style={{ top: "calc(18px - 8px)" }} />
           <div className="text-slate-200 text-[13px] leading-relaxed space-y-0.5 mb-2">
@@ -239,10 +225,10 @@ const InfoTooltip = ({ children, lines = [], linkText = "", linkHref = "#" }) =>
       )}
     </div>
   );
-};
+});
 
 /* ================= RANK TABLE ================= */
-const RankTable = ({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, extraVisible, onRowClick }) => (
+const RankTable = memo(({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, extraVisible, onRowClick }) => (
   <div className="w-full lg:w-[35%] bg-[#0f172a] rounded-lg border border-slate-700 overflow-hidden flex flex-col">
     <div className="overflow-y-auto flex-1 custom-scrollbar">
       <table className="w-full text-sm">
@@ -301,10 +287,10 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, 
       </table>
     </div>
   </div>
-);
+));
 
 /* ================= SVG FLOW CHART ================= */
-const FlowChart = ({
+const FlowChart = memo(({
   allSeries, labels, top5, highlighted, dimmed, extraVisible, allData,
   height = 256, chartId, globalHoverIndex, setGlobalHoverIndex, chartRefs,
   pointGap, handleZoom, fullWidth = false, flashMap = {},
@@ -323,7 +309,7 @@ const FlowChart = ({
   }, [labels.length]);
 
   const { paddingLeft: padL, paddingRight: padR, paddingTop: padT, paddingBottom: padB } = CHART_CFG;
-  const gap    = pointGap ?? CHART_CFG.pointGap;
+  const gap    = pointGap ?? CHART_CFG.pointGapDefault;
   const pts    = labels.length;
   const chartW = padL + (pts - 1) * gap + 4;
 
@@ -343,8 +329,11 @@ const FlowChart = ({
   );
 
   const yTicks = 5;
-  const yTickVals = Array.from({ length: yTicks }, (_, i) =>
-    yScale.max - (i * (yScale.max - yScale.min)) / (yTicks - 1)
+  const yTickVals = useMemo(
+    () => Array.from({ length: yTicks }, (_, i) =>
+      yScale.max - (i * (yScale.max - yScale.min)) / (yTicks - 1)
+    ),
+    [yScale]
   );
 
   useEffect(() => {
@@ -370,20 +359,21 @@ const FlowChart = ({
     return () => el.removeEventListener("wheel", onWheel);
   }, [handleZoom]);
 
-  const syncScroll = src => {
+  const syncScroll = useCallback(src => {
     Object.values(chartRefs.current).forEach(node => {
       if (node && node !== src && Math.abs(node.scrollLeft - src.scrollLeft) > 1)
         node.scrollLeft = src.scrollLeft;
     });
     syncVisibleRight(src);
-  };
+  }, [chartRefs, syncVisibleRight]);
 
-  const onMouseDown = e => {
+  const onMouseDown = useCallback(e => {
     setIsDragging(true);
     setGlobalHoverIndex(null);
     dragStart.current = { x: e.pageX - scrollRef.current.offsetLeft, scrollLeft: scrollRef.current.scrollLeft };
-  };
-  const onMouseMove = e => {
+  }, [setGlobalHoverIndex]);
+
+  const onMouseMove = useCallback(e => {
     if (!scrollRef.current) return;
     if (isDragging) {
       e.preventDefault();
@@ -397,9 +387,10 @@ const FlowChart = ({
     const mouseX = e.clientX - rect.left + scrollRef.current.scrollLeft;
     const idx    = Math.max(0, Math.min(Math.round((mouseX - padL) / gap), pts - 1));
     setGlobalHoverIndex(idx);
-  };
-  const onMouseLeave = () => { setIsDragging(false); setGlobalHoverIndex(null); };
-  const onMouseUp    = () => setIsDragging(false);
+  }, [isDragging, padL, gap, pts, syncVisibleRight, setGlobalHoverIndex]);
+
+  const onMouseLeave = useCallback(() => { setIsDragging(false); setGlobalHoverIndex(null); }, [setGlobalHoverIndex]);
+  const onMouseUp    = useCallback(() => setIsDragging(false), []);
 
   const isHovering = globalHoverIndex !== null && !isDragging && globalHoverIndex < pts;
   const hoverX     = isHovering ? padL + globalHoverIndex * gap : null;
@@ -421,7 +412,7 @@ const FlowChart = ({
 
   const visIdx = Math.min(visibleRightIdx, pts - 1);
 
-  const endTags = (() => {
+  const endTags = useMemo(() => {
     if (extraVisible != null) {
       const s = allSeries[extraVisible];
       if (!s) return [];
@@ -435,9 +426,13 @@ const FlowChart = ({
       return { symbol: row.symbol, value: v.toFixed(1), y: normY(v, yScale, height, padT, padB), color: PALETTE[i] };
     }).filter(Boolean);
     return avoidCollisions(raw);
-  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extraVisible, allSeries, allData, top5, dimmed, visIdx, yScale, height, padT, padB]);
 
-  const flashedIndices = Object.keys(flashMap).map(Number).filter(i => i < 5);
+  const flashedIndices = useMemo(
+    () => Object.keys(flashMap).map(Number).filter(i => i < 5),
+    [flashMap]
+  );
 
   return (
     <div className={`${fullWidth ? "w-full" : "w-full lg:w-[65%]"} bg-[#0f1e2e] rounded-lg border border-slate-600/60 relative`} style={{ height }}>
@@ -452,7 +447,7 @@ const FlowChart = ({
         onMouseUp={onMouseUp}
       >
         <svg width={chartW} height={height} className="overflow-visible pointer-events-none" style={{ display: "block" }}>
-          {[...Array(yTicks)].map((_, i) => {
+          {Array.from({ length: yTicks }, (_, i) => {
             const y = padT + (i * (height - padT - padB)) / (yTicks - 1);
             return <line key={i} x1={0} y1={y} x2={chartW} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
           })}
@@ -623,24 +618,18 @@ const FlowChart = ({
       </div>
     </div>
   );
-};
+});
 
 /* ================= SPIN BUTTON ================= */
-const SpinButton = ({ onClick, title, label }) => {
-  const [spinning, setSpinning] = useState(false);
+const SpinButton = memo(({ onClick, title, label }) => {
   const iconRef = useRef(null);
   const handle = () => {
     onClick?.();
-    setSpinning(false);
-    requestAnimationFrame(() => {
-      setSpinning(true);
-      if (iconRef.current) {
-        iconRef.current.classList.remove("spin-once");
-        void iconRef.current.offsetWidth;
-        iconRef.current.classList.add("spin-once");
-      }
-    });
-    setTimeout(() => setSpinning(false), 550);
+    if (iconRef.current) {
+      iconRef.current.classList.remove("spin-once");
+      void iconRef.current.offsetWidth;
+      iconRef.current.classList.add("spin-once");
+    }
   };
   return label ? (
     <button onClick={handle} style={{
@@ -650,10 +639,9 @@ const SpinButton = ({ onClick, title, label }) => {
       color: "#ffffff", cursor: "pointer", fontSize: 11, fontWeight: 600,
       fontFamily: "monospace", flexShrink: 0, transition: "all .15s",
     }}
-      onMouseEnter={e => { e.currentTarget.style.color="#ffffff"; e.currentTarget.style.borderColor="rgba(255,255,255,0.3)"; }}
-      onMouseLeave={e => { e.currentTarget.style.color="#ffffff"; e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"; }}
-      title={title}
-    >
+      onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(255,255,255,0.3)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"; }}
+      title={title}>
       <span ref={iconRef} style={{ display: "inline-flex" }}>
         <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M13.5 6A6 6 0 1 0 14 10"/><path d="M14 4v3h-3"/>
@@ -671,10 +659,10 @@ const SpinButton = ({ onClick, title, label }) => {
       </span>
     </button>
   );
-};
+});
 
 /* ================= ZOOM MODAL ================= */
-const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendClick, onRowClick, onReset, globalHoverIndex, setGlobalHoverIndex, chartRefs, pointGap, handleZoom, flashMap, recentMap = {} }) => {
+const ZoomModal = memo(({ card, onClose, highlighted, dimmed, extraVisible, onLegendClick, onRowClick, onReset, globalHoverIndex, setGlobalHoverIndex, chartRefs, pointGap, handleZoom, flashMap, recentMap = {} }) => {
   const [localPointGap, setLocalPointGap] = useState(pointGap);
   const chartContainerRef = useRef(null);
   const modalChartRefs = useRef({});
@@ -722,6 +710,16 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
 
   const [chartH, setChartH] = useState(0);
 
+  useEffect(() => {
+    const el = chartContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.height > 0) setChartH(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (!card) return null;
   const { category, type, data, allSeries, labels, top5 } = card;
   const isPos = type === "+";
@@ -763,7 +761,6 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
         }}>
           {isPos ? "▲ BUY FLOW" : "▼ SELL FLOW"}
         </span>
-
         <div style={{ flex: 1 }} />
         <SpinButton
           onClick={() => { onReset?.(); setLocalPointGap(pointGap); }}
@@ -772,25 +769,11 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <div
-          ref={el => {
-            chartContainerRef.current = el;
-            if (el && !el._roAttached) {
-              el._roAttached = true;
-              const ro = new ResizeObserver(([entry]) => {
-                if (entry.contentRect.height > 0) setChartH(entry.contentRect.height);
-              });
-              ro.observe(el);
-            }
-          }}
-          style={{ flex: 1, minWidth: 0, position: "relative" }}
-        >
+        <div ref={chartContainerRef} style={{ flexShrink: 0 }}>
           {chartH > 0 && (
             <div style={{ position: "absolute", inset: 0 }}>
               <FlowChart
-                allSeries={allSeries}
-                labels={labels}
-                top5={top5}
+                allSeries={allSeries} labels={labels} top5={top5}
                 highlighted={highlighted} dimmed={dimmed}
                 extraVisible={extraVisible} allData={data}
                 height={chartH}
@@ -843,8 +826,7 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
                 <React.Fragment key={row.rank}>
                   {showDivider && (
                     <div style={{
-                      margin: "4px 18px",
-                      borderTop: "1px solid rgba(255,255,255,0.08)",
+                      margin: "4px 18px", borderTop: "1px solid rgba(255,255,255,0.08)",
                       display: "flex", alignItems: "center", gap: 8,
                     }}>
                       <span style={{ fontSize: 9, color: "#334155", fontFamily: "monospace", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>OTHER</span>
@@ -852,24 +834,16 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
                   )}
                   <div onClick={() => onRowClick?.(i)}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "32px 10px 1fr auto auto",
-                      alignItems: "center",
-                      gap: "0 10px",
-                      padding: "9px 18px",
+                      display: "grid", gridTemplateColumns: "32px 10px 1fr auto auto",
+                      alignItems: "center", gap: "0 10px", padding: "9px 18px",
                       borderBottom: "1px solid rgba(255,255,255,0.15)",
-                      borderLeft: leftBorder,
-                      background: rowBg,
-                      cursor: "pointer",
-                      transition: "background .3s",
+                      borderLeft: leftBorder, background: rowBg,
+                      cursor: "pointer", transition: "background .3s",
                     }}>
                     <span style={{
-                      color: isTop5 ? "#94a3b8" : "#334155",
-                      fontSize: isTop5 ? 12 : 11,
-                      fontWeight: isTop5 ? 700 : 400,
-                      textAlign: "right", fontFamily: "monospace",
-                      borderRight: "1px solid rgba(255,255,255,0.08)",
-                      paddingRight: 6,
+                      color: isTop5 ? "#94a3b8" : "#334155", fontSize: isTop5 ? 12 : 11,
+                      fontWeight: isTop5 ? 700 : 400, textAlign: "right", fontFamily: "monospace",
+                      borderRight: "1px solid rgba(255,255,255,0.08)", paddingRight: 6,
                     }}>{row.rank}</span>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, justifySelf: "center" }} />
                     <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", fontFamily: "monospace" }}>
@@ -883,8 +857,7 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
                     <span style={{
                       fontSize: 12, fontWeight: 700, fontFamily: "monospace", textAlign: "right",
                       color: flash === "up" ? "#86efac" : flash === "down" ? "#fca5a5" : "#64748b",
-                      borderRight: "1px solid rgba(255,255,255,0.08)",
-                      paddingRight: 8,
+                      borderRight: "1px solid rgba(255,255,255,0.08)", paddingRight: 8,
                     }}>{row.value}</span>
                     <span style={{
                       fontSize: 12, fontWeight: 700, fontFamily: "monospace", textAlign: "right", minWidth: 56,
@@ -901,10 +874,10 @@ const ZoomModal = ({ card, onClose, highlighted, dimmed, extraVisible, onLegendC
       </div>
     </div>
   );
-};
+});
 
 /* ================= LAST UPDATE BADGE ================= */
-const LastUpdateBadge = ({ lastUpdated }) => {
+const LastUpdateBadge = memo(({ lastUpdated }) => {
   const [display, setDisplay] = useState("");
   useEffect(() => {
     if (!lastUpdated) return;
@@ -925,10 +898,36 @@ const LastUpdateBadge = ({ lastUpdated }) => {
       updated {display}
     </span>
   );
-};
+});
+
+/* ================= BREAKPOINT HOOK ================= */
+function useBreakpoint() {
+  const [bp, setBp] = useState(() => {
+    if (typeof window === "undefined") return "lg";
+    const w = window.innerWidth;
+    if (w < 480) return "xs";
+    if (w < 640) return "sm";
+    if (w < 768) return "md";
+    if (w < 1024) return "lg";
+    return "xl";
+  });
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 480) setBp("xs");
+      else if (w < 640) setBp("sm");
+      else if (w < 768) setBp("md");
+      else if (w < 1024) setBp("lg");
+      else setBp("xl");
+    };
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return bp;
+}
 
 /* ================= SECTION CARD ================= */
-const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, globalHoverIndex, setGlobalHoverIndex, chartRefs, pointGap, handleZoom }) => {
+const SectionCard = memo(({ category, type, baseSeed, selectedDate, dateIndex, globalHoverIndex, setGlobalHoverIndex, chartRefs, pointGap, handleZoom }) => {
   const [highlighted, setHighlighted]   = useState(null);
   const [dimmed, setDimmed]             = useState({});
   const [extraVisible, setExtraVisible] = useState(null);
@@ -936,9 +935,8 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
   const [lastUpdated, setLastUpdated]   = useState(null);
 
   const isPos  = type === "+";
-  const POINTS = 29; // intraday slots per day
+  const POINTS = 29;
 
-  // seed เปลี่ยนตาม dateIndex → หุ้นและกราฟเปลี่ยนตามวัน
   const dateSeed = (baseSeed * 17 + (dateIndex + 1) * 131) >>> 0;
 
   const baseData   = useMemo(() => mkFlowData(dateSeed), [dateSeed]);
@@ -946,14 +944,10 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
   const dayLabels  = useMemo(() => selectedDate ? mkDayLabels(selectedDate) : mkDayLabels("06/01/25"), [selectedDate]);
   const cardKey    = `${category}-${type}-${dateSeed}`;
 
-  const filteredLabels = dayLabels;
-  const filteredSeries = baseSeries;
-
   const { liveData, flashMap, recentMap } = useLiveData(baseData, cardKey);
 
   useEffect(() => {
-    const hasFlash = Object.keys(flashMap).length > 0;
-    if (hasFlash) setLastUpdated(Date.now());
+    if (Object.keys(flashMap).length > 0) setLastUpdated(Date.now());
   }, [flashMap]);
 
   const top5 = useMemo(() => liveData.slice(0, 5), [liveData]);
@@ -969,7 +963,11 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
   const handleLegendClick = useCallback(idx => {
     setHighlighted(prev => {
       const next = prev === idx ? null : idx;
-      setDimmed(() => { const d = {}; for (let i = 0; i < 5; i++) d[i] = next !== null && i !== next; return d; });
+      setDimmed(() => {
+        const d = {};
+        for (let i = 0; i < 5; i++) d[i] = next !== null && i !== next;
+        return d;
+      });
       return next;
     });
   }, []);
@@ -977,13 +975,21 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
   const handleRowClick = useCallback(rowIdx => {
     if (rowIdx < 5) {
       setExtraVisible(null);
-      handleLegendClick(rowIdx);
+      setHighlighted(prev => {
+        const next = prev === rowIdx ? null : rowIdx;
+        setDimmed(() => {
+          const d = {};
+          for (let i = 0; i < 5; i++) d[i] = next !== null && i !== next;
+          return d;
+        });
+        return next;
+      });
     } else {
       setHighlighted(null);
       setDimmed({});
       setExtraVisible(prev => prev === rowIdx ? null : rowIdx);
     }
-  }, [handleLegendClick]);
+  }, []);
 
   return (
     <>
@@ -1011,25 +1017,18 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
 
         <div className="flex flex-col lg:flex-row gap-4 lg:h-64">
           <FlowChart
-            allSeries={filteredSeries} labels={filteredLabels} top5={top5}
+            allSeries={baseSeries} labels={dayLabels} top5={top5}
             highlighted={highlighted} dimmed={dimmed}
             extraVisible={extraVisible} allData={liveData}
-            height={256}
-            chartId={chartId}
+            height={256} chartId={chartId}
             globalHoverIndex={globalHoverIndex}
             setGlobalHoverIndex={setGlobalHoverIndex}
-            chartRefs={chartRefs}
-            pointGap={pointGap}
-            handleZoom={handleZoom}
+            chartRefs={chartRefs} pointGap={pointGap} handleZoom={handleZoom}
             flashMap={flashMap}
           />
           <RankTable
-            data={liveData}
-            flashMap={flashMap}
-            recentMap={recentMap}
-            top5Len={5}
-            highlighted={highlighted}
-            extraVisible={extraVisible}
+            data={liveData} flashMap={flashMap} recentMap={recentMap}
+            top5Len={5} highlighted={highlighted} extraVisible={extraVisible}
             onRowClick={handleRowClick}
           />
         </div>
@@ -1037,28 +1036,23 @@ const SectionCard = ({ category, type, baseSeed, selectedDate, dateIndex, global
 
       {modalOpen && (
         <ZoomModal
-          card={{ category, type, data: liveData, allSeries: filteredSeries, labels: filteredLabels, top5 }}
+          card={{ category, type, data: liveData, allSeries: baseSeries, labels: dayLabels, top5 }}
           onClose={() => setModalOpen(false)}
           highlighted={highlighted} dimmed={dimmed} extraVisible={extraVisible}
           onLegendClick={handleLegendClick} onRowClick={handleRowClick} onReset={handleRefresh}
-          globalHoverIndex={globalHoverIndex}
-          setGlobalHoverIndex={setGlobalHoverIndex}
-          chartRefs={chartRefs}
-          pointGap={pointGap}
-          handleZoom={handleZoom}
-          flashMap={flashMap}
-          recentMap={recentMap}
+          globalHoverIndex={globalHoverIndex} setGlobalHoverIndex={setGlobalHoverIndex}
+          chartRefs={chartRefs} pointGap={pointGap} handleZoom={handleZoom}
+          flashMap={flashMap} recentMap={recentMap}
         />
       )}
     </>
   );
-};
+});
 
 /* ================= DATE PICKER ================= */
-// Generate N trading dates starting from base
 function getTradingDates(numDays = 2087) {
   const dates = [];
-  const base = new Date("2019-01-02"); // เริ่มต้นปี 2019
+  const base = new Date("2019-01-02");
   let day = 0;
   while (dates.length < numDays) {
     const d = new Date(base);
@@ -1074,22 +1068,7 @@ function getTradingDates(numDays = 2087) {
   return dates;
 }
 
-// Labels for a single trading day (intraday 15-min slots)
-function mkDayLabels(dateKey) {
-  const slots = [];
-  for (let h = 9; h <= 16; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      if (h === 9 && m < 30) continue; // SET opens 9:30
-      if (h === 16 && m > 30) continue;
-      slots.push(`${dateKey}\n${h}:${String(m).padStart(2,"0")}`);
-    }
-  }
-  return slots;
-}
-
-// ── helpers ──────────────────────────────────────────────
 function parseKey(key) {
-  // "dd/mm/yy" → { day, month (1-based), year (full) }
   const [dd, mm, yy] = key.split("/");
   return { day: +dd, month: +mm, year: 2000 + +yy };
 }
@@ -1099,18 +1078,17 @@ function toKey(year, month, day) {
 function formatDisplay(key) {
   if (!key) return "";
   const { day, month, year } = parseKey(key);
-  const d = new Date(year, month - 1, day);
   const dd = String(day).padStart(2,"0");
-  const yyyy = String(year);
-  return `${dd} ${MONTH_NAMES[month-1]} ${yyyy}`;
+  return `${dd} ${MONTH_NAMES[month-1]} ${year}`;
 }
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-const DatePicker = ({ dates, selected, onChange }) => {
-  const [open, setOpen] = useState(false);
+const DatePicker = memo(({ dates, selected, onChange }) => {
+  const [open, setOpen] = useState(false);         
   const [view, setView] = useState("day");
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
 
   const FULL_MONTH  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1119,6 +1097,7 @@ const DatePicker = ({ dates, selected, onChange }) => {
   const initView = useMemo(() => {
     if (selected) { const p = parseKey(selected); return { month: p.month, year: p.year }; }
     return { month: 1, year: 2025 };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [viewMonth, setViewMonth] = useState(initView.month);
   const [viewYear,  setViewYear]  = useState(initView.year);
@@ -1133,7 +1112,10 @@ const DatePicker = ({ dates, selected, onChange }) => {
   }, [dates, viewYear]);
 
   const decadeStart = Math.floor(viewYear / 10) * 10;
-  const decadeYears = Array.from({ length: 12 }, (_, i) => decadeStart - 1 + i);
+  const decadeYears = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => decadeStart - 1 + i),
+    [decadeStart]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -1142,10 +1124,27 @@ const DatePicker = ({ dates, selected, onChange }) => {
     return () => document.removeEventListener("mousedown", fn);
   }, [open]);
 
-  const prevMonth = () => { if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y-1); } else setViewMonth(m => m-1); };
-  const nextMonth = () => { if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y+1); } else setViewMonth(m => m+1); };
-  const canPrev   = () => { if (!dates[0]) return false; const p = parseKey(dates[0]); return viewYear > p.year || (viewYear === p.year && viewMonth > p.month); };
-  const canNext   = () => { if (!dates[dates.length-1]) return false; const p = parseKey(dates[dates.length-1]); return viewYear < p.year || (viewYear === p.year && viewMonth < p.month); };
+  const prevMonth = useCallback(() => {
+    if (viewMonth === 1) { setViewMonth(12); setViewYear(y => y-1); }
+    else setViewMonth(m => m-1);
+  }, [viewMonth]);
+
+  const nextMonth = useCallback(() => {
+    if (viewMonth === 12) { setViewMonth(1); setViewYear(y => y+1); }
+    else setViewMonth(m => m+1);
+  }, [viewMonth]);
+
+  const canPrev = useCallback(() => {
+    if (!dates[0]) return false;
+    const p = parseKey(dates[0]);
+    return viewYear > p.year || (viewYear === p.year && viewMonth > p.month);
+  }, [dates, viewYear, viewMonth]);
+
+  const canNext = useCallback(() => {
+    if (!dates[dates.length-1]) return false;
+    const p = parseKey(dates[dates.length-1]);
+    return viewYear < p.year || (viewYear === p.year && viewMonth < p.month);
+  }, [dates, viewYear, viewMonth]);
 
   const calDays = useMemo(() => {
     const firstDow = new Date(viewYear, viewMonth - 1, 1).getDay();
@@ -1157,41 +1156,33 @@ const DatePicker = ({ dates, selected, onChange }) => {
     return cells;
   }, [viewMonth, viewYear]);
 
-  // ── shared micro-styles ──
   const popup = {
-    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 9999,
-    width: 252,
-    background: "#0f172a",
-    border: "0.5px solid rgba(255,255,255,0.1)",
-    borderRadius: 12,
-    boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
-    fontFamily: "monospace",
+    position: "fixed", top: popupPos.top, left: popupPos.left, zIndex: 9999,
+    width: 252, background: "#0f172a",
+    border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 12,
+    boxShadow: "0 16px 40px rgba(0,0,0,0.6)", fontFamily: "monospace",
     overflow: "hidden",
-  };
+    maxHeight: `calc(100vh - ${popupPos.top}px - 8px)`,  // ไม่ให้สูงเกินจอ
+    overflowY: "auto",
+    };
   const header = {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "10px 14px 8px",
-    borderBottom: "0.5px solid rgba(255,255,255,0.07)",
+    padding: "10px 14px 8px", borderBottom: "0.5px solid rgba(255,255,255,0.07)",
   };
   const navBtn = (active) => ({
-    width: 22, height: 22, borderRadius: 5,
-    border: "none", background: "transparent",
-    color: active ? "#94a3b8" : "#1e293b",
-    cursor: active ? "pointer" : "default",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    transition: "background .1s",
+    width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent",
+    color: active ? "#94a3b8" : "#1e293b", cursor: active ? "pointer" : "default",
+    display: "flex", alignItems: "center", justifyContent: "center", transition: "background .1s",
   });
   const titleBtn = {
     background: "transparent", border: "none", cursor: "pointer",
-    color: "#e2e8f0", fontSize: 13, fontWeight: 500,
-    fontFamily: "monospace", letterSpacing: "0.03em",
-    display: "flex", alignItems: "center", gap: 3, padding: "2px 4px",
-    borderRadius: 5,
+    color: "#e2e8f0", fontSize: 13, fontWeight: 500, fontFamily: "monospace",
+    letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: 3,
+    padding: "2px 4px", borderRadius: 5,
   };
   const body   = { padding: "8px 12px 10px" };
   const footer = {
-    borderTop: "0.5px solid rgba(255,255,255,0.07)",
-    padding: "6px 14px",
+    borderTop: "0.5px solid rgba(255,255,255,0.07)", padding: "6px 14px",
     display: "flex", alignItems: "center", justifyContent: "space-between",
   };
   const Chev = ({ d }) => (
@@ -1203,19 +1194,28 @@ const DatePicker = ({ dates, selected, onChange }) => {
   );
 
   return (
-    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-
-      {/* ── Trigger ── */}
+    <div ref={ref} style={{ flexShrink: 0 }}>
       <button onClick={() => {
         if (!open && selected) { const p = parseKey(selected); setViewMonth(p.month); setViewYear(p.year); }
+        if (!open && ref.current) {
+          const rect = ref.current.getBoundingClientRect();
+          const POPUP_W = 252;
+          const clampedLeft = Math.min(
+            rect.left,
+            window.innerWidth - POPUP_W - 8   // ไม่ให้ล้นขวา
+          );
+          const clampedTop = Math.min(
+            rect.bottom + 8,
+            window.innerHeight - 8            // ไม่ให้ล้นล่าง
+          );
+          setPopupPos({ top: clampedTop, left: Math.max(8, clampedLeft) });
+        }
         setOpen(o => !o); setView("day");
       }} style={{
-        display: "flex", alignItems: "center", gap: 7,
-        padding: "0 12px", height: 34,
+        display: "flex", alignItems: "center", gap: 7, padding: "0 12px", height: 34,
         background: open ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
         border: `0.5px solid ${open ? "rgba(59,130,246,0.5)" : "rgba(59,130,246,0.25)"}`,
-        borderRadius: 8, cursor: "pointer",
-        color: "#93c5fd", fontSize: 12, fontWeight: 500,
+        borderRadius: 8, cursor: "pointer", color: "#93c5fd", fontSize: 12, fontWeight: 500,
         fontFamily: "monospace", transition: "all .15s",
       }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1232,8 +1232,6 @@ const DatePicker = ({ dates, selected, onChange }) => {
 
       {open && (
         <div style={popup}>
-
-          {/* ════ YEAR VIEW ════ */}
           {view === "year" && (<>
             <div style={header}>
               <button style={navBtn(decadeStart > (availableYears[0]??2025))}
@@ -1276,7 +1274,6 @@ const DatePicker = ({ dates, selected, onChange }) => {
             </div>
           </>)}
 
-          {/* ════ MONTH VIEW ════ */}
           {view === "month" && (<>
             <div style={header}>
               <button style={navBtn(availableYears.includes(viewYear-1))}
@@ -1285,8 +1282,7 @@ const DatePicker = ({ dates, selected, onChange }) => {
                 onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <Chev d="left"/>
               </button>
-              <button style={titleBtn}
-                onClick={()=>setView("year")}
+              <button style={titleBtn} onClick={()=>setView("year")}
                 onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.06)"}
                 onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 {viewYear} <Chev d="down"/>
@@ -1322,7 +1318,6 @@ const DatePicker = ({ dates, selected, onChange }) => {
             </div>
           </>)}
 
-          {/* ════ DAY VIEW ════ */}
           {view === "day" && (<>
             <div style={header}>
               <button style={navBtn(canPrev())} onClick={prevMonth}
@@ -1330,8 +1325,7 @@ const DatePicker = ({ dates, selected, onChange }) => {
                 onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <Chev d="left"/>
               </button>
-              <button style={titleBtn}
-                onClick={()=>setView("month")}
+              <button style={titleBtn} onClick={()=>setView("month")}
                 onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.06)"}
                 onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 {FULL_MONTH[viewMonth-1]} {viewYear} <Chev d="down"/>
@@ -1342,9 +1336,7 @@ const DatePicker = ({ dates, selected, onChange }) => {
                 <Chev d="right"/>
               </button>
             </div>
-
             <div style={body}>
-              {/* day-of-week */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
                 {DAY_NAMES.map(n => (
                   <div key={n} style={{
@@ -1354,7 +1346,6 @@ const DatePicker = ({ dates, selected, onChange }) => {
                   }}>{n}</div>
                 ))}
               </div>
-              {/* days */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
                 {calDays.map((day, i) => {
                   if (!day) return <div key={`e-${i}`}/>;
@@ -1366,15 +1357,11 @@ const DatePicker = ({ dates, selected, onChange }) => {
                     <button key={key}
                       onClick={()=>{ if(isTrade){ onChange(key); setOpen(false); } }}
                       style={{
-                        height:28, borderRadius:6,
-                        border: isSel ? "none" : "none",
+                        height:28, borderRadius:6, border: "none",
                         cursor: isTrade?"pointer":"default", fontFamily:"monospace",
                         fontSize:11, fontWeight: isSel?600:400,
                         background: isSel?"#3b82f6":"transparent",
-                        color: isSel?"#fff"
-                          : isTrade?"#e2e8f0"
-                          : isWeekend?"#1e3a5f"
-                          : "#334155",
+                        color: isSel?"#fff" : isTrade?"#e2e8f0" : isWeekend?"#1e3a5f" : "#334155",
                         transition:"all .1s", position:"relative",
                       }}
                       onMouseEnter={e=>{ if(isTrade&&!isSel) e.currentTarget.style.background="rgba(255,255,255,0.07)"; }}
@@ -1392,26 +1379,20 @@ const DatePicker = ({ dates, selected, onChange }) => {
                 })}
               </div>
             </div>
-
             <div style={footer}>
-              <span style={{ fontSize:9, color:"#334155", letterSpacing:"0.1em", textTransform:"uppercase" }}>
-                Trading Days
-              </span>
+              <span style={{ fontSize:9, color:"#334155", letterSpacing:"0.1em", textTransform:"uppercase" }}>Trading Days</span>
               <span style={{
                 fontSize:11, fontWeight:500, color:"#60a5fa",
-                background:"rgba(59,130,246,0.1)",
-                padding:"1px 8px", borderRadius:99,
+                background:"rgba(59,130,246,0.1)", padding:"1px 8px", borderRadius:99,
                 border:"0.5px solid rgba(59,130,246,0.2)",
               }}>{dates.length}</span>
             </div>
           </>)}
-
         </div>
       )}
     </div>
   );
-};
-
+});
 
 /* ================= MAIN COMPONENT ================= */
 export default function HisRealFlow() {
@@ -1421,11 +1402,10 @@ export default function HisRealFlow() {
   const [globalHoverIndex, setGlobalHoverIndex] = useState(null);
   const [pointGap, setPointGap] = useState(52);
   const chartRefs = useRef({});
+  const navigate = useNavigate();
 
   const tradingDates   = useMemo(() => getTradingDates(), []);
-  const availableDates  = tradingDates.map(d => d.key);
-  // default to first date
-  const defaultDate = availableDates[0] ?? null;
+  const availableDates = useMemo(() => tradingDates.map(d => d.key), [tradingDates]);
 
   const handleZoom = useCallback((deltaY, mouseClientX, scrollEl) => {
     setPointGap(prev => {
@@ -1468,95 +1448,89 @@ export default function HisRealFlow() {
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-        @keyframes flash-up {
-          0%   { background-color: rgba(34,197,94,0.45); }
-          40%  { background-color: rgba(34,197,94,0.2); }
-          100% { background-color: transparent; }
-        }
-        @keyframes flash-down {
-          0%   { background-color: rgba(239,68,68,0.45); }
-          40%  { background-color: rgba(239,68,68,0.2); }
-          100% { background-color: transparent; }
-        }
+        @keyframes flash-up { 0% { background-color: rgba(34,197,94,0.45); } 40% { background-color: rgba(34,197,94,0.2); } 100% { background-color: transparent; } }
+        @keyframes flash-down { 0% { background-color: rgba(239,68,68,0.45); } 40% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
         .flash-up   { animation: flash-up 3s ease-out forwards; }
         .flash-down { animation: flash-down 3s ease-out forwards; }
-
-        @keyframes ping-slow {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.5); opacity: 0; }
-        }
+        @keyframes ping-slow { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.5); opacity: 0; } }
         .animate-ping { animation: ping-slow 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-
-        @keyframes bounce-icon {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
+        @keyframes bounce-icon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
         .animate-bounce-icon { animation: bounce-icon 0.4s ease-in-out 3; }
-
-        @keyframes spin-once {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin-once { animation: spin-once 0.5s ease-in-out; }
-
-        @keyframes pulse-ring {
-          0%   { r: 6; opacity: 0.8; }
-          100% { r: 16; opacity: 0; }
-        }
+        @keyframes pulse-ring { 0% { r: 6; opacity: 0.8; } 100% { r: 16; opacity: 0; } }
         .pulse-ring { animation: pulse-ring 1s ease-out forwards; }
+        @keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .mobile-menu-enter { animation: slide-down 0.18s ease-out forwards; }
+        .cat-pill-active { box-shadow: 0 0 0 1px rgba(59,130,246,0.5), 0 2px 8px rgba(59,130,246,0.2); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="max-w-[1600px] mx-auto px-4 py-6">
-        <header className="flex flex-wrap items-center gap-3 mb-8">
-          <InfoTooltip
-            lines={[
-              "His Real Flow ติดตามกระแสเงินตลาดหุ้น Real-time",
-              "ราคาอัพเดทอัตโนมัติทุก 4-10 วินาที (demo)",
-              "กราฟ append จุดใหม่ทุกครั้งที่มีข้อมูล",
-              "ตัวเลขเปลี่ยนแบบ animate + มีเสียง tick",
-            ]}
-            linkText="View feature details here" linkHref="#">
-            <button className="w-9 h-9 rounded-full border border-slate-600 flex items-center justify-center text-slate-300 hover:bg-slate-700 hover:text-white hover:border-slate-400 transition-all text-sm font-bold shrink-0">?</button>
-          </InfoTooltip>
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <header className="mb-6 sm:mb-8">
 
-          <div className="relative w-56">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <input type="text" placeholder="Search..." value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-[#1e293b] rounded-lg py-2 pl-9 pr-8 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 transition-all" />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs transition-colors">✕</button>
-            )}
-          </div>
+     {/* ── Row 1: Search + DatePicker + Real Flow button ── */}
+<div className="flex items-center gap-2 sm:gap-3">
 
-          <DatePicker dates={availableDates} selected={selectedDate} onChange={setSelectedDate} />
+  <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
+    His Real Flow tracks stock market money flow historically.
+    Select a trading date to view that day's flow data.
+    Charts and rankings update based on the selected date.
+  </ToolHint>
 
-          <div className="flex flex-wrap gap-2 ml-auto lg:ml-0">
-            {CATEGORIES.map(cat => {
-              const isActive = activeCategory === cat;
-              return (
-                <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all border focus:outline-none
-                    ${isActive
-                      ? "bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/50"
-                      : "bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white"}`}>
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </header>
+  {/* Search */}
+  <div className="relative flex-1 min-w-0 max-w-[160px] sm:max-w-[200px] lg:max-w-[220px]">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </span>
+    <input type="text" placeholder="Search..." value={searchQuery}
+      onChange={e => setSearchQuery(e.target.value)}
+      className="w-full bg-[#1e293b] rounded-lg py-1.5 sm:py-2 pl-8 sm:pl-9 pr-7 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 transition-all" />
+    {searchQuery && (
+      <button onClick={() => setSearchQuery("")}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs transition-colors">✕</button>
+    )}
+  </div>
 
-        <div className="space-y-6 pb-12">
+  {/* DatePicker */}
+  <DatePicker dates={availableDates} selected={selectedDate} onChange={setSelectedDate} />
+
+  {/* Real Flow button */}
+  <button
+    onClick={() => navigate("/real-flow")}
+    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all border bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white focus:outline-none ml-auto shrink-0"
+    title="Back to Real Flow">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span className="hidden sm:inline">Real Flow</span>
+  </button>
+</div>
+
+{/* ── Row 2: Category pills — ทุก breakpoint ── */}
+<div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
+  {CATEGORIES.map(cat => {
+    const isActive = activeCategory === cat;
+    return (
+      <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
+        className={`px-3 lg:px-5 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all border focus:outline-none whitespace-nowrap flex-shrink-0
+          ${isActive
+            ? "bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/50 cat-pill-active"
+            : "bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white"}`}>
+        {cat}
+      </button>
+    );
+  })}
+</div>
+          </header>
+
+        <div className="space-y-4 sm:space-y-6 pb-12">
           {visibleSections.length > 0 ? (
             visibleSections.map(({ category, type }) => {
-              const baseSeed = (CATEGORIES.indexOf(category) * 2 + (type === "+" ? 0 : 1) + 1) * 37;
+              const baseSeed  = (CATEGORIES.indexOf(category) * 2 + (type === "+" ? 0 : 1) + 1) * 37;
               const dateIndex = tradingDates.findIndex(d => d.key === selectedDate);
               const safeIdx   = dateIndex >= 0 ? dateIndex : 0;
               return (
@@ -1574,7 +1548,7 @@ export default function HisRealFlow() {
             })
           ) : (
             <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-              <svg className="w-12 h-12 mb-4" style={{opacity:0.2,color:"#92400e"}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>

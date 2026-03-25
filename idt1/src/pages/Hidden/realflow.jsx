@@ -828,16 +828,12 @@ export default function RealFlow() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery, setSearchQuery]        = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen]  = useState(false);
 
   const [globalLogical, setGlobalLogical] = useState(null);
   const chartRefs = useRef({});
   const [barWidth, setBarWidth] = useState(80);
 
   const bp = useBreakpoint();
-  const isMobile = bp === "xs" || bp === "sm";
-  const isTablet = bp === "md";
-  const isCompact = isMobile || isTablet;
 
   const handleZoom = useCallback((deltaY, _chartApi) => {
     setBarWidth(prev => {
@@ -864,13 +860,6 @@ export default function RealFlow() {
     const matchSearch = searchQuery.trim() === "" || category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchSearch;
   }), [allSections, activeCategory, searchQuery]);
-
-  /* ── category pill label: ย่อบน mobile ── */
-  const catLabel = (cat) => {
-    if (!isMobile) return cat;
-    const shortMap = { "SET100": "S100", "NON-SET100": "NON", "MAI": "MAI", "WARRANT": "WAR" };
-    return shortMap[cat] ?? cat;
-  };
 
   return (
     <div className="w-full min-h-screen bg-[#0f172a] text-white">
@@ -908,154 +897,63 @@ export default function RealFlow() {
             md     : [? icon] [Search____] [S100][NON][MAI][WAR] [History]
             lg/xl  : [? icon] [Search________] [SET100][NON-SET100][MAI][WARRANT] [History]
         ══════════════════════════════════════════════════════ */}
-        <header className="mb-6 sm:mb-8">
 
-{/* ── Row 1: always visible ── */}
-<div className="flex items-center gap-2 sm:gap-3">
+  <header className="mb-6 sm:mb-8">
 
-  <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-    Real Flow tracks stock market money flow in real-time.
-    Prices update automatically every 10–15 seconds.
-  </ToolHint>
+  {/* ── Row 1: ToolHint + Search + History button ── */}
+  <div className="flex items-center gap-2 sm:gap-3">
 
-  {/* Search */}
-  <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-[240px] md:max-w-[200px] lg:max-w-[220px]">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
+      Real Flow tracks stock market money flow in real-time.
+      Prices update automatically every 10–15 seconds.
+    </ToolHint>
+
+    {/* Search */}
+    <div className="relative flex-1 min-w-0 max-w-[160px] sm:max-w-[200px] lg:max-w-[220px]">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input type="text" placeholder="Search..." value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        className="w-full bg-[#1e293b] rounded-lg py-1.5 sm:py-2 pl-8 sm:pl-9 pr-7 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 transition-all" />
+      {searchQuery && (
+        <button onClick={() => setSearchQuery("")}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs transition-colors">✕</button>
+      )}
+    </div>
+
+    {/* History button */}
+    <button
+      onClick={() => navigate("/hisrealflow")}
+      className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all border bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white focus:outline-none ml-auto shrink-0"
+      title="View History">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
-    </span>
-    <input
-      type="text"
-      placeholder="Search..."
-      value={searchQuery}
-      onChange={e => setSearchQuery(e.target.value)}
-      className="w-full bg-[#1e293b] rounded-lg py-1.5 sm:py-2 pl-8 sm:pl-9 pr-7 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 transition-all"
-    />
-    {searchQuery && (
-      <button
-        onClick={() => setSearchQuery("")}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs transition-colors">
-        ✕
-      </button>
-    )}
+      <span className="hidden sm:inline">History</span>
+    </button>
   </div>
 
-  {/* Category pills — hidden on xs/sm, shown from md up */}
-  <div className="hidden md:flex items-center gap-1.5 lg:gap-2 flex-1 overflow-x-auto no-scrollbar">
+  {/* ── Row 2: Category pills — ทุก breakpoint ── */}
+  <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
     {CATEGORIES.map(cat => {
       const isActive = activeCategory === cat;
       return (
-        <button
-          key={cat}
-          onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
-          className={`
-            px-3 lg:px-5 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all border focus:outline-none whitespace-nowrap flex-shrink-0
+        <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
+          className={`px-3 lg:px-5 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all border focus:outline-none whitespace-nowrap flex-shrink-0
             ${isActive
               ? "bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/50 cat-pill-active"
-              : "bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white"
-            }
-          `}>
-          {catLabel(cat)}
+              : "bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white"}`}>
+          {cat}
         </button>
       );
     })}
   </div>
 
-  {/* Right actions — History + hamburger */}
-  <div className="flex items-center gap-1.5 ml-auto shrink-0">
-    <button
-      onClick={() => navigate("/hisrealflow")}
-      className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all border bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white focus:outline-none"
-      title="View History">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-      <span className="hidden sm:inline">History</span>
-    </button>
-
-    <button
-      onClick={() => setMobileMenuOpen(prev => !prev)}
-      className="md:hidden w-8 h-8 rounded-lg border border-slate-600 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 hover:border-slate-400 transition-all"
-      aria-label="Toggle category menu"
-      aria-expanded={mobileMenuOpen}>
-      {mobileMenuOpen ? (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      ) : (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      )}
-    </button>
-  </div>
-
-</div>
-
-          {/* ── Row 2 (mobile): category pills dropdown ── */}
-          {mobileMenuOpen && (
-            <div className="md:hidden mt-2 mobile-menu-enter">
-              <div className="bg-[#1e293b] rounded-xl border border-slate-700 p-3">
-                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2 px-1">Filter by category</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES.map(cat => {
-                    const isActive = activeCategory === cat;
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => {
-                          setActiveCategory(prev => prev === cat ? null : cat);
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`
-                          py-2.5 px-3 rounded-lg text-sm font-semibold transition-all border focus:outline-none text-left flex items-center gap-2
-                          ${isActive
-                            ? "bg-blue-600/20 border-blue-500/60 text-blue-300"
-                            : "bg-[#0f172a] border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white"
-                          }
-                        `}>
-                        {isActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                        )}
-                        <span>{cat}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Active filter indicator */}
-                {activeCategory && (
-                  <button
-                    onClick={() => { setActiveCategory(null); setMobileMenuOpen(false); }}
-                    className="mt-2 w-full py-1.5 rounded-lg text-xs text-slate-400 hover:text-white border border-dashed border-slate-600 hover:border-slate-400 transition-all flex items-center justify-center gap-1.5">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                    Clear filter ({activeCategory})
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── Active filter chip (xs/sm) — shows when a category is selected but menu is closed ── */}
-          {!mobileMenuOpen && activeCategory && isMobile && (
-            <div className="md:hidden mt-2 flex items-center gap-2">
-              <span className="text-[10px] text-slate-500 font-mono">Filtered:</span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-600/15 border border-blue-500/40 rounded-full text-xs text-blue-300 font-semibold">
-                {activeCategory}
-                <button
-                  onClick={() => setActiveCategory(null)}
-                  className="text-blue-400 hover:text-white transition-colors leading-none ml-0.5">
-                  ✕
-                </button>
-              </span>
-            </div>
-          )}
-
-        </header>
-
+</header>
+      
         {/* ── Sections ── */}
         <div className="space-y-4 sm:space-y-6 pb-12">
           {visibleSections.length > 0 ? (
