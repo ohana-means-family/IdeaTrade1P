@@ -29,7 +29,7 @@ app.post("/api/request-otp", async (req, res) => {
   const otpCode = Math.floor(100000 + Math.random() * 900000);
 
   // 👇 1. นำ URL ที่ได้จาก Google Apps Script มาใส่ในนี้ (ต้องอยู่ในเครื่องหมายคำพูด "")
-  const GOOGLE_SCRIPT_URL = "วาง_URL_ของ_Google_Apps_Script_ที่ก๊อปปี้มาไว้ตรงนี้"; 
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWFvhTdfmWyIOlQT6feXrQCy-qVfMR7f_5y0-v74HqZGLkpMF4USXcBYXdADJKgxiH/exec"; 
 
   // 👇 2. จัดเตรียมเนื้อหาอีเมลที่จะส่งไปให้ Google Apps Script
   const emailPayload = {
