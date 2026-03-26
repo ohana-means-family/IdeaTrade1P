@@ -368,21 +368,26 @@ const FlowChart = memo(({
   }, [chartRefs, syncVisibleRight]);
 
   const onMouseDown = useCallback(e => {
-    setIsDragging(true);
-    setGlobalHoverIndex(null);
-    dragStart.current = { x: e.pageX - scrollRef.current.offsetLeft, scrollLeft: scrollRef.current.scrollLeft };
-  }, [setGlobalHoverIndex]);
+  setIsDragging(true);
+  setGlobalHoverIndex(null);
+  const rect = scrollRef.current.getBoundingClientRect();
+  dragStart.current = { 
+    x: e.clientX - rect.left,                
+    scrollLeft: scrollRef.current.scrollLeft 
+  };
+}, [setGlobalHoverIndex]);
 
   const onMouseMove = useCallback(e => {
-    if (!scrollRef.current) return;
-    if (isDragging) {
-      e.preventDefault();
-      const dx = e.pageX - scrollRef.current.offsetLeft - dragStart.current.x;
-      scrollRef.current.scrollLeft = dragStart.current.scrollLeft - dx * 1.5;
-      syncVisibleRight(scrollRef.current);
-      setGlobalHoverIndex(null);
-      return;
-    }
+  if (!scrollRef.current) return;
+  if (isDragging) {
+    e.preventDefault();
+    const rect = scrollRef.current.getBoundingClientRect();
+    const dx = e.clientX - rect.left - dragStart.current.x; 
+    scrollRef.current.scrollLeft = dragStart.current.scrollLeft - dx * 1.5;
+    syncVisibleRight(scrollRef.current);
+    setGlobalHoverIndex(null);
+    return;
+  }
     const rect   = scrollRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left + scrollRef.current.scrollLeft;
     const idx    = Math.max(0, Math.min(Math.round((mouseX - padL) / gap), pts - 1));
@@ -667,24 +672,6 @@ const ZoomModal = memo(({ card, onClose, highlighted, dimmed, extraVisible, onLe
   const chartContainerRef = useRef(null);
   const modalChartRefs = useRef({});
 
-  useEffect(() => {
-    let rafId = requestAnimationFrame(() => {
-      const el = chartContainerRef.current;
-      if (!el || !card || card.labels.length < 2) return;
-      const availW = el.clientWidth - CHART_CFG.paddingLeft - CHART_CFG.paddingRight - 4;
-      const gap = Math.max(8, Math.min(120, availW / (card.labels.length - 1)));
-      setLocalPointGap(gap);
-      rafId = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const id = `modal-${card?.category}-${card?.type}`;
-          const chartEl = modalChartRefs.current?.[id];
-          if (chartEl) chartEl.scrollLeft = chartEl.scrollWidth;
-        });
-      });
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [card]);
-
   const localHandleZoom = useCallback((deltaY, mouseClientX, scrollEl) => {
     setLocalPointGap(prev => {
       const factor = deltaY > 0 ? 0.82 : 1.22;
@@ -714,11 +701,15 @@ const ZoomModal = memo(({ card, onClose, highlighted, dimmed, extraVisible, onLe
     const el = chartContainerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      if (entry.contentRect.height > 0) setChartH(entry.contentRect.height);
+      if (entry.contentRect.height > 0) setChartH(entry.contentRect.height);if (width > 0 && card && card.labels.length > 1) {
+      const availW = width - CHART_CFG.paddingLeft - CHART_CFG.paddingRight - 4;
+      const gap = Math.max(8, Math.min(120, availW / (card.labels.length - 1)));
+      setLocalPointGap(gap);
+    }
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [card]); 
 
   if (!card) return null;
   const { category, type, data, allSeries, labels, top5 } = card;
@@ -769,32 +760,30 @@ const ZoomModal = memo(({ card, onClose, highlighted, dimmed, extraVisible, onLe
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <div ref={chartContainerRef} style={{ flexShrink: 0 }}>
-          {chartH > 0 && (
-            <div style={{ position: "absolute", inset: 0 }}>
-              <FlowChart
-                allSeries={allSeries} labels={labels} top5={top5}
-                highlighted={highlighted} dimmed={dimmed}
-                extraVisible={extraVisible} allData={data}
-                height={chartH}
-                chartId={`modal-${category}-${type}`}
-                globalHoverIndex={globalHoverIndex}
-                setGlobalHoverIndex={setGlobalHoverIndex}
-                chartRefs={modalChartRefs}
-                pointGap={localPointGap}
-                handleZoom={localHandleZoom}
-                fullWidth={true}
-                flashMap={flashMap}
-              />
-            </div>
-          )}
-        </div>
+  <div ref={chartContainerRef} style={{ flex: 1, minWidth: 0, position: "relative", minHeight: 0 }}>
+    {chartH > 0 && (
+      <FlowChart
+        allSeries={allSeries} labels={labels} top5={top5}
+        highlighted={highlighted} dimmed={dimmed}
+        extraVisible={extraVisible} allData={data}
+        height={chartH}
+        chartId={`modal-${category}-${type}`}
+        globalHoverIndex={globalHoverIndex}
+        setGlobalHoverIndex={setGlobalHoverIndex}
+        chartRefs={modalChartRefs}    
+          pointGap={localPointGap}
+          handleZoom={localHandleZoom}
+        fullWidth={true}
+        flashMap={flashMap}
+      />
+    )}
+  </div>
 
-        <div style={{
-          width: 300, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0,
-          border: "1px solid rgba(255,255,255,0.15)",
-          margin: "8px 8px 8px 0", borderRadius: 8, overflow: "hidden",
-        }}>
+  <div style={{
+    width: 300, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0,
+    border: "1px solid rgba(255,255,255,0.15)",
+    margin: "8px 8px 8px 0", borderRadius: 8, overflow: "hidden",
+  }}>
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "10px 18px 8px",
@@ -1036,15 +1025,17 @@ const SectionCard = memo(({ category, type, baseSeed, selectedDate, dateIndex, g
 
       {modalOpen && (
         <ZoomModal
-          card={{ category, type, data: liveData, allSeries: baseSeries, labels: dayLabels, top5 }}
-          onClose={() => setModalOpen(false)}
-          highlighted={highlighted} dimmed={dimmed} extraVisible={extraVisible}
-          onLegendClick={handleLegendClick} onRowClick={handleRowClick} onReset={handleRefresh}
-          globalHoverIndex={globalHoverIndex} setGlobalHoverIndex={setGlobalHoverIndex}
-          chartRefs={chartRefs} pointGap={pointGap} handleZoom={handleZoom}
-          flashMap={flashMap} recentMap={recentMap}
-        />
-      )}
+    card={{ category, type, data: liveData, allSeries: baseSeries, labels: dayLabels, top5 }}
+    onClose={() => setModalOpen(false)}
+    highlighted={highlighted} dimmed={dimmed} extraVisible={extraVisible}
+    onLegendClick={handleLegendClick} onRowClick={handleRowClick} onReset={handleRefresh}
+    globalHoverIndex={globalHoverIndex} setGlobalHoverIndex={setGlobalHoverIndex}
+    chartRefs={chartRefs}     
+    pointGap={pointGap}
+    handleZoom={handleZoom}     
+    flashMap={flashMap} recentMap={recentMap}
+      />
+    )}
     </>
   );
 });
