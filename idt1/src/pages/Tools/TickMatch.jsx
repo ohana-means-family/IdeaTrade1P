@@ -665,34 +665,43 @@ export default function TickMatch() {
   };
 
   const scroll = (direction) => {
-    if (scrollContainerRef.current) {
-      isPaused.current = true;
-      const scrollAmount = 350;
-      if (direction === "left") { scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: "smooth" }); scrollDirection.current = -1; }
-      else                      { scrollContainerRef.current.scrollBy({ left:  scrollAmount, behavior: "smooth" }); scrollDirection.current =  1; }
-      setTimeout(checkScroll, 300);
-      setTimeout(() => { isPaused.current = false; }, 500);
-    }
+    if (!scrollContainerRef.current) return;
+    isPaused.current = true;
+    const { current } = scrollContainerRef;
+    current.scrollBy({ left: direction === "left" ? -350 : 350, behavior: "smooth" });
+    scrollDirection.current = direction === "left" ? -1 : 1;
+    setTimeout(checkScroll, 300);
+    setTimeout(() => { isPaused.current = false; }, 500);
   };
 
+  // ✅ Fix: Move scrollContainerRef.current inside setInterval
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const id = setInterval(() => {
+    const speed = 1;
+    const intervalTime = 15;
+    
+    const autoScrollInterval = setInterval(() => {
+      const container = scrollContainerRef.current; // 🔥 Moved inside
       if (isPaused.current || !container) return;
+      
       const { scrollLeft, scrollWidth, clientWidth } = container;
       const maxScroll = scrollWidth - clientWidth;
-      if (scrollDirection.current === 1  && Math.ceil(scrollLeft) >= maxScroll - 2) scrollDirection.current = -1;
-      if (scrollDirection.current === -1 && scrollLeft <= 2)                        scrollDirection.current =  1;
-      container.scrollLeft += scrollDirection.current;
+      
+      if (scrollDirection.current === 1 && Math.ceil(scrollLeft) >= maxScroll - 2) {
+        scrollDirection.current = -1;
+      } else if (scrollDirection.current === -1 && scrollLeft <= 2) {
+        scrollDirection.current = 1;
+      }
+      container.scrollLeft += scrollDirection.current * speed;
       checkScroll();
-    }, 15);
-    return () => clearInterval(id);
+    }, intervalTime);
+    
+    return () => clearInterval(autoScrollInterval);
   }, [isMember, enteredTool]);
 
   useEffect(() => {
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
   }, []);
 
   function FitText({ value, className }) {
@@ -1054,8 +1063,8 @@ export default function TickMatch() {
     );
   };
 
-  /* ── Preview / Start screen shared markup ── */
-  const PreviewLayout = ({ showStartButton }) => (
+  /* ── ✅ Fix: Preview Layout changed from Component to a regular Function ── */
+  const renderPreviewLayout = (showStartButton) => (
     <div className="relative w-full min-h-screen text-white overflow-x-hidden animate-fade-in pb-20">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
@@ -1083,24 +1092,67 @@ export default function TickMatch() {
           </div>
         </div>
 
+        {/* 🌟 4 Main Features Section 🌟 */}
         <div className="w-full max-w-5xl mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">4 Main Features</h2>
-          <div className="relative group w-full" onMouseEnter={() => isPaused.current = true} onMouseLeave={() => isPaused.current = false}>
-            <button onClick={() => scroll("left")} aria-label="Scroll Left"
-              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
+            4 Main Features
+          </h2>
+          <div 
+            className="relative group" 
+            onMouseEnter={() => { isPaused.current = true; }} 
+            onMouseLeave={() => { isPaused.current = false; }}
+            onTouchStart={() => { isPaused.current = true; }}
+            onTouchEnd={() => { isPaused.current = false; }}
+          >
+            <button
+              onClick={() => scroll("left")}
+              aria-label="Scroll Left"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)]
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95
+                          ${showLeft ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
-            <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar" style={scrollbarHideStyle}>
+
+            <div 
+              ref={scrollContainerRef} 
+              onScroll={checkScroll} 
+              className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar" 
+              style={scrollbarHideStyle}
+            >
               {features.map((item, index) => (
-                <div key={index} className="w-[350px] md:w-[400px] flex-shrink-0 group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300">
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">{item.title}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                <div 
+                  key={index} 
+                  className="w-[350px] md:w-[400px] flex-shrink-0 group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300"
+                >
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
               ))}
             </div>
-            <button onClick={() => scroll("right")} aria-label="Scroll Right"
-              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+
+            <button
+              onClick={() => scroll("right")}
+              aria-label="Scroll Right"
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20
+                          w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white
+                          hover:bg-cyan-500 hover:border-cyan-400 hover:text-white
+                          hover:shadow-[0_0_15px_rgba(6,182,212,0.5)]
+                          flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95
+                          ${showRight ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
@@ -1133,8 +1185,9 @@ export default function TickMatch() {
     </div>
   );
 
-  if (!isMember)               return <PreviewLayout showStartButton={false} />;
-  if (isMember && !enteredTool) return <PreviewLayout showStartButton={true}  />;
+  // ✅ Use the new render function instead of component
+  if (!isMember)               return renderPreviewLayout(false);
+  if (isMember && !enteredTool) return renderPreviewLayout(true);
 
   /* ── CASE 3: Full Dashboard ── */
   const todayStr = new Date().toISOString().split('T')[0];
