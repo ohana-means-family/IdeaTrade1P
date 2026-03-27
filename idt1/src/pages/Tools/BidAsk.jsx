@@ -680,11 +680,7 @@ function ReplayPanel({ toolHint }) {
               </div>
             )}
 
-            <label
-              className={`absolute left-2 md:left-3 text-[10px] px-1 bg-[#0f172a] text-slate-300 transition-all duration-200 ease-in-out pointer-events-none ${
-                isFocused || symbol ? "-top-2" : "top-2"
-              }`}
-            >
+            <label className="absolute left-2 md:left-3 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300 pointer-events-none">
               Symbol*
             </label>
           </div>
