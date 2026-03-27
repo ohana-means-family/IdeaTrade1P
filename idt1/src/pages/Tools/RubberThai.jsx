@@ -893,12 +893,6 @@ export default function RubberThai() {
             {/* Symbol Search */}
             <div className="relative w-full sm:w-64 flex-1 sm:flex-none">
               <div className="relative bg-[#111827] border border-slate-700 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 flex items-center shadow-inner">
-                <span
-                  onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                  className="text-slate-400 text-xs mr-2 cursor-pointer p-1 hover:bg-slate-800 rounded"
-                >
-                  ▾
-                </span>
                 <input
                   value={symbolQuery}
                   onChange={(e) => {
@@ -910,6 +904,12 @@ export default function RubberThai() {
                   placeholder="Type a Symbol..."
                   className="flex-1 bg-transparent outline-none text-white text-xs sm:text-sm placeholder:text-slate-500 min-w-0"
                 />
+                <span
+                  onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
+                  className="text-slate-400 text-xs mr-2 cursor-pointer p-1 hover:bg-slate-800 rounded"
+                >
+                  ▾
+                </span>
                 {(symbol || symbolQuery) && (
                   <button
                     onClick={() => {
