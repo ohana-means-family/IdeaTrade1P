@@ -876,15 +876,21 @@ export default function PetroleumInsights() {
               <div className="relative w-56" onClick={(e) => e.stopPropagation()}>
                 <div className= " relative bg-[#111827] border border-slate-700 rounded-md px-4 py-3 flex items-center "> 
                   <input
-                    value={symbolQuery}
+                    value={symbol}
                     onChange={(e) => {
-                      setSymbolQuery(e.target.value);
+                      setSymbol(e.target.value);
                       setShowSymbolDropdown(true);
-                      setSymbol("");
                     }}
-                    onFocus={() => { setShowSymbolDropdown(true); setShowOilDropdown(false); }}
-                    placeholder=""
-                    className="w-full bg-transparent outline-none text-white text-sm"
+                    onFocus={() => {
+                      setIsFocused(true);
+                      setShowSymbolDropdown(true);
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowSymbolDropdown(false), 150);
+                      setIsFocused(false);
+                    }}
+                    placeholder="Symbol*"
+                    className="w-full bg-transparent outline-none text-white text-xs pr-5 placeholder-slate-400"
                   />
                   <div className="flex items-center gap-2">
                     {(symbol || symbolQuery) && (
@@ -893,9 +899,6 @@ export default function PetroleumInsights() {
                     <span onClick={() => setShowSymbolDropdown(!showSymbolDropdown)} className="text-slate-400 text-xs ml-2 cursor-pointer">▾</span>
                   </div>
                 </div>
-                <label className={`absolute left-4 px-2 transition-all duration-200 pointer-events-none ${symbol || symbolQuery || showSymbolDropdown ? "-top-2 text-xs bg-[#0c111b]" : "top-1/2 -translate-y-1/2 text-sm text-slate-400"}`}> 
-                  Type a Symbol...
-                </label>
                 {showSymbolDropdown && (
                   <div className="absolute mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-72 overflow-y-auto z-50"> 
                     {filteredSymbols.length > 0
