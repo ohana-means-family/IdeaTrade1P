@@ -962,49 +962,81 @@ export default function FlowIntraday() {
       {/* Fullscreen Modal - Responsive Wrap */}
       {fullscreenIndex !== null && symbols[fullscreenIndex] && (
         <div className="fixed inset-0 bg-[#0d1117] z-[999] flex flex-col">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0 shadow-lg">
-            <button onClick={() => { setFullscreenIndex(null); setFsDrawing(false); setFsHline(null); }}
-                    className="flex items-center gap-1 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs text-slate-300 hover:text-white transition-all flex-shrink-0">
-              ← <span className="hidden sm:inline">Back</span>
-            </button>
-            
-            <FullscreenSymbolInput value={symbols[fullscreenIndex]} onChange={v => handleSymbolChange(fullscreenIndex, v)}/>
-            
-            <h2 className="hidden md:block text-lg font-bold text-white tracking-widest uppercase flex-1 text-center truncate">{symbols[fullscreenIndex]}</h2>
-            
-            <div className="flex-1 md:hidden"></div> {/* Push content to right on mobile */}
+<div className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border-b border-slate-800 flex-shrink-0 shadow-lg">
 
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              {/* Fullscreen bell */}
-              <button
-                onClick={handleFsBell}
-                title={fsDrawing ? "Click chart" : fsHline != null ? "Remove HLine" : "Place HLine"}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-semibold transition-all ${
-                  fsDrawing
-                    ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400 animate-pulse"
-                    : fsHline != null
-                      ? "border-violet-500/60 bg-violet-500/10 text-violet-400"
-                      : "border-slate-700 bg-[#1f2937] text-slate-400 hover:text-white hover:border-slate-500"
-                }`}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-[14px] sm:h-[14px]">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                <span className="hidden sm:inline">{fsDrawing ? "Click chart..." : fsHline != null ? `HLine: ${Math.round(fsHline).toLocaleString()}` : "HLine"}</span>
-              </button>
+  {/* ซ้าย */}
+  <div className="flex items-center gap-2 flex-shrink-0">
 
-              <ChartModeDropdown value={fullscreenMode} onChange={v => setFullscreenMode(v)} />
-              
-              <button 
-                onClick={handleFullscreenReset} 
-                title="Reset View" 
-                className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#1f2937] border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-all flex-shrink-0"
-              >
-                <RefreshIcon sx={{ fontSize: isMobile ? 16 : 18 }}/>
-              </button>
-            </div>
-          </div>
+    {/* ? ToolHint */}
+    <ToolHint onViewDetails={() => { setFullscreenIndex(null); setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+      Fullscreen chart view. Click bell to place horizontal alert line.
+    </ToolHint>
+
+    {/* ← back */}
+    <button
+      onClick={() => { setFullscreenIndex(null); setFsDrawing(false); setFsHline(null); }}
+      className="flex items-center gap-1.5 bg-[#1f2937] hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white transition-all"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+      </svg>
+      back
+    </button>
+
+    {/* Refresh */}
+    <button
+      onClick={handleFullscreenReset}
+      className="w-7 h-7 flex items-center justify-center rounded-full bg-[#1f2937] border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-all"
+    >
+      <RefreshIcon sx={{ fontSize: 14 }} />
+    </button>
+
+    {/* Search input */}
+    <FullscreenSymbolInput value={symbols[fullscreenIndex]} onChange={v => handleSymbolChange(fullscreenIndex, v)} />
+  </div>
+
+  {/* กลาง */}
+  <div className="flex-1 flex items-center justify-center">
+    <h2 className="text-base font-bold text-white tracking-widest uppercase">
+      {symbols[fullscreenIndex]}
+    </h2>
+  </div>
+
+  {/* ขวา */}
+  <div className="flex items-center gap-3 flex-shrink-0">
+
+    {/* Alert Settings ⓘ */}
+    <div className="flex items-center gap-1.5 text-slate-400 text-xs cursor-default select-none">
+      <span>Alert Settings</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3"/>
+        <line x1="12" y1="12" x2="12" y2="16"/>
+      </svg>
+    </div>
+
+    {/* 🔔 Open H-line */}
+    <button
+      onClick={handleFsBell}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+        fsDrawing
+          ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400 animate-pulse"
+          : fsHline != null
+            ? "border-violet-500/60 bg-violet-500/10 text-violet-400"
+            : "border-slate-700 bg-transparent text-slate-300 hover:text-white hover:border-slate-500"
+      }`}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span>{fsHline != null ? `${Math.round(fsHline).toLocaleString()}` : "Open H-line"}</span>
+    </button>
+
+    {/* Select Alert Type (ChartModeDropdown) */}
+    <ChartModeDropdown value={fullscreenMode} onChange={v => setFullscreenMode(v)} />
+  </div>
+</div>
 
           {/* Fullscreen drawing hint */}
           {fsDrawing && (
