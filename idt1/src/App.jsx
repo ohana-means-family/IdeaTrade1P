@@ -37,6 +37,8 @@ function MainLayout() {
     "/chart-flip-id", 
     "/hisrealflow",
     "/dw",
+    "/ideatradepoint",       
+    "/hisideatradepoint",
   ];
   
   // เช็คว่า path ปัจจุบันอยู่ในรายการที่ต้องซ่อน Sidebar หรือไม่
