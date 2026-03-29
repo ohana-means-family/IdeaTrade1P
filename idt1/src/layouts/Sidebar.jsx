@@ -247,6 +247,13 @@ const SidebarContent = ({
     onMobileClose?.();
   };
 
+    /* ─── Chart Flip navigation ── */
+    const handleChartFlipNavigation = () => {
+    navigate("/chart-flip-id");
+    setActivePage("chart-flip-id");
+    onMobileClose?.();
+  };
+
   /* ─── HisRealFlow navigation ── */
   const handleHisRealFlowNavigation = () => {
     navigate("/hisrealflow");
@@ -511,7 +518,7 @@ const SidebarContent = ({
 
         {/* ── Chart Flip ID Button ── */}
         <button
-          onClick={() => handleNavigation("chartflipid")}
+          onClick={handleChartFlipNavigation}
           onMouseEnter={(e) => handleMouseEnter(e, "Chart Flip ID")}
           onMouseLeave={handleMouseLeave}
           className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
