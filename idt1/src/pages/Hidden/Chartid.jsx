@@ -18,27 +18,28 @@ const TICK_LABELS = Array.from({ length: 14 }, (_, i) => {
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
-  bg:        "#080f1a",
-  surface:   "#0b1525",
-  panel:     "#0f1c2e",
-  header:    "#0f1c2e",
-  border:    "rgba(255,255,255,0.11)",
-  borderHi:  "rgba(255,255,255,0.20)",
+  bg:        "#0a1320",
+  surface:   "#0d1828",
+  panel:     "#101b2b",
+  header:    "#1e293b",
+  border:    "rgba(64,68,71,0.6)",
+  borderHi:  "rgba(64,68,71,0.4)",
   grid:      "rgba(255,255,255,0.04)",
   axis:      "rgba(255,255,255,0.13)",
   dimText:   "#1e3a5f",
   mutedText: "#4d6484",
   bodyText:  "#7a96b8",
-  t1:        "#22c55e",
-  t1d:       "#14532d",
-  id:        "#eab308",
-  idd:       "#713f12",
+  t1:        "#e1c605",
+  t1d:       "#585820",
+  id:        "#21a376",
+  idd:       "#067259",
   zero:      "#6366f1",
   zeroglow:  "rgba(99,102,241,0.10)",
   crosshair: "rgba(255,255,255,0.18)",
-  tagBg:     "#1a2d45",
-  navBg:     "#131f30",
-  navBorder: "rgba(255,255,255,0.11)",
+  tagBg:     "#1e293b",
+  navBg:     "#0d1828",
+  navBorder: "rgba(64,68,71,0.6)",
+  axisArea:  "#1e293b",
 };
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -209,7 +210,7 @@ function InfoTooltip({ text }) {
       {show && (
         <div style={{
           position: "absolute", top: 24, left: 0,
-          background: "#0a1422",
+          background: "#0a1320",
           border: `1px solid rgba(255,255,255,0.12)`,
           borderRadius: 6, padding: "5px 10px",
           whiteSpace: "nowrap", zIndex: 999,
@@ -380,8 +381,6 @@ function ChartPanel({
             letterSpacing: "0.10em",
             fontFamily: "'JetBrains Mono', monospace",
           }}>{title}</span>
-
-          {/* ── Info Tooltip แทน button เดิม ── */}
           <InfoTooltip text={subtitle} />
         </div>
 
@@ -450,6 +449,9 @@ function ChartPanel({
             <style>{`@keyframes spin-once { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }`}</style>
 
             <svg width={svgW} height={bodyH} style={{ display: "block", overflow: "visible", pointerEvents: "none" }}>
+              {/* axis area background */}
+              <rect x={0} y={bodyH - PAD.b} width={svgW} height={PAD.b} fill={C.axisArea} />
+
               {yTicks.map(({ y }, i) => (
                 <line key={i} x1={0} y1={y} x2={svgW} y2={y} stroke={C.grid} strokeWidth={1} />
               ))}
@@ -504,8 +506,8 @@ function ChartPanel({
         {isHovering && (
           <div style={{
             position: "absolute", top: 8, left: 10,
-            background: "rgba(8,15,26,0.96)",
-            border: `1px solid ${C.borderHi}`,
+            background: "rgba(10,19,32,0.96)",
+            border: `1px solid rgba(255,255,255,0.12)`,
             borderRadius: 8, padding: "6px 10px",
             pointerEvents: "none", zIndex: 20,
             backdropFilter: "blur(4px)",
@@ -538,12 +540,25 @@ function ChartPanel({
             cursor: isDragging ? "grabbing" : "default",
           }}
         >
+          {/* tagBg หยุดก่อน axis area */}
           <div style={{
-            position: "absolute", inset: 0,
+            position: "absolute",
+            top: 0, left: 0, right: 0,
+            bottom: PAD.b,
             background: C.tagBg,
-            borderLeft: `1px solid rgba(255,255,255,0.05)`,
           }} />
+          {/* axis area ส่วน Y-axis */}
+          <div style={{
+            position: "absolute",
+            bottom: 0, left: 0, right: 0,
+            height: PAD.b,
+            background: C.axisArea,
+          }} />
+
           <svg width={YAXIS_W} height={bodyH} style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}>
+            {/* เส้นแนวตั้งซ้าย Y-axis ยาวตลอด */}
+            <line x1={0} y1={0} x2={0} y2={bodyH} stroke="rgba(64,68,71,0.4)" strokeWidth={1} />
+
             {yTicks.map(({ y, v }, i) => {
               if (avoidYs.some(ay => Math.abs(y - ay) < 14)) return null;
               return (
@@ -560,12 +575,10 @@ function ChartPanel({
                 textAnchor="middle" dominantBaseline="central" fontWeight="800">0</text>
             </g>
 
-            {/* endTags — ตัวเลขแสดงเสมอ, ป้ายชื่อแสดงเฉพาะเมื่อ showLabels=true */}
             {endTags.map(({ id, y, val, label, color }) => {
               const LW = 52, VW = YAXIS_W - 6, TH = 20, r = 4;
               return (
                 <g key={id}>
-                  {/* ป้ายชื่อ — ซ่อนเมื่อ showLabels=false */}
                   {showLabels && (
                     <>
                       <rect x={-LW - 2} y={y - TH/2} width={LW} height={TH} rx={r} fill={color} />
@@ -575,7 +588,6 @@ function ChartPanel({
                       </text>
                     </>
                   )}
-                  {/* ตัวเลขค่า — แสดงเสมอ */}
                   <rect x={3} y={y - TH/2} width={VW} height={TH} rx={r}
                     fill="transparent" stroke={color} strokeWidth="0.8" strokeOpacity="0.4" />
                   <text x={3 + VW/2} y={y} fill={color} fontSize={11} fontWeight="700"
@@ -670,7 +682,6 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         ---
       </ToolHint>
 
-      {/* ← Back */}
       <button
         onClick={onBack}
         style={{
@@ -688,11 +699,10 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         <IconBack /> back
       </button>
 
-      {/* Symbol search */}
       <div style={{ position: "relative", flexShrink: 0 }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 6,
-          background: "#0a1422",
+          background: "#0a1320",
           border: `1px solid ${C.border}`,
           borderRadius: 7, padding: "0 10px",
           height: 30, width: 180, cursor: "text",
@@ -718,7 +728,7 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         {dropOpen && (
           <div style={{
             position: "absolute", top: 34, left: 0, width: 180,
-            background: "#0a1422",
+            background: "#0a1320",
             border: `1px solid rgba(255,255,255,0.10)`,
             borderRadius: 8, overflow: "hidden",
             boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
@@ -742,7 +752,6 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         )}
       </div>
 
-      {/* Compare */}
       <button
         onClick={() => {
           const url = new URL(window.location.href);
@@ -772,7 +781,6 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         <IconCompare />
       </button>
 
-      {/* Symbol name — center */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{
           fontSize: 15, fontWeight: 800,
