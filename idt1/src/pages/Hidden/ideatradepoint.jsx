@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom";
 import { createChart, ColorType, LineStyle, LineSeries } from "lightweight-charts";
 import ToolHint from "@/components/ToolHint.jsx";
+import { InfoTooltip } from "@/components/ToolHint.jsx";
 
 /* ================= CONSTANTS ================= */
 const CATEGORIES = ["SET100", "NON-SET100", "MAI", "WARRANT"];
@@ -16,7 +17,7 @@ const TIME_PERIODS = [
   { key: "start",   label: "Start",    sub: "10:00-12:30", from: 0,   to: 150 },
   { key: "half",    label: "Half-Day", sub: "12:00-14:30", from: 120, to: 270 },
   { key: "end",     label: "End-Day",  sub: "14:15-16:30", from: 255, to: 390 },
-  { key: "all",     label: "All",      sub: "10:00-16:30", from: 0,   to: 390 },
+  { key: "all",     label: "All Day",  sub: "10:00-16:30", from: 0,   to: 390 },
 ];
 
 const ROW_COUNTS = {
@@ -28,6 +29,7 @@ function getRowCount(category, type) {
 }
 
 const VISIBLE_ROWS = 5;
+const MAX_SELECT   = 5;
 
 /* ================= RNG + FLOW DATA ================= */
 function rng(s) {
@@ -226,7 +228,7 @@ const avoidCollisions = (tags, tagH = 24) => {
 
 /* ================= LWC CHART COMPONENT ================= */
 const LWCChart = ({
-  seriesData, highlighted, extraVisible, allData,
+  seriesData, highlighted, extraVisibleSet = [], allData,
   height = 200, chartId, chartRefs,
   onZoom, globalLogical, setGlobalLogical,
   showLabels = false, labelData = [],
@@ -235,13 +237,12 @@ const LWCChart = ({
   const containerRef  = useRef(null);
   const chartRef      = useRef(null);
   const linesRef      = useRef([]);
-  const extraLineRef  = useRef(null);
+  const extraLinesRef = useRef(new Map());
   const isDragging    = useRef(false);
   const dragStart     = useRef({ lastX: 0 });
   const suppressSync  = useRef(false);
   const labelsDOMRef  = useRef({});
   const rafRef        = useRef(null);
-
   const priceRangeRef = useRef({ min: 0, max: 100 });
   const animRafRef    = useRef(null);
 
@@ -254,12 +255,14 @@ const LWCChart = ({
     );
   }, [seriesData, periodConfig]);
 
+  // ── Smooth Y-axis animation via RAF interpolation ──
   const animatePriceRange = useCallback((targetMin, targetMax) => {
     if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
     const startMin  = priceRangeRef.current.min;
     const startMax  = priceRangeRef.current.max;
     const startTime = performance.now();
-    const DURATION  = 600;
+    const DURATION  = 800;
+
     const tick = (now) => {
       const t    = Math.min((now - startTime) / DURATION, 1);
       const ease = 1 - Math.pow(1 - t, 3);
@@ -267,11 +270,22 @@ const LWCChart = ({
         min: startMin + (targetMin - startMin) * ease,
         max: startMax + (targetMax - startMax) * ease,
       };
-      if (linesRef.current[0]) {
-        linesRef.current[0].applyOptions({ priceLineVisible: false });
+
+      // สลับ lineWidth ทีละ frame เพื่อ force LWC เรียก autoscaleInfoProvider ใหม่ทุก frame
+      const s = linesRef.current[0];
+      if (s) {
+        const cur = s.options().lineWidth ?? 2;
+        s.applyOptions({ lineWidth: cur === 2 ? 2.01 : 2 });
       }
-      if (t < 1) animRafRef.current = requestAnimationFrame(tick);
+
+      if (t < 1) {
+        animRafRef.current = requestAnimationFrame(tick);
+      } else {
+        // reset lineWidth กลับค่าเดิมเมื่อ animation จบ
+        if (linesRef.current[0]) linesRef.current[0].applyOptions({ lineWidth: 2 });
+      }
     };
+
     animRafRef.current = requestAnimationFrame(tick);
   }, []);
 
@@ -279,6 +293,7 @@ const LWCChart = ({
     if (!showLabels || !chartRef.current || !linesRef.current.length) return;
     const logicalRange = chartRef.current.timeScale().getVisibleLogicalRange();
     const rawLabels = [];
+
     linesRef.current.slice(0, VISIBLE_ROWS).forEach((series, i) => {
       const pts = slicedSeriesData?.[i];
       if (!pts || pts.length === 0) return;
@@ -293,37 +308,34 @@ const LWCChart = ({
         rawLabels.push({ y, value: currentVal.toFixed(2), index: i });
       }
     });
-    if (extraLineRef.current && extraVisible != null && slicedSeriesData?.[extraVisible]) {
-      const pts = slicedSeriesData[extraVisible];
-      if (pts && pts.length > 0) {
-        let rightmostIdx = pts.length - 1;
-        if (logicalRange) {
-          rightmostIdx = Math.floor(logicalRange.to);
-          rightmostIdx = Math.max(0, Math.min(pts.length - 1, rightmostIdx));
-        }
-        const currentVal = pts[rightmostIdx].value;
-        const y = extraLineRef.current.priceToCoordinate(currentVal);
-        if (y !== null && y !== undefined) {
-          rawLabels.push({ y, value: currentVal.toFixed(2), index: "extra" });
-        }
+
+    extraLinesRef.current.forEach((series, dataIdx) => {
+      const pts = slicedSeriesData?.[dataIdx];
+      if (!pts || pts.length === 0) return;
+      let rightmostIdx = pts.length - 1;
+      if (logicalRange) {
+        rightmostIdx = Math.floor(logicalRange.to);
+        rightmostIdx = Math.max(0, Math.min(pts.length - 1, rightmostIdx));
       }
-    }
-    const adjustedLabels = avoidCollisions(rawLabels, 24);
-    Object.values(labelsDOMRef.current).forEach(el => {
-      if (el) el.style.opacity = 0;
+      const currentVal = pts[rightmostIdx].value;
+      const y = series.priceToCoordinate(currentVal);
+      if (y !== null && y !== undefined) {
+        rawLabels.push({ y, value: currentVal.toFixed(2), index: `extra-${dataIdx}` });
+      }
     });
+
+    const adjustedLabels = avoidCollisions(rawLabels, 24);
+    Object.values(labelsDOMRef.current).forEach(el => { if (el) el.style.opacity = 0; });
     adjustedLabels.forEach(({ y, value, index }) => {
       const el = labelsDOMRef.current[index];
       if (el) {
         el.style.transform = `translateY(${y - 11}px)`;
         el.style.opacity = 1;
         const valNode = el.querySelector(".label-val");
-        if (valNode && valNode.textContent !== value) {
-          valNode.textContent = value;
-        }
+        if (valNode && valNode.textContent !== value) valNode.textContent = value;
       }
     });
-  }, [showLabels, slicedSeriesData, extraVisible]);
+  }, [showLabels, slicedSeriesData, extraVisibleSet]);
 
   const scheduleUpdate = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -332,7 +344,7 @@ const LWCChart = ({
 
   useEffect(() => {
     if (showLabels) scheduleUpdate();
-  }, [extraVisible, showLabels, scheduleUpdate]);
+  }, [extraVisibleSet, showLabels, scheduleUpdate]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -377,16 +389,9 @@ const LWCChart = ({
     });
     chartRef.current = chart;
     if (chartRefs) chartRefs.current[chartId] = chart;
-    const allVals = (slicedSeriesData || [])
-      .slice(0, VISIBLE_ROWS)
-      .flat()
-      .map(p => p?.value)
-      .filter(v => v != null);
+    const allVals = (slicedSeriesData || []).slice(0, VISIBLE_ROWS).flat().map(p => p?.value).filter(v => v != null);
     if (allVals.length) {
-      priceRangeRef.current = {
-        min: Math.min(...allVals),
-        max: Math.max(...allVals),
-      };
+      priceRangeRef.current = { min: Math.min(...allVals), max: Math.max(...allVals) };
     }
     linesRef.current = (slicedSeriesData || []).slice(0, VISIBLE_ROWS).map((pts, i) => {
       const s = chart.addSeries(LineSeries, {
@@ -399,11 +404,8 @@ const LWCChart = ({
         ...(i === 0 ? {
           autoscaleInfoProvider: () => {
             const { min, max } = priceRangeRef.current;
-            const pad = (max - min) * 0.12;
-            return {
-              priceRange: { minValue: min - pad, maxValue: max + pad },
-              margins: { above: 10, below: 10 },
-            };
+            const pad = (max - min) * 0.15;
+            return { priceRange: { minValue: min - pad, maxValue: max + pad }, margins: { above: 8, below: 8 } };
           },
         } : {}),
       });
@@ -414,11 +416,8 @@ const LWCChart = ({
     chart.timeScale().scrollToRealTime();
     chart.subscribeCrosshairMove((param) => {
       if (suppressSync.current) return;
-      if (param.logical !== undefined && param.logical !== null) {
-        setGlobalLogical?.(param.logical);
-      } else {
-        setGlobalLogical?.(null);
-      }
+      if (param.logical !== undefined && param.logical !== null) setGlobalLogical?.(param.logical);
+      else setGlobalLogical?.(null);
       if (showLabels) scheduleUpdate();
     });
     chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
@@ -435,7 +434,7 @@ const LWCChart = ({
     return () => {
       if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      extraLineRef.current = null;
+      extraLinesRef.current.clear();
       ro.disconnect();
       chart.remove();
       if (chartRefs) delete chartRefs.current[chartId];
@@ -445,21 +444,14 @@ const LWCChart = ({
 
   useEffect(() => {
     if (!linesRef.current.length || !allData?.length) return;
-    const vals = (slicedSeriesData || [])
-      .slice(0, VISIBLE_ROWS)
-      .flat()
-      .map(p => p?.value)
-      .filter(v => v != null);
+    const vals = (slicedSeriesData || []).slice(0, VISIBLE_ROWS).flat().map(p => p?.value).filter(v => v != null);
     if (!vals.length) return;
     const targetMin = Math.min(...vals);
     const targetMax = Math.max(...vals);
-    const cur       = priceRangeRef.current;
+    const cur = priceRangeRef.current;
     const rangeDiff = Math.abs(targetMax - targetMin);
     const threshold = rangeDiff * 0.005;
-    if (
-      Math.abs(targetMin - cur.min) > threshold ||
-      Math.abs(targetMax - cur.max) > threshold
-    ) {
+    if (Math.abs(targetMin - cur.min) > threshold || Math.abs(targetMax - cur.max) > threshold) {
       animatePriceRange(targetMin, targetMax);
     }
   }, [allData, slicedSeriesData, animatePriceRange]);
@@ -468,45 +460,45 @@ const LWCChart = ({
     const chart = chartRef.current;
     if (!chart) return;
     suppressSync.current = true;
-    if (globalLogical !== null && globalLogical !== undefined) {
-      chart.setCrosshairPosition(undefined, undefined, globalLogical);
-    } else {
-      chart.clearCrosshairPosition();
-    }
+    if (globalLogical !== null && globalLogical !== undefined) chart.setCrosshairPosition(undefined, undefined, globalLogical);
+    else chart.clearCrosshairPosition();
     suppressSync.current = false;
   }, [globalLogical]);
 
+  // ── Sync extraVisibleSet → extra chart lines ──
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-    if (extraLineRef.current) {
-      try { chart.removeSeries(extraLineRef.current); } catch (_) {}
-      extraLineRef.current = null;
-    }
-    if (extraVisible != null && seriesData?.[extraVisible]) {
-      const pts = seriesData[extraVisible].slice(periodConfig.from, periodConfig.to);
-      const s = chart.addSeries(LineSeries, {
-        color: EXTRA_COLOR,
-        lineWidth: 2.2,
-        lastValueVisible: false,
-        priceLineVisible: false,
-        crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 4,
-      });
-      s.setData(pts);
-      extraLineRef.current = s;
-    }
+    const newSet = new Set(extraVisibleSet);
+    extraLinesRef.current.forEach((series, idx) => {
+      if (!newSet.has(idx)) {
+        try { chart.removeSeries(series); } catch (_) {}
+        extraLinesRef.current.delete(idx);
+      }
+    });
+    newSet.forEach(dataIdx => {
+      if (!extraLinesRef.current.has(dataIdx) && seriesData?.[dataIdx]) {
+        const pts = seriesData[dataIdx].slice(periodConfig.from, periodConfig.to);
+        const s = chart.addSeries(LineSeries, {
+          color: EXTRA_COLOR,
+          lineWidth: 2.2,
+          lastValueVisible: false,
+          priceLineVisible: false,
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 4,
+        });
+        s.setData(pts);
+        extraLinesRef.current.set(dataIdx, s);
+      }
+    });
     if (showLabels) scheduleUpdate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extraVisible, periodConfig]);
+  }, [extraVisibleSet, periodConfig]);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const onWheel = (e) => {
-      e.preventDefault();
-      onZoom?.(e.deltaY, chartRef.current);
-    };
+    const onWheel = (e) => { e.preventDefault(); onZoom?.(e.deltaY, chartRef.current); };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [onZoom]);
@@ -514,11 +506,7 @@ const LWCChart = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const onDown = (e) => {
-      isDragging.current = true;
-      dragStart.current  = { lastX: e.clientX };
-      el.style.cursor    = "grabbing";
-    };
+    const onDown = (e) => { isDragging.current = true; dragStart.current = { lastX: e.clientX }; el.style.cursor = "grabbing"; };
     const onMove = (e) => {
       if (!isDragging.current || !chartRef.current) return;
       const dx = e.clientX - dragStart.current.lastX;
@@ -530,24 +518,29 @@ const LWCChart = ({
     const onUp = () => { isDragging.current = false; el.style.cursor = "grab"; };
     el.addEventListener("mousedown", onDown);
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",   onUp);
+    window.addEventListener("mouseup", onUp);
     return () => {
       el.removeEventListener("mousedown", onDown);
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup",   onUp);
+      window.removeEventListener("mouseup", onUp);
     };
   }, []);
 
+  // ── dimming: ใช้ allSelected รวมทั้ง rank 1-5 และ 6+ ──
   useEffect(() => {
+    const allSelected = new Set([...highlighted, ...extraVisibleSet]);
     linesRef.current.forEach((s, i) => {
-      const isHi  = highlighted === i;
-      const isDim = highlighted !== null && !isHi;
-      s.applyOptions({ color: isDim ? PALETTE[i] + "28" : PALETTE[i], lineWidth: isHi ? 3 : 2 });
+      const isHi  = allSelected.has(i);
+      const isDim = allSelected.size > 0 && !isHi;
+      s.applyOptions({
+        color:     isDim ? PALETTE[i] + "18" : PALETTE[i],
+        lineWidth: isHi ? 3 : isDim ? 1 : 2,
+      });
     });
-  }, [highlighted]);
+  }, [highlighted, extraVisibleSet]);
 
   const labelsToRender = Array.from({ length: VISIBLE_ROWS }).map((_, i) => i);
-  if (extraVisible != null) labelsToRender.push("extra");
+  extraVisibleSet.forEach(idx => labelsToRender.push(`extra-${idx}`));
 
   return (
     <div style={{ flex: 1, minWidth: 0, position: "relative", height: typeof height === "number" ? height : "100%" }}>
@@ -561,8 +554,8 @@ const LWCChart = ({
         }}
       />
       {showLabels && labelsToRender.map(key => {
-        const isExtra = key === "extra";
-        const dataIdx = isExtra ? extraVisible : key;
+        const isExtra = typeof key === "string" && key.startsWith("extra-");
+        const dataIdx = isExtra ? parseInt(key.split("-")[1], 10) : key;
         const sym     = labelData?.[dataIdx]?.symbol ?? SYMS[dataIdx] ?? "UNK";
         const color   = isExtra ? EXTRA_COLOR : PALETTE[key];
         const initPts = slicedSeriesData?.[dataIdx];
@@ -585,16 +578,13 @@ const LWCChart = ({
             }}>
               {sym}
             </div>
-            <div
-              className="label-val"
-              style={{
-                background: "#0d1b2a", color: color,
-                fontSize: 11, fontWeight: 700, fontFamily: "monospace",
-                padding: "2px 6px", borderRadius: "0 5px 5px 0",
-                border: `1px solid ${color}60`, borderLeft: "none",
-                height: 22, display: "flex", alignItems: "center",
-              }}
-            >
+            <div className="label-val" style={{
+              background: "#0d1b2a", color: color,
+              fontSize: 11, fontWeight: 700, fontFamily: "monospace",
+              padding: "2px 6px", borderRadius: "0 5px 5px 0",
+              border: `1px solid ${color}60`, borderLeft: "none",
+              height: 22, display: "flex", alignItems: "center",
+            }}>
               {initVal}
             </div>
           </div>
@@ -605,28 +595,31 @@ const LWCChart = ({
 };
 
 /* ================= RANK TABLE ================= */
-// [FIX 1] ลบ const COL ออกจาก top-level — ย้ายเข้าไปใน RankTable เป็น dynamic
 const ROW_H   = 40;
 const TABLE_H = 36 + VISIBLE_ROWS * ROW_H;
 
-// [FIX 2] RankTable ใหม่ — responsive columns, ซ่อน CHART FLIP บน xs/sm/md
-const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisible, totalCount, onRowClick, onChartFlipClick }) => {
-  const bp     = useBreakpoint();
-  const isTiny = bp === "xs" || bp === "sm" || bp === "md";
+const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisibleSet = [], totalCount, onRowClick, onChartFlipClick }) => {
+  const containerRef = useRef(null);
+  const [containerW, setContainerW] = useState(460);
 
-  // ซ่อน CHART FLIP column บน tiny screen เพื่อให้ %CHG ไม่ตัด
-  const COL = isTiny
-    ? "30px 1fr 90px 68px"
-    : "36px 1fr 90px 72px 56px";
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const isTiny = containerW < 360;
+  const COL    = isTiny ? "30px 1fr 90px 72px" : "36px 1fr 90px 80px 48px";
+  const hiArr  = Array.isArray(highlighted) ? highlighted : (highlighted != null ? [highlighted] : []);
+  const allSelected = new Set([...hiArr, ...extraVisibleSet]);
 
   return (
-    <div style={{
-      width: "100%",          // [FIX] เปลี่ยนจาก width:480 fixed → 100% เสมอ
-      background: "#0d1b2a",
+    <div ref={containerRef} style={{
+      width: "100%", background: "#0d1b2a",
       border: "1px solid rgba(255,255,255,0.07)",
       borderRadius: 4, overflow: "hidden",
-      display: "flex", flexDirection: "column",
-      height: TABLE_H,
+      display: "flex", flexDirection: "column", height: TABLE_H,
     }}>
       {/* header */}
       <div style={{
@@ -638,7 +631,7 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
         <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "center" }}>#</span>
         <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, paddingLeft: 8 }}>SYMBOL</span>
         <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "right", paddingRight: 8 }}>VALUE</span>
-        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "right", paddingRight: isTiny ? 4 : 0 }}>%CHG</span>
+        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "right", paddingRight: 0 }}>%CHG</span>
         {!isTiny && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
             <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>CHART</span>
@@ -651,59 +644,68 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
       <div style={{ overflowY: "auto", flex: 1 }}>
         {data.slice(0, totalCount).map((row, i) => {
           const isTop5  = i < 5;
-          const isHi    = isTop5 && highlighted === i;
-          const isExtra = !isTop5 && extraVisible === i;
+          const isHi    = isTop5 && hiArr.includes(i);
+          const isExtra = !isTop5 && extraVisibleSet.includes(i);
+          const isSel   = allSelected.has(i);
           const flash   = flashMap[i];
           const recent  = recentMap[i];
-          const cc         = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
-          const chartColor = cc;
-          const rowBg   = flash === "up" ? "rgba(34,197,94,0.10)" : flash === "down" ? "rgba(239,68,68,0.10)" : isHi ? "rgba(59,130,246,0.07)" : isExtra ? "rgba(148,163,184,0.07)" : "transparent";
-          const borderLeft = isHi ? `3px solid ${PALETTE[i]}` : isExtra ? `3px solid ${EXTRA_COLOR}` : "3px solid transparent";
+          const cc      = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
+
+          const rowOpacity = allSelected.size > 0 && !isSel ? 0.18 : 1;
+          const rowBg      = flash === "up" ? "rgba(34,197,94,0.10)"
+                           : flash === "down" ? "rgba(239,68,68,0.10)"
+                           : isHi    ? "rgba(59,130,246,0.07)"
+                           : isExtra ? "rgba(148,163,184,0.07)"
+                           : "transparent";
+          const borderLeft = isHi    ? `3px solid ${PALETTE[i]}`
+                           : isExtra ? `3px solid ${EXTRA_COLOR}`
+                           : "3px solid transparent";
+
           return (
-            <div key={i} onClick={() => onRowClick?.(i)} style={{
-              display: "grid", gridTemplateColumns: COL,
-              alignItems: "center", padding: "0 10px", height: ROW_H,
-              borderBottom: "1px solid rgba(255,255,255,0.04)",
-              background: rowBg, borderLeft,
-              cursor: "pointer", transition: "background 0.3s",
-            }}>
+            <div
+              key={i}
+              onClick={(e) => onRowClick?.(i, e.ctrlKey || e.metaKey)}
+              style={{
+                display: "grid", gridTemplateColumns: COL,
+                alignItems: "center", padding: "0 10px", height: ROW_H,
+                borderBottom: "1px solid rgba(255,255,255,0.04)",
+                background: rowBg, borderLeft,
+                cursor: "pointer", opacity: rowOpacity,
+                transition: "background 0.3s, opacity 0.3s",
+              }}
+            >
               <span style={{ textAlign: "center", fontSize: 11, color: "#475569", fontWeight: 500 }}>{row.rank}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 8, minWidth: 0 }}>
                 {isTop5  && <span style={{ width: 7, height: 7, borderRadius: "50%", background: PALETTE[i], flexShrink: 0 }} />}
                 {isExtra && <span style={{ width: 7, height: 7, borderRadius: "50%", background: EXTRA_COLOR, flexShrink: 0 }} />}
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {row.symbol}
-                  {flash  && <span style={{ marginLeft: 3, fontSize: 9,  color: flash  === "up" ? "#4ade80" : "#f87171" }}>{flash  === "up" ? "▲" : "▼"}</span>}
+                  {flash  && <span style={{ marginLeft: 3, fontSize: 9, color: flash === "up" ? "#4ade80" : "#f87171" }}>{flash === "up" ? "▲" : "▼"}</span>}
                   {!flash && recent && <span style={{ marginLeft: 3, fontSize: 8, color: recent === "up" ? "#4ade80" : "#f87171", opacity: 0.7 }}>{recent === "up" ? "▲" : "▼"}</span>}
                 </span>
               </span>
               <span style={{ textAlign: "right", fontSize: 12, color: "#cbd5e1", paddingRight: 8 }}>
                 <AnimatedCell value={row.value} flash={flash} />
               </span>
-              <span style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: cc, paddingRight: isTiny ? 4 : 0, whiteSpace: "nowrap" }}>
+              <span style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: cc, paddingRight: 0, whiteSpace: "nowrap" }}>
                 {row.isUp === true ? "+" : ""}{row.change}%
               </span>
               {!isTiny && (
                 <span style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                   <button
                     onClick={e => { e.stopPropagation(); onChartFlipClick?.(row.symbol); }}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: 4, padding: "3px 6px",
-                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
+                    style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                     title={`Chart Flip — ${row.symbol}`}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "#34d399"; e.currentTarget.style.background = "rgba(52,211,153,0.08)"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "transparent"; }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={chartColor} strokeWidth="1.5"/>
-                      <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={chartColor}/>
-                      <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={chartColor}/>
-                      <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={chartColor}/>
-                      <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={chartColor}/>
-                      <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={chartColor} strokeWidth="0.8"/>
+                      <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={cc} strokeWidth="1.5"/>
+                      <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={cc}/>
+                      <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={cc}/>
+                      <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={cc}/>
+                      <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={cc}/>
+                      <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={cc} strokeWidth="0.8"/>
                     </svg>
                   </button>
                 </span>
@@ -717,48 +719,54 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
 };
 
 /* ================= FULLSCREEN RANKINGS PANEL ================= */
-const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, highlighted, extraVisible, onRowClick, onChartFlipClick }) => {
+const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, highlighted, extraVisibleSet = [], onRowClick, onChartFlipClick }) => {
   const top5   = data.slice(0, Math.min(5, totalCount));
   const others = data.slice(5, totalCount);
+  const hiArr  = Array.isArray(highlighted) ? highlighted : (highlighted != null ? [highlighted] : []);
+  const allSelected = new Set([...hiArr, ...extraVisibleSet]);
 
   const RankRow = ({ row, i, isTop }) => {
-    const flash      = flashMap[i];
-    const recent     = recentMap[i];
-    const isHi       = isTop && highlighted === i;
-    const isExtra    = !isTop && extraVisible === i;
-    const cc         = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
-    const rowBg      = flash === "up" ? "rgba(34,197,94,0.08)" : flash === "down" ? "rgba(239,68,68,0.08)" : isHi ? "rgba(59,130,246,0.08)" : isExtra ? "rgba(148,163,184,0.07)" : "transparent";
+    const flash   = flashMap[i];
+    const recent  = recentMap[i];
+    const isHi    = isTop && hiArr.includes(i);
+    const isExtra = !isTop && extraVisibleSet.includes(i);
+    const isSel   = allSelected.has(i);
+    const cc      = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
+
+    const rowOpacity = allSelected.size > 0 && !isSel ? 0.18 : 1;
+    const rowBg      = flash === "up" ? "rgba(34,197,94,0.08)"
+                     : flash === "down" ? "rgba(239,68,68,0.08)"
+                     : isHi    ? "rgba(59,130,246,0.08)"
+                     : isExtra ? "rgba(148,163,184,0.07)"
+                     : "transparent";
     const dotColor   = isTop ? PALETTE[i] : isExtra ? EXTRA_COLOR : "#334155";
-    const borderLeft = isHi ? `3px solid ${PALETTE[i]}` : isExtra ? `3px solid ${EXTRA_COLOR}` : "3px solid transparent";
-    const chartColor = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
+    const borderLeft = isHi    ? `3px solid ${PALETTE[i]}`
+                     : isExtra ? `3px solid ${EXTRA_COLOR}`
+                     : "3px solid transparent";
 
     return (
       <div
-        onClick={() => onRowClick?.(i)}
+        onClick={(e) => onRowClick?.(i, e.ctrlKey || e.metaKey)}
         style={{
           display: "grid",
           gridTemplateColumns: "28px 16px 1fr 80px 60px 52px",
-          alignItems: "center",
-          padding: "0 14px",
+          alignItems: "center", padding: "0 14px",
           height: isTop ? 46 : 40,
           borderBottom: "1px solid rgba(255,255,255,0.04)",
           background: rowBg, borderLeft,
-          cursor: "pointer", transition: "background 0.3s",
+          cursor: "pointer", opacity: rowOpacity,
+          transition: "background 0.3s, opacity 0.3s",
         }}
       >
         <span style={{ fontSize: isTop ? 13 : 12, color: isTop ? "#64748b" : "#334155", fontWeight: 600, textAlign: "center", fontFamily: "monospace" }}>
           {row.rank}
         </span>
-        <span style={{
-          width: isTop ? 10 : 8, height: isTop ? 10 : 8,
-          borderRadius: "50%", background: dotColor,
-          display: "inline-block", flexShrink: 0,
-        }} />
+        <span style={{ width: isTop ? 10 : 8, height: isTop ? 10 : 8, borderRadius: "50%", background: dotColor, display: "inline-block", flexShrink: 0 }} />
         <span style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 6 }}>
           <span style={{ fontSize: isTop ? 14 : 13, fontWeight: isTop ? 800 : 600, color: isTop || isExtra ? "#e2e8f0" : "#94a3b8", letterSpacing: "0.04em", fontFamily: "monospace" }}>
             {row.symbol}
           </span>
-          {flash  && <span style={{ fontSize: 9,  color: flash  === "up" ? "#4ade80" : "#f87171" }}>{flash  === "up" ? "▲" : "▼"}</span>}
+          {flash  && <span style={{ fontSize: 9, color: flash === "up" ? "#4ade80" : "#f87171" }}>{flash === "up" ? "▲" : "▼"}</span>}
           {!flash && recent && <span style={{ fontSize: 8, color: recent === "up" ? "#4ade80" : "#f87171", opacity: 0.6 }}>{recent === "up" ? "▲" : "▼"}</span>}
         </span>
         <span style={{ textAlign: "right", fontSize: isTop ? 13 : 12, color: isTop ? "#cbd5e1" : "#64748b", fontFamily: "monospace", paddingRight: 8 }}>
@@ -770,23 +778,18 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
         <span style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           <button
             onClick={e => { e.stopPropagation(); onChartFlipClick?.(row.symbol); }}
-            style={{
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 4, padding: "4px 7px",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            }}
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 4, padding: "4px 7px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             title={`Chart Flip — ${row.symbol}`}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#34d399"; e.currentTarget.style.background = "rgba(52,211,153,0.08)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "transparent"; }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={chartColor} strokeWidth="1.5"/>
-              <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={chartColor}/>
-              <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={chartColor}/>
-              <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={chartColor}/>
-              <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={chartColor}/>
-              <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={chartColor} strokeWidth="0.8"/>
+              <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={cc} strokeWidth="1.5"/>
+              <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={cc}/>
+              <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={cc}/>
+              <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={cc}/>
+              <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={cc}/>
+              <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={cc} strokeWidth="0.8"/>
             </svg>
           </button>
         </span>
@@ -799,17 +802,20 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 14px", height: 44,
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        flexShrink: 0,
+        borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: "0.1em" }}>RANKINGS</span>
+        {allSelected.size > 0 && (
+          <span style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>
+            {allSelected.size}/{MAX_SELECT} selected
+          </span>
+        )}
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>
         {top5.map((row, i) => <RankRow key={i} row={row} i={i} isTop />)}
         {others.length > 0 && (
           <div style={{
-            padding: "6px 14px",
-            fontSize: 10, fontWeight: 700, color: "#334155",
+            padding: "6px 14px", fontSize: 10, fontWeight: 700, color: "#334155",
             letterSpacing: "0.1em",
             borderBottom: "1px solid rgba(255,255,255,0.04)",
             background: "#0a1525",
@@ -828,19 +834,19 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
 
 /* ================= SECTION CARD ================= */
 const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRefs, globalLogical, setGlobalLogical, onZoom }) => {
-  const [highlighted,  setHighlighted]  = useState(null);
-  const [extraVisible, setExtraVisible] = useState(null);
+  const [selectedSet,  setSelectedSet]  = useState(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [timePeriod,   setTimePeriod]   = useState("all");
   const [lastUpdated,  setLastUpdated]  = useState(null);
 
-  const bp            = useBreakpoint();
-  const isPos         = type === "+";
+  const bp       = useBreakpoint();
+  const isMobile = bp === "xs" || bp === "sm";
+  const isPos    = type === "+";
   const totalCount    = getRowCount(category, type);
   const baseData      = useMemo(() => mkFlowData(initSeed, 20), [initSeed]);
   const allSeriesData = useMemo(() => mkLWCData(initSeed, 20, 390, isPos), [initSeed, isPos]);
-  const cardKey       = `${category}-${type}-${initSeed}`;
-  const chartId       = `card-${category}-${type}`;
+  const cardKey = `${category}-${type}-${initSeed}`;
+  const chartId = `card-${category}-${type}`;
 
   const { liveData, flashMap, recentMap } = useLiveData(baseData, cardKey);
 
@@ -848,28 +854,35 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
     if (Object.keys(flashMap).length > 0) setLastUpdated(Date.now());
   }, [flashMap]);
 
-  const handleRowClick = useCallback(rowIdx => {
-    if (rowIdx < 5) {
-      setExtraVisible(null);
-      setHighlighted(prev => prev === rowIdx ? null : rowIdx);
+  const highlighted     = [...selectedSet].filter(i => i < VISIBLE_ROWS);
+  const extraVisibleSet = [...selectedSet].filter(i => i >= VISIBLE_ROWS);
+
+  const handleRowClick = useCallback((rowIdx, isCtrl) => {
+    if (isCtrl) {
+      setSelectedSet(prev => {
+        const next = new Set(prev);
+        if (next.has(rowIdx)) {
+          next.delete(rowIdx);
+        } else if (next.size < MAX_SELECT) {
+          next.add(rowIdx);
+        }
+        return next;
+      });
     } else {
-      setHighlighted(null);
-      setExtraVisible(prev => prev === rowIdx ? null : rowIdx);
+      setSelectedSet(prev => {
+        if (prev.size === 1 && prev.has(rowIdx)) return new Set();
+        return new Set([rowIdx]);
+      });
     }
   }, []);
 
-  const handleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
-  }, []);
+  const handleFullscreen = useCallback(() => setIsFullscreen(prev => !prev), []);
 
   const handleRefresh = useCallback(() => {
-    setHighlighted(null);
-    setExtraVisible(null);
+    setSelectedSet(new Set());
     setTimePeriod("all");
     const fsId = isFullscreen ? `${chartId}-fs` : chartId;
-    if (chartRefs?.current?.[fsId]) {
-      chartRefs.current[fsId].timeScale().scrollToRealTime();
-    }
+    if (chartRefs?.current?.[fsId]) chartRefs.current[fsId].timeScale().scrollToRealTime();
   }, [chartRefs, chartId, isFullscreen]);
 
   useEffect(() => {
@@ -884,21 +897,18 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
     const isNarrowFS = bp === "xs" || bp === "sm" || bp === "md";
 
     return (
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: "#060e1a",
-        display: "flex", flexDirection: "column",
-      }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#060e1a", display: "flex", flexDirection: "column" }}>
         {/* top bar */}
         <div style={{
-          minHeight: 52,
-          background: "#07111c",
+          minHeight: 52, background: "#07111c",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           display: "flex", alignItems: "center", gap: 8,
-          padding: "8px 16px",
-          flexShrink: 0,
-          flexWrap: "wrap",
+          padding: "8px 16px", flexShrink: 0, flexWrap: "wrap",
         }}>
+          <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
+            ---
+          </ToolHint>
+
           <button
             onClick={() => setIsFullscreen(false)}
             style={{
@@ -913,7 +923,24 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 3L5 8l5 5"/>
             </svg>
-            Back
+            back
+          </button>
+
+          <button
+            onClick={handleRefresh}
+            style={{
+              width: 30, height: 30, borderRadius: 6,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b",
+            }}
+            title="Reset"
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#64748b"; e.currentTarget.style.color = "#e2e8f0"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#64748b"; }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13.5 6A6 6 0 1 0 14 10"/><path d="M14 4v3h-3"/>
+            </svg>
           </button>
 
           <span style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0", fontFamily: "monospace", letterSpacing: "0.04em" }}>
@@ -925,17 +952,30 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             background: isPos ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
             color: isPos ? "#4ade80" : "#f87171",
             border: `1px solid ${isPos ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`,
-            display: "flex", alignItems: "center", gap: 4,
+            display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
           }}>
             <span style={{ fontSize: 9 }}>{isPos ? "▲" : "▼"}</span>
             {isPos ? "BUY FLOW" : "SELL FLOW"}
           </span>
 
-          {!isNarrowFS && <LastUpdateBadge lastUpdated={lastUpdated} />}
+          {selectedSet.size > 0 && (
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
+              background: "rgba(59,130,246,0.12)", color: "#60a5fa",
+              border: "1px solid rgba(96,165,250,0.3)",
+              fontFamily: "monospace", whiteSpace: "nowrap",
+            }}>
+              {selectedSet.size}/{MAX_SELECT} เส้น
+            </span>
+          )}
 
           <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.08)", margin: "0 4px", flexShrink: 0 }} />
 
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
+            <InfoTooltip
+              text={`Ctrl+คลิก เพื่อเพิ่มหุ้นเปรียบเทียบ (รวมไม่เกิน ${MAX_SELECT} เส้น)`}
+              placement="bottom"
+            />
             {TIME_PERIODS.map(({ key, label, sub }) => {
               const isActive = timePeriod === key;
               return (
@@ -946,8 +986,7 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
                     background: isActive ? "#1d4ed8" : "transparent",
                     border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.10)",
                     borderRadius: 6, padding: isNarrowFS ? "4px 10px" : "4px 14px",
-                    cursor: "pointer",
-                    color: isActive ? "#fff" : "#64748b",
+                    cursor: "pointer", color: isActive ? "#fff" : "#64748b",
                     fontSize: 12, fontFamily: "inherit",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     lineHeight: 1.3, transition: "all 0.15s",
@@ -962,43 +1001,15 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
               );
             })}
           </div>
-
-          <button
-            onClick={handleRefresh}
-            style={{
-              marginLeft: "auto",
-              display: "flex", alignItems: "center", gap: 6,
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 6, padding: "5px 14px",
-              color: "#94a3b8", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#64748b"; e.currentTarget.style.color = "#e2e8f0"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#94a3b8"; }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13.5 6A6 6 0 1 0 14 10"/><path d="M14 4v3h-3"/>
-            </svg>
-            Reset
-          </button>
         </div>
 
-        {/* body: chart + sidebar */}
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: isNarrowFS ? "column" : "row",
-          minHeight: 0,
-        }}>
-          <div style={{
-            flex: 1, minWidth: 0, minHeight: 0,
-            padding: isNarrowFS ? "8px 8px 0" : "12px 0 12px 12px",
-            display: "flex",
-          }}>
+        {/* body */}
+        <div style={{ flex: 1, display: "flex", flexDirection: isNarrowFS ? "column" : "row", minHeight: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, padding: isNarrowFS ? "8px 8px 0" : "12px 0 12px 12px", display: "flex" }}>
             <LWCChart
               seriesData={allSeriesData}
               highlighted={highlighted}
-              extraVisible={extraVisible}
+              extraVisibleSet={extraVisibleSet}
               allData={liveData}
               height="100%"
               chartId={`${chartId}-fs`}
@@ -1011,12 +1022,10 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
               timePeriod={timePeriod}
             />
           </div>
-
           <div style={{
-            width:      isNarrowFS ? "100%" : 300,
-            height:     isNarrowFS ? 260    : undefined,
-            flexShrink: 0,
-            background: "#07111c",
+            width: isNarrowFS ? "100%" : 300,
+            height: isNarrowFS ? 260 : undefined,
+            flexShrink: 0, background: "#07111c",
             borderLeft: isNarrowFS ? "none" : "1px solid rgba(255,255,255,0.07)",
             borderTop:  isNarrowFS ? "1px solid rgba(255,255,255,0.10)" : "none",
             overflow: "hidden",
@@ -1027,7 +1036,7 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
               recentMap={recentMap}
               totalCount={totalCount}
               highlighted={highlighted}
-              extraVisible={extraVisible}
+              extraVisibleSet={extraVisibleSet}
               onRowClick={handleRowClick}
               onChartFlipClick={onChartFlipClick}
             />
@@ -1038,39 +1047,33 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
   }
 
   /* ── NORMAL (card) LAYOUT ── */
-  // [FIX 3] card header — alignItems flex-start + flex:1 ให้ badge wrap ได้ถูกต้อง
-  // [FIX 4] chart+table — column เสมอ, table full width ใต้ chart
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{
-        background: "#0f1c2e",
-        borderRadius: 8,
+        background: "#0f1c2e", borderRadius: 8,
         border: "1px solid rgba(255,255,255,0.07)",
-        padding: "16px 20px",
-        display: "flex", flexDirection: "column",
+        padding: "16px 20px", display: "flex", flexDirection: "column",
       }}>
-        {/* ── card header ── */}
         <div style={{
-          display: "flex", alignItems: "flex-start",   // [FIX] center → flex-start
+          display: "flex", alignItems: "flex-start",
           justifyContent: "space-between",
           marginBottom: 12, flexShrink: 0, gap: 8,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flex: 1, minWidth: 0 }}>  {/* [FIX] เพิ่ม flex:1 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: "#e2e8f0", letterSpacing: "0.04em", fontFamily: "monospace" }}>{category}</span>
             <span style={{
               fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99,
               background: isPos ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
               color: isPos ? "#4ade80" : "#f87171",
               border: `1px solid ${isPos ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`,
-              display: "flex", alignItems: "center", gap: 3,
-              whiteSpace: "nowrap",
+              display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap",
             }}>
               <span style={{ fontSize: 8 }}>{isPos ? "▲" : "▼"}</span>
               {isPos ? "BUY FLOW" : "SELL FLOW"}
             </span>
             <LastUpdateBadge lastUpdated={lastUpdated} />
           </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>  {/* [FIX] flexShrink:0 */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
             <button
               onClick={handleFullscreen}
               style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}
@@ -1092,19 +1095,12 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
           </div>
         </div>
 
-        {/* ── chart + table ── */}
-        {/* [FIX 4] เปลี่ยนจาก row+flexWrap → column เสมอ: chart บน, table ล่าง full width */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}>
-          {/* chart */}
-          <div style={{ width: "100%", height: TABLE_H }}>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, alignItems: "stretch" }}>
+          <div style={{ flex: 1, minWidth: 0, height: TABLE_H }}>
             <LWCChart
               seriesData={allSeriesData}
               highlighted={highlighted}
-              extraVisible={extraVisible}
+              extraVisibleSet={extraVisibleSet}
               allData={liveData}
               height={TABLE_H}
               chartId={chartId}
@@ -1117,15 +1113,13 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
               labelData={liveData}
             />
           </div>
-
-          {/* table — full width เสมอ */}
-          <div style={{ width: "100%" }}>
+          <div style={{ width: isMobile ? "100%" : 460, flexShrink: 0 }}>
             <RankTable
               data={liveData}
               flashMap={flashMap}
               recentMap={recentMap}
               highlighted={highlighted}
-              extraVisible={extraVisible}
+              extraVisibleSet={extraVisibleSet}
               totalCount={totalCount}
               onRowClick={handleRowClick}
               onChartFlipClick={onChartFlipClick}
@@ -1141,7 +1135,6 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
 function IdeatradePoint({ onChartFlipClick }) {
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery,    setSearchQuery]    = useState("");
-  const [infoOpen,       setInfoOpen]       = useState(false);
   const [globalLogical,  setGlobalLogical]  = useState(null);
   const chartRefs = useRef({});
   const [barWidth, setBarWidth] = useState(3);
@@ -1183,15 +1176,7 @@ function IdeatradePoint({ onChartFlipClick }) {
       `}</style>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 20px" }}>
-        {/* ── filter bar ── */}
-        {/* [FIX 5] แยก category buttons เป็น div ของตัวเอง ให้ wrap เป็นกลุ่ม */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 20, flexWrap: "wrap", rowGap: 8 }}>
-          <div style={{ position: "relative", zIndex: 50, flexShrink: 0 }}>
-            <ToolHint onViewDetails={() => setInfoOpen(true)}>
-              ---
-            </ToolHint>
-          </div>
-
           <div style={{ position: "relative", flexShrink: 0 }}>
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
               <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1204,14 +1189,10 @@ function IdeatradePoint({ onChartFlipClick }) {
               style={{ background: "#0f1c2e", borderRadius: 8, padding: "7px 26px 7px 28px", fontSize: 13, color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)", outline: "none", width: 120, fontFamily: "inherit" }}
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}
-              >✕</button>
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}>✕</button>
             )}
           </div>
 
-          {/* [FIX 5] category buttons ใน div แยก → wrap เป็นกลุ่ม ไม่แตกแถว */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => {
               const isActive = activeCategory === cat;
@@ -1234,12 +1215,10 @@ function IdeatradePoint({ onChartFlipClick }) {
           </div>
 
           <button style={{
-            marginLeft: "auto",
-            display: "flex", alignItems: "center", gap: 5,
+            marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
             padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
             background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
-            color: "#94a3b8", cursor: "pointer", fontFamily: "inherit",
-            whiteSpace: "nowrap",
+            color: "#94a3b8", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
           }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -1280,10 +1259,8 @@ function IdeatradePoint({ onChartFlipClick }) {
 /* ================= MAIN APP ================= */
 export default function App() {
   const navigate = useNavigate();
-
   const navigateToChartFlip = useCallback((symbol) => {
     navigate("/chart-flip-id", { state: { symbol } });
   }, [navigate]);
-
   return <IdeatradePoint onChartFlipClick={navigateToChartFlip} />;
 }
