@@ -630,8 +630,8 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
       }}>
         <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "center" }}>#</span>
         <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, paddingLeft: 8 }}>SYMBOL</span>
-        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "right", paddingRight: 8 }}>VALUE</span>
-        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "right", paddingRight: 0 }}>%CHG</span>
+        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "center", paddingRight: 8 }}>VALUE</span>
+        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textAlign: "center", paddingRight: 0 }}>%CHG</span>
         {!isTiny && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
             <span style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>CHART</span>
@@ -684,10 +684,10 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
                   {!flash && recent && <span style={{ marginLeft: 3, fontSize: 8, color: recent === "up" ? "#4ade80" : "#f87171", opacity: 0.7 }}>{recent === "up" ? "▲" : "▼"}</span>}
                 </span>
               </span>
-              <span style={{ textAlign: "right", fontSize: 12, color: "#cbd5e1", paddingRight: 8 }}>
+              <span style={{ textAlign: "center", fontSize: 12, color: "#cbd5e1", paddingRight: 0 }}>
                 <AnimatedCell value={row.value} flash={flash} />
               </span>
-              <span style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: cc, paddingRight: 0, whiteSpace: "nowrap" }}>
+              <span style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: cc, paddingRight: 0, whiteSpace: "nowrap" }}>
                 {row.isUp === true ? "+" : ""}{row.change}%
               </span>
               {!isTiny && (
