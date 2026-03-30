@@ -468,6 +468,287 @@ function LWCChart({
   );
 }
 
+// ─── ALERT SETTINGS TOOLTIP ───────────────────────────────────────────────────
+function AlertSettingsTooltip() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const buttonRef = useRef(null);
+
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: 320 });
+  const [pointerConfig, setPointerConfig] = useState({ type: "left", offset: 0 });
+  const [animClass, setAnimClass] = useState("popoverSlideIn");
+
+  const POPOVER_H_ESTIMATE = 280;
+
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw < 640;
+
+      let top, left, width, type, offset, anim;
+
+      if (isMobile) {
+        width = vw - 32;
+        left = 16;
+        top = rect.bottom + 12;
+        type = "top";
+        anim = "popoverSlideDown";
+        const btnCenter = rect.left + rect.width / 2;
+        offset = btnCenter - left;
+      } else {
+        width = 360;
+        left = rect.right + 12;
+        type = "left";
+        anim = "popoverSlideIn";
+
+        if (left + width > vw - 16) {
+          left = rect.left - width - 12;
+          type = "right";
+          anim = "popoverSlideInRight";
+        }
+
+        top = rect.top - 8;
+
+        if (top + POPOVER_H_ESTIMATE > vh - 8) {
+          top = vh - POPOVER_H_ESTIMATE - 8;
+        }
+        if (top < 8) {
+          top = 8;
+        }
+
+        offset = 0;
+      }
+
+      setPointerConfig({ type, offset });
+      setPopoverPos({ top, left, width });
+      setAnimClass(anim);
+    }
+    setIsOpen(!isOpen);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setIsHovered(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const onScroll = () => setIsOpen(false);
+      window.addEventListener("scroll", onScroll, true);
+      return () => window.removeEventListener("scroll", onScroll, true);
+    }
+  }, [isOpen]);
+
+  const getClipPath = () => {
+    const arrowWidth = 14;
+    const arrowHeight = 8;
+
+    if (pointerConfig.type === "top") {
+      const cx = pointerConfig.offset;
+      return `polygon(
+        0% ${arrowHeight}px,
+        ${cx - arrowWidth / 2}px ${arrowHeight}px,
+        ${cx}px 0%,
+        ${cx + arrowWidth / 2}px ${arrowHeight}px,
+        100% ${arrowHeight}px,
+        100% 100%,
+        0% 100%
+      )`;
+    } else if (pointerConfig.type === "left") {
+      return `polygon(
+        ${arrowHeight}px 0%,
+        100% 0%,
+        100% 100%,
+        ${arrowHeight}px 100%,
+        ${arrowHeight}px 24px,
+        0% 16px,
+        ${arrowHeight}px 8px
+      )`;
+    } else if (pointerConfig.type === "right") {
+      return `polygon(
+        0% 0%,
+        calc(100% - ${arrowHeight}px) 0%,
+        calc(100% - ${arrowHeight}px) 8px,
+        100% 16px,
+        calc(100% - ${arrowHeight}px) 24px,
+        calc(100% - ${arrowHeight}px) 100%,
+        0% 100%
+      )`;
+    }
+    return "none";
+  };
+
+  return (
+    <>
+      {/* Alert Settings Button */}
+      <button
+        ref={buttonRef}
+        className="flex items-center gap-1.5 text-slate-400 hover:text-slate-300 text-xs cursor-pointer select-none transition-colors"
+        onClick={handleButtonClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => !isOpen && setIsHovered(false)}
+        title="Smart Flow Alerts Information"
+      >
+        <span className="font-medium">Alert Settings</span>
+        <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
+          isOpen || isHovered 
+            ? "bg-cyan-500/30 border border-cyan-500/60 text-cyan-400" 
+            : "bg-cyan-500/20 border border-cyan-500/40 text-cyan-400"
+        }`}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[9998]"
+          onClick={handleClose}
+          style={{ cursor: "default" }}
+        />
+      )}
+
+      {/* Popover */}
+      {isOpen && (
+        <div
+          className="fixed z-[9999] pointer-events-auto"
+          style={{
+            top: `${popoverPos.top}px`,
+            left: `${popoverPos.left}px`,
+            width: `${popoverPos.width}px`,
+            animation: `${animClass} 0.2s ease-out forwards`,
+            filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.6))",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="w-full bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-md relative"
+            style={{
+              clipPath: getClipPath(),
+              paddingTop: pointerConfig.type === "top" ? "20px" : "16px",
+              paddingBottom: "16px",
+              paddingLeft: pointerConfig.type === "left" ? "24px" : "20px",
+              paddingRight: pointerConfig.type === "right" ? "24px" : "20px",
+            }}
+          >
+            <div className="absolute inset-0 border border-slate-600/50 rounded-xl mix-blend-overlay pointer-events-none" />
+            <div className="relative z-20 space-y-3">
+              {/* Header */}
+              <h3 className="text-cyan-400 text-xs font-bold uppercase tracking-widest">
+                Smart Flow Alerts
+              </h3>
+
+              {/* Main Description */}
+              <p className="text-slate-300 text-xs leading-relaxed">
+                ระบบแจ้งเตือนอัจฉริยะที่คุณสามารถ
+                <span className="text-cyan-300 font-semibold"> ตั้งเงื่อนไขได้เอง</span>
+                ทั้ง<span className="text-cyan-300 font-semibold"> ระดับราคา</span>
+                และ<span className="text-cyan-300 font-semibold"> สัญญาณเงินไหล</span> เมื่อถึงจุดที่กำหนด
+                ระบบจะ<span className="text-cyan-300 font-semibold"> แจ้งเตือน(ในกลุ่มรวม telegram)ทันที</span>
+              </p>
+
+              {/* Features List */}
+              <div className="space-y-2 pt-1">
+                {[
+                  {
+                    icon: "⚙",
+                    title: "ตั้งเงื่อนไขได้เอง",
+                    desc: "กำหนดเงื่อนไขการแจ้งเตือนตามที่คุณต้องการ",
+                  },
+                  {
+                    icon: "📊",
+                    title: "ระดับราคา (Price Level)",
+                    desc: "ตั้งราคาเป้าหมายและได้รับแจ้งเตือนทันที",
+                  },
+                  {
+                    icon: "◈",
+                    title: "สัญญาณเงินไหล (Flow Signal)",
+                    desc: "ติดตามการเปลี่ยนแปลงของกระแสเงินไหล",
+                  },
+                  {
+                    icon: "✈",
+                    title: "แจ้งเตือน Telegram ทันที",
+                    desc: "ส่งแจ้งเตือนไปยังกลุ่มรวม Telegram ทันที",
+                  },
+                ].map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-cyan-400 text-sm font-bold flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                      {feature.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-slate-200 leading-tight">
+                        {feature.title}
+                      </p>
+                      <p className="text-[9px] text-slate-400 leading-snug">
+                        {feature.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* View Details Link */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }}
+                className="text-cyan-400 hover:text-cyan-300 text-xs font-semibold transition-colors inline-flex items-center gap-1.5 group pt-1"
+              >
+                View feature details here
+                <svg
+                  className="w-3 h-3 group-hover:translate-x-0.5 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes popoverSlideIn {
+          from { opacity: 0; transform: translateX(-12px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes popoverSlideInRight {
+          from { opacity: 0; transform: translateX(12px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes popoverSlideDown {
+          from { opacity: 0; transform: translateY(-12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function FlowIntraday() {
   const navigate = useNavigate();
@@ -1006,14 +1287,7 @@ export default function FlowIntraday() {
   <div className="flex items-center gap-3 flex-shrink-0">
 
     {/* Alert Settings ⓘ */}
-    <div className="flex items-center gap-1.5 text-slate-400 text-xs cursor-default select-none">
-      <span>Alert Settings</span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3"/>
-        <line x1="12" y1="12" x2="12" y2="16"/>
-      </svg>
-    </div>
+    <AlertSettingsTooltip />
 
     {/* 🔔 Open H-line */}
     <button
