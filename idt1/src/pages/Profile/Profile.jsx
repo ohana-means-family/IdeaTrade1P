@@ -1,93 +1,39 @@
 // src/pages/Profile.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // ลบ useEffect ออกได้เลยเพราะเราดึงมาจาก Context แล้ว
 import './Profile.css';
+import { useAuth } from '@/context/AuthContext';
 
-// ✅ Import Firebase Auth และ Firestore
-import { auth, db } from "@/firebase"; 
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+// ✅ Import เฉพาะสิ่งที่ใช้ตอนกด Save
+import { db } from "@/firebase"; 
+import { doc, setDoc } from "firebase/firestore";
 
 const Profile = () => {
+  // ดึงข้อมูลทั้งหมดจากถังส่วนกลาง
+  const { currentUser, userData, setUserData } = useAuth();
+  
   const [activeTab, setActiveTab] = useState('Profile');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [userData, setUserData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    lastLogin: '',
-    isVerified: true
-  });
+  // ❌ ลบ useEffect อันยาวๆ ของเก่าทิ้งไปได้เลยครับ เพราะ AuthContext จัดการดึงให้แล้ว
 
-  // ================= 1. ดึงข้อมูลจาก Firebase ตอนเปิดหน้า =================
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const lastSignIn = new Date(user.metadata.lastSignInTime);
-        const day = lastSignIn.getDate();
-        const month = lastSignIn.toLocaleString('en-US', { month: 'long' });
-        const year = lastSignIn.getFullYear();
-        const hours = String(lastSignIn.getHours()).padStart(2, '0');
-        const minutes = String(lastSignIn.getMinutes()).padStart(2, '0');
-        const formattedDate = `${day} ${month} ${year}, ${hours}:${minutes}`;
-
-        setUserData(prev => ({
-          ...prev,
-          email: user.email || '',
-          lastLogin: formattedDate
-        }));
-
-        try {
-          const mainDocRef = doc(db, "users", user.uid);
-          const mainDocSnap = await getDoc(mainDocRef);
-          const mainData = mainDocSnap.data();
-
-          if (mainDocSnap.exists() && mainData?.firstName) {
-            setUserData(prev => ({
-              ...prev,
-              firstName: mainData.firstName || '',
-              lastName: mainData.lastName || '',
-              phone: mainData.phone || ''
-            }));
-          } else {
-            const tempDocRef = doc(db, "users_temp", user.email.toLowerCase()); 
-            const tempDocSnap = await getDoc(tempDocRef);
-            
-            if (tempDocSnap.exists()) {
-              const data = tempDocSnap.data();
-              setUserData(prev => ({
-                ...prev,
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
-                phone: data.phone || ''
-              }));
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // ถ้าข้อมูลยังโหลดไม่เสร็จ (userData เป็น null) ให้ขึ้น Loading ไว้ก่อน
+  if (!userData) return <div className="text-white text-center mt-20">Loading profile...</div>;
 
   const handleSave = async () => {
-    const user = auth.currentUser;
-    if (!user) return alert("กรุณาล็อกอินใหม่อีกครั้ง");
+    if (!currentUser) return alert("กรุณาล็อกอินใหม่อีกครั้ง");
 
     setIsSaving(true);
     try {
-      const docRef = doc(db, "users", user.uid);
+      const docRef = doc(db, "users", currentUser.uid);
       await setDoc(docRef, {
         firstName: userData.firstName,
         lastName: userData.lastName,
         phone: userData.phone,
-        email: user.email,
+        email: userData.email, // ใช้จาก userData ได้เลย
         updatedAt: new Date()
       }, { merge: true });
 
+      // อัพเดท localStorage
       const storedProfile = localStorage.getItem("userProfile");
       let profile = storedProfile ? JSON.parse(storedProfile) : {};
       localStorage.setItem("userProfile", JSON.stringify({
@@ -106,8 +52,7 @@ const Profile = () => {
   };
 
   return (
-
-   <div className="w-full min-h-screen bg-transparent p-4 md:p-8 animate-fade-in">
+    <div className="w-full min-h-screen bg-transparent p-4 md:p-8 animate-fade-in">
       <div className="max-w-3xl mx-auto">
         
         <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-6 text-left">Account Settings</h1>
@@ -132,7 +77,6 @@ const Profile = () => {
 
         {activeTab === 'Profile' && (
           <div className="w-full">
-            {/* Card Container */}
             <div className="bg-transparent w-full flex flex-col gap-6">
               
               <div className="flex flex-col gap-1 w-full">
@@ -149,7 +93,7 @@ const Profile = () => {
                     <input 
                       type="text" 
                       className="w-full bg-[#111827]/50 border border-gray-700/50 rounded-lg p-3.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                      value={userData.firstName}
+                      value={userData.firstName || ''}
                       onChange={(e) => setUserData({...userData, firstName: e.target.value})}
                       placeholder="Enter first name"
                     />
@@ -159,7 +103,7 @@ const Profile = () => {
                     <input 
                       type="text" 
                       className="w-full bg-[#111827]/50 border border-gray-700/50 rounded-lg p-3.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                      value={userData.lastName}
+                      value={userData.lastName || ''}
                       onChange={(e) => setUserData({...userData, lastName: e.target.value})}
                       placeholder="Enter last name"
                     />
@@ -172,7 +116,7 @@ const Profile = () => {
                   <input 
                     type="email" 
                     className="w-full bg-[#111827]/30 border border-gray-700/30 rounded-lg p-3.5 text-gray-500 text-sm cursor-not-allowed"
-                    value={userData.email}
+                    value={userData.email || ''}
                     disabled
                   />
                 </div>
@@ -183,7 +127,7 @@ const Profile = () => {
                   <input 
                     type="tel" 
                     className="w-full bg-[#111827]/50 border border-gray-700/50 rounded-lg p-3.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                    value={userData.phone}
+                    value={userData.phone || ''}
                     onChange={(e) => setUserData({...userData, phone: e.target.value})}
                     placeholder="Enter phone number"
                   />
@@ -203,7 +147,6 @@ const Profile = () => {
 
               </div>
             </div>
-
           </div>
         )}
 
