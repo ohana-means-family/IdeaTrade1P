@@ -125,39 +125,27 @@ const ChartFlipHint = () => {
       </button>
 
       {visible && (
-      <div
-        onClick={e => e.stopPropagation()}
-        className="fixed z-[9999] whitespace-nowrap"
-        style={{
-          top: pos.top,
-          left: pos.left,
-          transform: "translate(-95%, -130%)",
-        }}
-      >
-        {/* กล่อง bubble */}
-        <div style={{
-          background: "#1e293b",
-          borderRadius: 12,
-          padding: "8px 14px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-          position: "relative",
-        }}>
-          <p style={{ color: "#f1f5f9", fontSize: 12, fontWeight: 500, margin: 0 }}>
-            คลิกที่แถวเพื่อดูกราฟของหุ้นนั้นใน chart
-          </p>
+        <div
+          onClick={e => e.stopPropagation()}
+          className="fixed z-[9999] whitespace-nowrap"
+          style={{ top: pos.top, left: pos.left, transform: "translate(-95%, -130%)" }}
+        >
           <div style={{
-            position: "absolute",
-            bottom: -8,
-            right: 14,
-            width: 0,
-            height: 0,
-            borderLeft: "6px solid transparent",
-            borderRight: "6px solid transparent",
-            borderTop: "8px solid #1e293b",
-          }} />
+            background: "#1e293b", borderRadius: 12, padding: "8px 14px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)", position: "relative",
+          }}>
+            <p style={{ color: "#f1f5f9", fontSize: 12, fontWeight: 500, margin: 0 }}>
+              คลิกที่ icon เพื่อไปหน้า ChartFlip ของหุ้นนั้น
+            </p>
+            <div style={{
+              position: "absolute", bottom: -8, right: 14,
+              width: 0, height: 0,
+              borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
+              borderTop: "8px solid #1e293b",
+            }} />
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };
@@ -175,7 +163,6 @@ const MiniSparkline = ({ values, isUp, width = 80, height = 32 }) => {
   }).join(" ");
   const color = isUp === true ? "#4ade80" : isUp === false ? "#f87171" : "#64748b";
   const fillColor = isUp === true ? "rgba(74,222,128,0.08)" : isUp === false ? "rgba(248,113,113,0.08)" : "rgba(100,116,139,0.06)";
-  // build fill path
   const firstPt = values.map((v, i) => {
     const x = (i / (values.length - 1)) * (width - 6) + 3;
     const y = height - 5 - ((v - min) / range) * (height - 10);
@@ -312,7 +299,12 @@ const InfoTooltip = ({ children, lines = [], linkText = "", linkHref = "#" }) =>
 };
 
 /* ================= RANK TABLE ================= */
-const RankTable = ({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, extraVisible, onRowClick, compact = false, sparklines = [] }) => {
+const RankTable = ({
+  data, flashMap = {}, recentMap = {},
+  top5Len, highlighted, extraVisible,
+  onRowClick, onChartFlipClick,          // ← onChartFlipClick รับ symbol
+  compact = false, sparklines = [],
+}) => {
   const [expanded, setExpanded] = useState(false);
   const visibleData = compact && !expanded ? data.slice(0, top5Len) : data;
 
@@ -330,11 +322,11 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, 
               <th className="py-2.5 pl-1 pr-1 text-right" style={{ width: "25%" }}>Value</th>
               <th className="py-2.5 pl-1 pr-4 text-right" style={{ width: "25%" }}>%Chg</th>
               <th className="py-2.5 pl-1 pr-3 text-right" style={{ width: 90 }}>
-              <span className="flex items-center justify-end gap-1 text-slate-400">
-                <span>Chart flip</span>
-                <ChartFlipHint />
-              </span>
-            </th>
+                <span className="flex items-center justify-end gap-1 text-slate-400">
+                  <span>Chart flip</span>
+                  <ChartFlipHint />
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -378,9 +370,10 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, top5Len, highlighted, 
                     {row.isUp === true ? "+" : ""}{row.change}%
                   </td>
                   <td className="py-1.5 pl-1 pr-3 text-right" style={{ width: 90 }}>
+                    {/* ── ปุ่ม ChartFlip: navigate ไปหน้า chartflipid พร้อม symbol ── */}
                     <button
-                      onClick={e => { e.stopPropagation(); onRowClick?.(i); }}
-                      className="inline-flex items-center justify-center rounded-lg border border-slate-600/80 bg-slate-800/70 hover:bg-slate-700 hover:border-slate-500 transition-all group"
+                      onClick={e => { e.stopPropagation(); onChartFlipClick?.(row.symbol); }}
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-600/80 bg-slate-800/70 hover:bg-blue-900/40 hover:border-blue-500/60 transition-all group"
                       style={{ width: 30, height: 30 }}
                       title={`ChartFlip: ${row.symbol}`}
                     >
@@ -642,6 +635,7 @@ const ZoomModal = ({
   highlighted, extraVisible, onRowClick, onReset,
   flashMap, recentMap = {},
   globalLogical, setGlobalLogical,
+  onChartFlipClick,                        // ← รับ prop มาด้วย
 }) => {
   const [timeFilter, setTimeFilter] = useState("all");
   const modalChartRefs   = useRef({});
@@ -790,7 +784,7 @@ const ZoomModal = ({
           </div>
         </div>
 
-        {/* ChartFlip Panel in modal */}
+        {/* ChartFlip Panel in modal — กดแล้ว navigate ด้วย */}
         <div style={{ width: modalIsMobile ? "100%" : 200, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0, border: "1px solid rgba(255,255,255,0.08)", margin: modalIsMobile ? "0 6px 6px" : "8px 8px 8px 4px", borderRadius: 8, overflow: "hidden", background: "#0f172a" }}>
           <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
             <ChartFlipIcon size={11} color="#64748b" />
@@ -803,8 +797,13 @@ const ZoomModal = ({
               const cc = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
               const rowBg = flash === "up" ? "rgba(34,197,94,0.1)" : flash === "down" ? "rgba(239,68,68,0.1)" : "transparent";
               return (
-                <div key={i} onClick={() => onRowClick?.(i)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: rowBg, cursor: "pointer", transition: "background .3s" }}>
+                <div
+                  key={i}
+                  onClick={() => onChartFlipClick?.(row.symbol)}   // ← navigate ด้วย
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: rowBg, cursor: "pointer", transition: "background .3s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(59,130,246,0.07)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
+                >
                   <span style={{ color: "#475569", fontSize: 10, fontFamily: "monospace", width: 16, textAlign: "right", flexShrink: 0 }}>{row.rank}</span>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: isTop5 ? PALETTE[i] : EXTRA_COLOR, flexShrink: 0 }} />
                   <span style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700, fontFamily: "monospace", width: 44, flexShrink: 0 }}>{row.symbol}</span>
@@ -874,14 +873,15 @@ const SectionCard = ({
   category, type, seed: initSeed,
   chartRefs, globalLogical, setGlobalLogical, onZoom,
 }) => {
+  const navigate = useNavigate();
   const [highlighted, setHighlighted]   = useState(null);
   const [extraVisible, setExtraVisible] = useState(null);
   const [modalOpen, setModalOpen]       = useState(false);
   const [lastUpdated, setLastUpdated]   = useState(null);
 
-  const bp       = useBreakpoint();
-  const isMobile = bp === "xs" || bp === "sm";
-  const isTablet = bp === "md";
+  const bp        = useBreakpoint();
+  const isMobile  = bp === "xs" || bp === "sm";
+  const isTablet  = bp === "md";
   const isDesktop = !isMobile && !isTablet;
 
   const isPos  = type === "+";
@@ -894,6 +894,11 @@ const SectionCard = ({
   const chartId       = `card-${category}-${type}`;
 
   const { liveData, flashMap, recentMap } = useLiveData(baseData, cardKey);
+
+  /* ── navigate ไปหน้า ChartFlip พร้อม symbol ── */
+  const handleChartFlipClick = useCallback((symbol) => {
+    navigate("/chartflipid", { state: { symbol, from: "realflow" } });
+  }, [navigate]);
 
   useEffect(() => {
     if (Object.keys(flashMap).length > 0) setLastUpdated(Date.now());
@@ -945,14 +950,9 @@ const SectionCard = ({
           </div>
         </div>
 
-        {/* ── Body Layout ──
-            Mobile/Tablet : chart → rankTable (stacked) → chartflip panel (stacked)
-            Desktop (lg+) : [chart 50%] [rankTable 25%] [chartflip 25%]  side-by-side
-        */}
         {isDesktop ? (
-          /* Desktop: 3-column side by side */
+          /* Desktop: chart + rank table side by side */
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 380px", gap: 12, height: 256 }}>
-            {/* Chart */}
             <LWCChart
               seriesData={allSeriesData.slice(0, 5)}
               highlighted={highlighted}
@@ -964,11 +964,12 @@ const SectionCard = ({
               globalLogical={globalLogical}
               setGlobalLogical={setGlobalLogical}
             />
-            {/* Rank Table with ChartFlip column */}
+            {/* ── Desktop RankTable: ส่ง onChartFlipClick ── */}
             <RankTable
               data={liveData} flashMap={flashMap} recentMap={recentMap}
               top5Len={5} highlighted={highlighted} extraVisible={extraVisible}
               onRowClick={handleRowClick}
+              onChartFlipClick={handleChartFlipClick}
               compact={false}
               sparklines={sparklines}
             />
@@ -987,10 +988,12 @@ const SectionCard = ({
               globalLogical={globalLogical}
               setGlobalLogical={setGlobalLogical}
             />
+            {/* ── Mobile RankTable: ส่ง onChartFlipClick ── */}
             <RankTable
               data={liveData} flashMap={flashMap} recentMap={recentMap}
               top5Len={5} highlighted={highlighted} extraVisible={extraVisible}
               onRowClick={handleRowClick}
+              onChartFlipClick={handleChartFlipClick}
               compact={true}
               sparklines={sparklines}
             />
@@ -1007,6 +1010,7 @@ const SectionCard = ({
           flashMap={flashMap} recentMap={recentMap}
           globalLogical={globalLogical}
           setGlobalLogical={setGlobalLogical}
+          onChartFlipClick={handleChartFlipClick}  // ← ส่งเข้า modal ด้วย
         />
       )}
     </>
