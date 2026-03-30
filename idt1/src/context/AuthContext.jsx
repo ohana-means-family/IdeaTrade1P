@@ -35,18 +35,25 @@ export const AuthProvider = ({ children }) => {
         };
 
         try {
+          console.log("1. กำลังหาข้อมูลของ UID:", user.uid); // 🟢 ดูว่า UID คืออะไร
+          
           // ดึงจาก collection "users" ก่อน
           const mainDocRef = doc(db, "users", user.uid);
           const mainDocSnap = await getDoc(mainDocRef);
 
-          if (mainDocSnap.exists() && mainDocSnap.data()?.firstName) {
+          if (mainDocSnap.exists()) {
+            console.log("2. 🎉 เจอข้อมูลใน users แล้ว!:", mainDocSnap.data()); // 🟢 ดูว่าดึงอะไรมาได้บ้าง
             fetchedData = { ...fetchedData, ...mainDocSnap.data() };
-          } else if (user.email) { 
-            // 🟢 เพิ่มการดักเช็คตรงนี้: ถ้าล็อกอินด้วย OTP จะไม่มี email ก็จะข้ามขั้นตอนนี้ไป ไม่พังแล้ว!
-            const tempDocRef = doc(db, "users_temp", user.email.toLowerCase()); 
-            const tempDocSnap = await getDoc(tempDocRef);
-            if (tempDocSnap.exists()) {
-              fetchedData = { ...fetchedData, ...tempDocSnap.data() };
+          } else {
+            console.log("2. ❌ ไม่เจอข้อมูลใน users สำหรับ UID นี้"); // 🟢 ถ้าขึ้นอันนี้ แปลว่า UID ไม่ตรงกับ Document ID
+            
+            if (user.email) { 
+              const tempDocRef = doc(db, "users_temp", user.email.toLowerCase()); 
+              const tempDocSnap = await getDoc(tempDocRef);
+              if (tempDocSnap.exists()) {
+                console.log("3. เจอข้อมูลใน users_temp:", tempDocSnap.data());
+                fetchedData = { ...fetchedData, ...tempDocSnap.data() };
+              }
             }
           }
           
