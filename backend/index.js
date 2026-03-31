@@ -20,15 +20,16 @@ admin.initializeApp({
 // กำหนดตัวแปรสำหรับเรียกใช้ Firestore
 const db = admin.firestore();
 
+// 🟢 ตัวแปรสำหรับเก็บ OTP ชั่วคราว (ในระบบจริง แนะนำให้เก็บลง Firestore หรือ Redis เพื่อป้องกันข้อมูลหายตอน Server รีสตาร์ท)
+const otpStorage = new Map();
+
 // ==========================================
-// API: สมัครสมาชิก (สร้างบัญชี Auth และบันทึกลง Firestore)
+// API 1: สมัครสมาชิก (สร้างบัญชี Auth และบันทึกลง Firestore)
 // ==========================================
 app.post('/api/register', async (req, res) => {
   try {
-    // รับข้อมูลที่หน้าบ้านส่งมา
     const { email, firstName, lastName, phone } = req.body;
 
-    // 1. เช็คก่อนว่ามีอีเมลนี้ใน Firestore แล้วหรือยัง
     const usersRef = db.collection('users');
     const snapshot = await usersRef.where('email', '==', email).get();
     
@@ -36,37 +37,31 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: "มีอีเมลนี้ในระบบแล้ว กรุณาใช้ชื่ออื่น" });
     }
 
-    // 2. สร้างบัญชีผู้ใช้ในแท็บ Firebase Auth (เพื่อให้ล็อกอินได้จริง)
     let userRecord;
     try {
       userRecord = await admin.auth().createUser({
         email: email,
-        // ถ้าหน้าเว็บมีช่องให้กรอกรหัสผ่านด้วย ให้เปิดคอมเมนต์บรรทัดล่างนี้ครับ
-        // password: req.body.password 
       });
     } catch (authErr) {
       if (authErr.code === 'auth/email-already-exists') {
         return res.status(400).json({ error: "อีเมลนี้ถูกใช้งานในระบบแล้ว" });
       }
-      throw authErr; // ถ้าพังด้วยสาเหตุอื่น ให้โยน error ออกไป
+      throw authErr; 
     }
 
-    // 3. กำหนดวันหมดอายุสมาชิก (ให้ใช้งานฟรี 30 วัน)
     const expireDate = new Date();
     expireDate.setDate(expireDate.getDate() + 30); 
 
-    // 4. เตรียมข้อมูลที่จะบันทึกลงฐานข้อมูล
     const newUser = {
       email: email,
       firstName: firstName,
       lastName: lastName,
       phone: phone,
       memberExpireAt: expireDate,
-      uid: userRecord.uid, // เก็บ UID เอาไว้ใช้ยืนยันตัวตน
-      createdAt: admin.firestore.FieldValue.serverTimestamp() // ใช้เวลามาตรฐานของ Server
+      uid: userRecord.uid, 
+      createdAt: admin.firestore.FieldValue.serverTimestamp() 
     };
 
-    // 5. บันทึกลงตาราง users ใน Firestore โดยตั้งชื่อ Document ให้ตรงกับ UID ของ Auth!
     await db.collection('users').doc(userRecord.uid).set(newUser);
 
     console.log("✅ สมัครสมาชิกสำเร็จ! โพรไฟล์ถูกสร้างด้วย UID:", userRecord.uid);
@@ -75,6 +70,97 @@ app.post('/api/register', async (req, res) => {
   } catch (error) {
     console.error("❌ Error saving to Firebase:", error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกข้อมูล" });
+  }
+});
+
+// ==========================================
+// API 2: ขอ OTP (ส่งไปยังอีเมล)
+// ==========================================
+app.post('/api/request-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const formattedEmail = email.trim().toLowerCase();
+
+    // 1. เช็คว่ามีผู้ใช้นี้ใน Firebase Auth หรือไม่
+    try {
+      await admin.auth().getUserByEmail(formattedEmail);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // 🟢 ส่ง Error กลับไปให้ Frontend รู้ว่าหาอีเมลไม่เจอ (ตรงกับเงื่อนไขในหน้า Welcome.jsx)
+        return res.status(404).json({ success: false, error: "Email not found" });
+      }
+      throw error;
+    }
+
+    // 2. สร้างรหัส OTP 6 หลัก (แบบสุ่ม)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // 3. เก็บ OTP ไว้ใน Memory พร้อมเวลาหมดอายุ (เช่น 5 นาที)
+    otpStorage.set(formattedEmail, {
+      otp: otp,
+      expiresAt: Date.now() + 5 * 60 * 1000 // 5 นาที
+    });
+
+    // 4. 🚀 TODO: โค้ดสำหรับส่งอีเมลจริงๆ (เช่น ใช้ Nodemailer)
+    // ตอนนี้ให้ Console.log ไปก่อนเพื่อใช้ทดสอบ
+    console.log(`\n📧 [SIMULATE EMAIL] ส่ง OTP: ${otp} ไปยังอีเมล: ${formattedEmail}\n`);
+
+    res.json({ success: true, message: "OTP sent successfully" });
+
+  } catch (error) {
+    console.error("❌ Error requesting OTP:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+});
+
+// ==========================================
+// API 3: ยืนยัน OTP และสร้าง Custom Token 🌟
+// ==========================================
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const formattedEmail = email.trim().toLowerCase();
+
+    // 1. เช็คว่ามี OTP ของอีเมลนี้เก็บไว้ไหม
+    const storedData = otpStorage.get(formattedEmail);
+
+    if (!storedData) {
+      return res.status(400).json({ success: false, error: "ไม่พบรหัส OTP หรือรหัสหมดอายุแล้ว" });
+    }
+
+    // 2. เช็คเวลาหมดอายุ
+    if (Date.now() > storedData.expiresAt) {
+      otpStorage.delete(formattedEmail); // ลบทิ้ง
+      return res.status(400).json({ success: false, error: "รหัส OTP หมดอายุแล้ว" });
+    }
+
+    // 3. เช็คว่ารหัสตรงกันไหม
+    if (storedData.otp !== otp) {
+      return res.status(400).json({ success: false, error: "รหัส OTP ไม่ถูกต้อง" });
+    }
+
+    // 🌟 4. ถ้ารหัสถูกต้อง ให้หา UID ของผู้ใช้จาก Firebase Auth
+    const userRecord = await admin.auth().getUserByEmail(formattedEmail);
+    const uid = userRecord.uid;
+
+    // 🌟 5. สร้าง Custom Token ด้วย UID
+    const customToken = await admin.auth().createCustomToken(uid);
+
+    console.log(`✅ ยืนยัน OTP สำเร็จ! ออกบัตรผ่าน (Token) ให้: ${formattedEmail}`);
+
+    // ล้าง OTP ทิ้งเมื่อใช้งานสำเร็จแล้ว
+    otpStorage.delete(formattedEmail);
+
+    // 6. ส่ง Token กลับไปให้หน้าบ้านเอาไปใช้ล็อกอิน
+    res.json({ 
+      success: true, 
+      token: customToken, 
+      message: "Login successful" 
+    });
+
+  } catch (error) {
+    console.error("❌ Error verifying OTP:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 });
 
