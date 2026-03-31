@@ -4,16 +4,14 @@ import { useNavigate } from "react-router-dom";
 import logo from "@/assets/images/logo.png";
 
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider, db } from "@/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth, googleProvider } from "@/firebase"; // ❌ เอา db ออกแล้ว เพราะไม่ได้ใช้ในหน้านี้แล้ว
 
 import Rocket from "@/assets/icons/rocket-lunch 1.svg";
 import Crown from "@/assets/icons/crown 1.svg";
 import OtpModal from "@/components/OtpModal";
-import axios from "axios"; 
 
-// 🟢 แก้ไขจุดที่ 1: ดึง URL จาก Environment Variable มาเตรียมไว้
-const BASE_API_URL = import.meta.env.VITE_API_URL || "https://ideatrade1p.onrender.com/";
+// 🟢 ดึง URL จาก Environment Variable
+const BASE_API_URL = import.meta.env.VITE_API_URL || "https://ideatrade1p.onrender.com";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -95,20 +93,8 @@ export default function Welcome() {
     setIsLoading(true);
     try {
       const formattedEmail = email.trim().toLowerCase();
-      const usersRef = collection(db, "users"); 
-      const q = query(usersRef, where("email", "==", formattedEmail));
       
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        setPopupType("emailNotFound"); 
-        setOpenForgot(true);
-        setIsLoading(false);
-        return;
-      }
-
-      // 🟢 แก้ไขจุดที่ 2: ใช้ BASE_API_URL ต่อกับ Path ของ Function
-      // วิธีนี้จะทำให้ยิงไปหา Render (https://ideatrade1p.onrender.com) ได้ถูกต้อง
+      // 🟢 ลบ getDocs ออก แล้วยิง API เพื่อขอ OTP (และให้ API เช็คอีเมลให้)
       const response = await fetch(`${BASE_API_URL}/api/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,17 +111,25 @@ export default function Welcome() {
         }
         setOpenOtp(true); 
       } else {
-        alert("ไม่สามารถส่งอีเมลได้: " + (data.error || "ไม่ทราบสาเหตุ"));
+        // 🟢 ดักจับ Error จาก Backend (สมมติว่าถ้าไม่มีอีเมล Backend ส่ง error กลับมาว่า "Email not found" หรือคล้ายๆ กัน)
+        // คุณอาจจะต้องปรับข้อความในเงื่อนไขให้ตรงกับที่ API ของคุณตอบกลับมา
+        const errorMsg = data.error?.toLowerCase() || "";
+        
+        if (errorMsg.includes("not found") || errorMsg.includes("no user")) {
+           setPopupType("emailNotFound"); 
+           setOpenForgot(true);
+        } else {
+           alert("ไม่สามารถส่งอีเมลได้: " + (data.error || "ไม่ทราบสาเหตุ"));
+        }
       }
     } catch (error) {
       console.error("Error requesting OTP:", error);
-      alert("⚠️ เกิดข้อผิดพลาด: " + error.message);
+      alert("⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- ส่วน JSX ด้านล่างคงเดิมทั้งหมดตามที่คุณเขียนมา ---
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-700 px-4">
       <div className="w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-6xl mx-auto rounded-2xl lg:rounded-[3rem] overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 shadow-2xl">
