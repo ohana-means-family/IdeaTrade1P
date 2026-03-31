@@ -3,8 +3,8 @@ import { auth, db } from "@/firebase";
 import { signInWithCustomToken } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 
-// ดึง URL ของ Backend จาก Environment Variable
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// 🟢 ปรับ URL สำรองให้ตรงกับ Production (Render) หรือ Local (8000) ของคุณ
+const API_URL = import.meta.env.VITE_API_URL || "https://ideatrade1p.onrender.com";
 
 export default function OtpModal({ open, onClose, onSuccess, email }) { 
   const OTP_LENGTH = 6;
@@ -16,13 +16,16 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
 
   const hiddenInputRef = useRef(null);
 
-  /* ⏱ Timer Logic */
+  /* ⏱ Timer & Auto Focus Logic */
   useEffect(() => {
     if (!open) return;
     setTimeLeft(300);
     setResent(false);
     setOtp(Array(OTP_LENGTH).fill(""));
     setStatus("idle");
+
+    // 🟢 โฟกัสช่องกรอกอัตโนมัติเมื่อเปิด Modal
+    setTimeout(() => hiddenInputRef.current?.focus(), 100);
 
     const interval = setInterval(() => {
       setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
@@ -40,7 +43,6 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
   const verifyOtp = async (code) => {
     setStatus("loading");
     try {
-      // 🟢 แก้ไข: ใช้ Path /api/verify-otp ให้ตรงกับ Backend
       const response = await fetch(`${API_URL}/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -62,17 +64,22 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
 
       // 2. กระบวนการย้ายข้อมูลจาก [ชื่อไฟล์เป็น Email] -> [ชื่อไฟล์เป็น UID]
       if (user) {
-        const formattedEmail = email.trim().toLowerCase();
-        const emailDocRef = doc(db, "users", formattedEmail);
-        const emailDocSnap = await getDoc(emailDocRef);
+        // 🟢 ครอบ try-catch ย่อยไว้ เพื่อป้องกัน Security Rules บล็อกจนล็อกอินพัง
+        try {
+          const formattedEmail = email.trim().toLowerCase();
+          const emailDocRef = doc(db, "users", formattedEmail);
+          const emailDocSnap = await getDoc(emailDocRef);
 
-        if (emailDocSnap.exists()) {
-          const userData = emailDocSnap.data();
-          const uidDocRef = doc(db, "users", user.uid);
-          
-          await setDoc(uidDocRef, userData, { merge: true });
-          await deleteDoc(emailDocRef);
-          console.log("Successfully merged user data from Email to UID");
+          if (emailDocSnap.exists()) {
+            const userData = emailDocSnap.data();
+            const uidDocRef = doc(db, "users", user.uid);
+            
+            await setDoc(uidDocRef, userData, { merge: true });
+            await deleteDoc(emailDocRef);
+            console.log("Successfully merged user data from Email to UID");
+          }
+        } catch (migrationError) {
+          console.log("Migration skipped (อาจเพราะอัปเดตข้อมูลเป็น UID แล้ว หรือติด Rules):", migrationError.message);
         }
       }
 
@@ -82,6 +89,11 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     } catch (error) {
       console.error("🔥 Verify Error:", error.message); 
       setStatus("error");
+      
+      // 🟢 เคลียร์ช่องให้พิมพ์ใหม่ได้ทันทีเมื่อเกิด Error
+      setOtp(Array(OTP_LENGTH).fill("")); 
+      setTimeout(() => hiddenInputRef.current?.focus(), 100);
+      
       alert("เกิดข้อผิดพลาด: " + error.message); 
     }
   };
@@ -94,7 +106,6 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     setResent(true);
     hiddenInputRef.current?.focus();
     try {
-      // 🟢 แก้ไข: เปลี่ยนจาก Path Firebase เดิม เป็น /api/request-otp ของ Render
       await fetch(`${API_URL}/api/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
