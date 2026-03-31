@@ -1,14 +1,14 @@
 import React, { useState } from 'react'; 
 import './Profile.css';
 
-// 🟢 แก้ไข: Import useSubscription มาใช้งานแทน useAuth
+// 🟢 แก้ไขจุดนี้: ต้อง Import useSubscription ให้ตรงกับที่เรียกใช้ข้างล่าง
 import { useSubscription } from '@/context/SubscriptionContext'; 
 
 import { db } from "@/firebase"; 
 import { doc, setDoc } from "firebase/firestore";
 
 const Profile = () => {
-  // 🟢 ดึงข้อมูลจาก SubscriptionContext มาใช้
+  // 🟢 ดึงข้อมูลจาก SubscriptionContext มาใช้ (ซึ่งตอนนี้มีทั้ง Auth และ Profile อยู่ในตัวเดียวแล้ว)
   const { currentUser, userData, setUserData } = useSubscription();
   
   const [activeTab, setActiveTab] = useState('Profile');
