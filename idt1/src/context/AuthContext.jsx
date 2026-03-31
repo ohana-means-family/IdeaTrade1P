@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
@@ -14,21 +13,23 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user); // 🟢 ตอนนี้ user จะไม่ null แล้ว เพราะเราล็อกอินด้วย Token ตะกี้
+      setCurrentUser(user);
       
       if (user) {
         try {
-          // วิ่งไปดึงข้อมูลจากตาราง users ด้วย UID ได้ตรงๆ เลย
+          // ดึงข้อมูลตรงๆ จาก UID ของแท้เลย!
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           } else {
+            console.log("ไม่พบเอกสารของ User นี้");
             setUserData({});
           }
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          console.error("Context fetch error:", error);
+          setUserData({});
         }
       } else {
         setUserData(null);

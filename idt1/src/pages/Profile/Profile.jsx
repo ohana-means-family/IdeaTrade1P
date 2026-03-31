@@ -1,22 +1,16 @@
-// src/pages/Profile.jsx
-import React, { useState } from 'react'; // ลบ useEffect ออกได้เลยเพราะเราดึงมาจาก Context แล้ว
+import React, { useState } from 'react'; 
 import './Profile.css';
 import { useAuth } from '@/context/AuthContext';
-
-// ✅ Import เฉพาะสิ่งที่ใช้ตอนกด Save
 import { db } from "@/firebase"; 
 import { doc, setDoc } from "firebase/firestore";
 
 const Profile = () => {
-  // ดึงข้อมูลทั้งหมดจากถังส่วนกลาง
   const { currentUser, userData, setUserData } = useAuth();
   
   const [activeTab, setActiveTab] = useState('Profile');
   const [isSaving, setIsSaving] = useState(false);
 
-  // ❌ ลบ useEffect อันยาวๆ ของเก่าทิ้งไปได้เลยครับ เพราะ AuthContext จัดการดึงให้แล้ว
-
-  // ถ้าข้อมูลยังโหลดไม่เสร็จ (userData เป็น null) ให้ขึ้น Loading ไว้ก่อน
+  // ถ้าข้อมูลยังมาไม่ถึง ให้โชว์ Loading
   if (!userData) return <div className="text-white text-center mt-20">Loading profile...</div>;
 
   const handleSave = async () => {
@@ -24,28 +18,20 @@ const Profile = () => {
 
     setIsSaving(true);
     try {
+      // เซฟทับลง UID โดยตรง
       const docRef = doc(db, "users", currentUser.uid);
       await setDoc(docRef, {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        phone: userData.phone,
-        email: userData.email, // ใช้จาก userData ได้เลย
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        phone: userData.phone || '',
+        email: userData.email || '',
         updatedAt: new Date()
       }, { merge: true });
-
-      // อัพเดท localStorage
-      const storedProfile = localStorage.getItem("userProfile");
-      let profile = storedProfile ? JSON.parse(storedProfile) : {};
-      localStorage.setItem("userProfile", JSON.stringify({
-        ...profile,
-        firstName: userData.firstName,
-        lastName: userData.lastName
-      }));
 
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error saving profile:", error);
-      alert("Failed to save profile.");
+      alert("Failed to save profile. ตรวจสอบสิทธิ์อีกครั้ง");
     } finally {
       setIsSaving(false);
     }
@@ -54,10 +40,8 @@ const Profile = () => {
   return (
     <div className="w-full min-h-screen bg-transparent p-4 md:p-8 animate-fade-in">
       <div className="max-w-3xl mx-auto">
-        
         <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-6 text-left">Account Settings</h1>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-6 w-full overflow-x-auto hide-scrollbar">
           <button 
             className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold flex items-center justify-center transition-colors text-sm
@@ -78,15 +62,11 @@ const Profile = () => {
         {activeTab === 'Profile' && (
           <div className="w-full">
             <div className="bg-transparent w-full flex flex-col gap-6">
-              
               <div className="flex flex-col gap-1 w-full">
                 <h2 className="text-lg md:text-xl font-bold text-white text-left">Personal Information</h2>
-                <p className="text-xs text-gray-500 text-left">Last Login: {userData.lastLogin}</p>
               </div>
               
               <div className="flex flex-col gap-5 w-full">
-                
-                {/* First & Last Name */}
                 <div className="flex flex-col md:flex-row gap-5 w-full">
                   <div className="flex flex-col gap-2 flex-1 w-full">
                     <label className="text-sm font-medium text-gray-400 text-left">First Name</label>
@@ -110,7 +90,6 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Email */}
                 <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-400 text-left">Email Address</label>
                   <input 
@@ -121,7 +100,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Phone */}
                 <div className="flex flex-col gap-2 w-full">
                   <label className="text-sm font-medium text-gray-400 text-left">Phone Number</label>
                   <input 
@@ -133,7 +111,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Action Button */}
                 <div className="w-full pt-2">
                   <button 
                     className="w-full bg-[#007bff] hover:bg-[#0069d9] text-white text-sm font-bold py-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20" 
@@ -144,20 +121,8 @@ const Profile = () => {
                     <EditIcon /> {isSaving ? "Saving..." : "Save Profile"} 
                   </button>
                 </div>
-
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === 'API' && (
-          <div className="w-full fade-in">
-             <div className="bg-transparent w-full">
-                  <h2 className="text-lg md:text-xl font-bold text-white mb-4 text-left">API Configuration</h2>
-                  <div className="text-gray-500 text-sm text-left">
-                      Manage your API keys here.
-                  </div>
-             </div>
           </div>
         )}
       </div>
