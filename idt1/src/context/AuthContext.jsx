@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "@/firebase"; 
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -17,28 +17,36 @@ export const AuthProvider = ({ children }) => {
       
       if (user) {
         try {
-          // 🟢 เติม console.log ตรงนี้เพื่อดูรหัส UID ปัจจุบัน
-          console.log("🔥 คนที่ล็อกอินอยู่ตอนนี้คือ Email:", user.email);
-          console.log("🔑 สลาก UID ที่ได้มาคือ:", user.uid);
-          
-          // ดึงข้อมูลตรงๆ จาก UID ของแท้เลย!
+          // --- ขั้นตอนที่ 1: ลองหาด้วย UID ก่อน (วิธีมาตรฐาน) ---
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
+            console.log("✅ เจอข้อมูลด้วย UID!");
             setUserData(docSnap.data());
           } else {
-            console.log("ไม่พบเอกสารของ User นี้");
-            setUserData({});
+            // --- ขั้นตอนที่ 2: ถ้าไม่เจอ (เช่นกรณี UID บั๊กเป็นอีเมล) ให้ค้นหาด้วย Field email แทน ---
+            console.log("🔍 ไม่เจอ UID... กำลังค้นหาด้วย Email แทน");
+            const userEmail = user.email || user.uid; // เผื่อกรณี email ไปอยู่ในช่อง uid
+            
+            const q = query(collection(db, "users"), where("email", "==", userEmail));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+              console.log("🎯 เจอข้อมูลด้วยการค้นหา Email!");
+              setUserData(querySnapshot.docs[0].data());
+            } else {
+              console.log("❌ หาไม่เจอทั้ง UID และ Email");
+              setUserData({});
+            }
           }
         } catch (error) {
-          console.error("Context fetch error:", error);
+          console.error("Fetch Error:", error);
           setUserData({});
         }
       } else {
         setUserData(null);
       }
-      
       setLoading(false);
     });
 
