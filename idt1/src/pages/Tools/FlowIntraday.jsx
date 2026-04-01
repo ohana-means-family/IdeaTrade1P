@@ -249,17 +249,36 @@ function ChartModeDropdown({ value, onChange }) {
 
   return (
     <div ref={ref} className="relative">
-      <button onMouseDown={e => { e.preventDefault(); setOpen(v => !v); }}
-        className={`flex items-center gap-1 bg-[#1f2937] border rounded-md px-2 py-[3px] text-[11px] sm:text-xs font-semibold transition-all min-w-[52px] justify-between
-          ${open ? "border-slate-500 text-white" : "border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white"}`}>
-        <span>{current.label}</span>
-        <svg width="7" height="4" viewBox="0 0 8 5" fill="currentColor" className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}><path d="M4 5L0 0H8Z"/></svg>
+      <button
+        onMouseDown={e => { e.preventDefault(); setOpen(v => !v); }}
+        className={`relative flex items-center bg-[#1f2937] border rounded-md pl-2 pr-6 py-[3px] text-[11px] sm:text-xs font-semibold transition-all min-w-[64px]
+          ${open ? "border-slate-500 text-white" : "border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white"}`}
+      >
+        <span className="block truncate">{current.label}</span>
+
+        <svg
+          width="7"
+          height="4"
+          viewBox="0 0 8 5"
+          fill="currentColor"
+          className={`absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M4 5L0 0H8Z" />
+        </svg>
       </button>
+
       {open && (
         <div className="absolute right-0 top-full mt-1 w-20 bg-[#0d1526] border border-slate-600/60 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.8)] z-[200] overflow-hidden py-0.5">
           {CHART_MODES.map(({ value: v, label }) => (
-            <div key={v} onMouseDown={() => { onChange(v); setOpen(false); }}
-              className={`px-3 py-2 cursor-pointer text-xs font-bold transition-all ${v === value ? "text-white bg-[#1e293b]" : "text-slate-400 hover:bg-slate-800/70 hover:text-white"}`}>
+            <div
+              key={v}
+              onMouseDown={() => { onChange(v); setOpen(false); }}
+              className={`px-3 py-2 cursor-pointer text-xs font-bold transition-all ${
+                v === value
+                  ? "text-white bg-[#1e293b]"
+                  : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+              }`}
+            >
               {label}
             </div>
           ))}
