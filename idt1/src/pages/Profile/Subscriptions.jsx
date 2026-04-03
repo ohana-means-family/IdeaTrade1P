@@ -1,7 +1,7 @@
 // src/pages/ManageSubscription.jsx
 import React, { useState, useEffect } from 'react';
 import './Subscriptions.css'; 
-import { doc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { db, auth } from "@/firebase"; 
 import { useNavigate } from 'react-router-dom';
 
@@ -20,10 +20,11 @@ const ManageSubscription = () => {
   const authContext = useAuth();
   const userData = authContext?.userData || null;
   const loading = authContext?.loading || false;
-  const currentUser = authContext?.currentUser || auth.currentUser; // 🟢 ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่
+  const currentUser = authContext?.currentUser || auth.currentUser;
 
   useEffect(() => {
-    const processAndSetSubscriptions = (savedSubs = []) => {
+    // 🟢 รับค่า expirations (ที่เป็น Object เก็บ Timestamp ของแต่ละเครื่องมือ) เข้ามาด้วย
+    const processAndSetSubscriptions = (savedSubs = [], expirations = {}) => {
       let active = [];
       let expiring = [];
       let ended = [];
@@ -42,21 +43,26 @@ const ManageSubscription = () => {
             hour: '2-digit', minute: '2-digit', hour12: false
           });
 
-          let expireObj = new Date(purchaseObj);
+          let expireDateStr = "Unknown";
+          let daysLeft = 0;
           
-          if (sub.cycle?.toLowerCase() === 'monthly') {
-            expireObj.setDate(expireObj.getDate() + 30);
-          } else if (sub.cycle?.toLowerCase() === 'yearly') {
-            expireObj.setFullYear(expireObj.getFullYear() + 1);
+          // 🟢 ดึงข้อมูลวันหมดอายุจาก Map: subscriptions
+          const toolExpireData = expirations[sub.id]; 
+          
+          if (toolExpireData) {
+            // แปลง Firestore Timestamp เป็น Date Object
+            const expireObj = typeof toolExpireData.toDate === 'function' 
+              ? toolExpireData.toDate() 
+              : new Date(toolExpireData);
+            
+            expireDateStr = expireObj.toLocaleString('en-GB', {
+              day: 'numeric', month: 'short', year: 'numeric'
+            });
+
+            const today = new Date();
+            const timeDiff = expireObj.getTime() - today.getTime();
+            daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
           }
-
-          const expireDateStr = expireObj.toLocaleString('en-GB', {
-            day: 'numeric', month: 'short', year: 'numeric'
-          });
-
-          const today = new Date();
-          const timeDiff = expireObj.getTime() - today.getTime();
-          const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
           const priceValue = parseInt(String(sub.price || '0').replace(/,/g, '').replace(' THB', '')) || 0;
           
@@ -69,6 +75,7 @@ const ManageSubscription = () => {
             priceValue: priceValue 
           };
 
+          // 🟢 แยกการ์ดตามจำนวนวันที่เหลือ (ใช้ daysLeft ที่คำนวณจาก Timestamp)
           if (daysLeft <= 0 || sub.status === 'inactive') {
             ended.push(formattedItem);
           } else if (daysLeft > 0 && daysLeft <= 3) {
@@ -93,9 +100,10 @@ const ManageSubscription = () => {
 
     if (!loading) {
       if (userData && userData.mySubscriptions) {
-        processAndSetSubscriptions(userData.mySubscriptions);
+        // 🟢 โยนทั้ง Array แพ็กเกจที่ซื้อ และ Object วันหมดอายุ ไปประมวลผลพร้อมกัน
+        processAndSetSubscriptions(userData.mySubscriptions, userData.subscriptions || {});
       } else {
-        processAndSetSubscriptions([]); 
+        processAndSetSubscriptions([], {}); 
       }
     }
 
@@ -109,31 +117,21 @@ const ManageSubscription = () => {
     });
   };
 
-  /* ======================= 🟢 TEST BLOCK (ระบบจำลองวันหมดอายุอัปเดตใหม่) ======================= */
+  /* ======================= 🟢 TEST BLOCK: อัปเดตที่ช่อง subscriptions (Timestamp) ======================= */
   const handleTestStatus = async (item, mode) => {
     if (!currentUser) {
       alert("ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
       return;
     }
 
-    // 1. กำหนดวันหมดอายุเป้าหมาย (เหลือ 2 วัน หรือ หมดอายุไปแล้ว 1 วัน)
     const targetExpireDate = new Date();
     if (mode === 'expiring') {
-      targetExpireDate.setDate(targetExpireDate.getDate() + 2); 
+      targetExpireDate.setDate(targetExpireDate.getDate() + 2); // เหลือ 2 วัน
     } else {
-      targetExpireDate.setDate(targetExpireDate.getDate() - 1); 
-    }
-
-    // 2. คำนวณวันที่ซื้อ (purchaseDate) ย้อนหลัง เพื่อหลอกระบบ
-    const mockPurchaseDate = new Date(targetExpireDate);
-    if (item.cycle?.toLowerCase() === 'monthly') {
-      mockPurchaseDate.setDate(mockPurchaseDate.getDate() - 30);
-    } else if (item.cycle?.toLowerCase() === 'yearly') {
-      mockPurchaseDate.setFullYear(mockPurchaseDate.getFullYear() - 1);
+      targetExpireDate.setDate(targetExpireDate.getDate() - 1); // หมดไปแล้ว 1 วัน
     }
 
     try {
-      // 3. ค้นหา Document ของ User ด้วย Email (ชัวร์สุด)
       const userEmail = currentUser.email || currentUser.uid;
       const q = query(collection(db, "users"), where("email", "==", userEmail));
       const querySnapshot = await getDocs(q);
@@ -141,25 +139,14 @@ const ManageSubscription = () => {
       if (!querySnapshot.empty) {
         const userDoc = querySnapshot.docs[0];
         const userRef = doc(db, "users", userDoc.id);
-        const data = userDoc.data();
-        let mySubs = data.mySubscriptions || [];
         
-        // 4. หา Index ของเครื่องมือตัวที่เรากดปุ่ม
-        const subIndex = mySubs.findIndex(s => s.name === item.name && s.cycle === item.cycle);
+        // 🟢 อัปเดตเฉพาะเจาะจงลงไปที่ Map: subscriptions.{ชื่อเครื่องมือ} เป็น Timestamp ตรงๆ
+        await updateDoc(userRef, {
+          [`subscriptions.${item.id}`]: Timestamp.fromDate(targetExpireDate)
+        });
         
-        if (subIndex > -1) {
-          // 5. แทนที่วันที่ซื้อเดิม ด้วยวันที่เราจำลองขึ้นมา
-          mySubs[subIndex].purchaseDate = mockPurchaseDate.toISOString();
-          
-          await updateDoc(userRef, {
-            mySubscriptions: mySubs
-          });
-          
-          console.log(`✅ จำลองสถานะสำเร็จ! (${mode})`);
-          window.location.reload(); // รีเฟรชหน้าจอ
-        } else {
-          alert("ไม่พบเครื่องมือนี้ในฐานข้อมูลของคุณ");
-        }
+        console.log(`✅ จำลองสถานะสำเร็จ! (${mode}) ให้กับ ${item.id}`);
+        window.location.reload(); 
       } else {
         alert("ไม่พบข้อมูลบัญชีของคุณในระบบ");
       }
@@ -233,7 +220,6 @@ const ManageSubscription = () => {
               <div className="text-gray-400 text-[12px] pb-1.5">
                 {item.paymentMethod || 'Bank Transfer'}
               </div>
-              {/* 🟢 ปุ่มกดจำลองสถานะ Mobile */}
               <div className="flex gap-1 opacity-40 hover:opacity-100 transition-opacity">
                 <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
                 <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
@@ -262,7 +248,6 @@ const ManageSubscription = () => {
             <div className="text-center">{btnDesktop}</div>
             <div className="flex flex-col items-end gap-1">
               <div className="text-gray-400 text-[13px] text-right truncate">{item.paymentMethod || 'Bank Transfer'}</div>
-              {/* 🟢 ปุ่มกดจำลองสถานะ Desktop */}
               <div className="flex gap-1 opacity-20 hover:opacity-100 transition-opacity">
                 <button onClick={() => handleTestStatus(item, 'expiring')} className="text-[9px] bg-yellow-600/80 text-white px-1.5 py-0.5 rounded">T: 2 Days</button>
                 <button onClick={() => handleTestStatus(item, 'expired')} className="text-[9px] bg-red-600/80 text-white px-1.5 py-0.5 rounded">T: Expired</button>
