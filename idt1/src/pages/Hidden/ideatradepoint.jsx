@@ -175,7 +175,6 @@ const LastUpdateBadge = ({ lastUpdated }) => {
     const t = setInterval(fmt, 5000);
     return () => clearInterval(t);
   }, [lastUpdated]);
-
   if (!lastUpdated) return null;
   return (
     <span style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>
@@ -255,14 +254,12 @@ const LWCChart = ({
     );
   }, [seriesData, periodConfig]);
 
-  // ── Smooth Y-axis animation via RAF interpolation ──
   const animatePriceRange = useCallback((targetMin, targetMax) => {
     if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
     const startMin  = priceRangeRef.current.min;
     const startMax  = priceRangeRef.current.max;
     const startTime = performance.now();
     const DURATION  = 800;
-
     const tick = (now) => {
       const t    = Math.min((now - startTime) / DURATION, 1);
       const ease = 1 - Math.pow(1 - t, 3);
@@ -270,22 +267,17 @@ const LWCChart = ({
         min: startMin + (targetMin - startMin) * ease,
         max: startMax + (targetMax - startMax) * ease,
       };
-
-      // สลับ lineWidth ทีละ frame เพื่อ force LWC เรียก autoscaleInfoProvider ใหม่ทุก frame
       const s = linesRef.current[0];
       if (s) {
         const cur = s.options().lineWidth ?? 2;
         s.applyOptions({ lineWidth: cur === 2 ? 2.01 : 2 });
       }
-
       if (t < 1) {
         animRafRef.current = requestAnimationFrame(tick);
       } else {
-        // reset lineWidth กลับค่าเดิมเมื่อ animation จบ
         if (linesRef.current[0]) linesRef.current[0].applyOptions({ lineWidth: 2 });
       }
     };
-
     animRafRef.current = requestAnimationFrame(tick);
   }, []);
 
@@ -293,7 +285,6 @@ const LWCChart = ({
     if (!showLabels || !chartRef.current || !linesRef.current.length) return;
     const logicalRange = chartRef.current.timeScale().getVisibleLogicalRange();
     const rawLabels = [];
-
     linesRef.current.slice(0, VISIBLE_ROWS).forEach((series, i) => {
       const pts = slicedSeriesData?.[i];
       if (!pts || pts.length === 0) return;
@@ -308,7 +299,6 @@ const LWCChart = ({
         rawLabels.push({ y, value: currentVal.toFixed(2), index: i });
       }
     });
-
     extraLinesRef.current.forEach((series, dataIdx) => {
       const pts = slicedSeriesData?.[dataIdx];
       if (!pts || pts.length === 0) return;
@@ -323,7 +313,6 @@ const LWCChart = ({
         rawLabels.push({ y, value: currentVal.toFixed(2), index: `extra-${dataIdx}` });
       }
     });
-
     const adjustedLabels = avoidCollisions(rawLabels, 24);
     Object.values(labelsDOMRef.current).forEach(el => { if (el) el.style.opacity = 0; });
     adjustedLabels.forEach(({ y, value, index }) => {
@@ -465,7 +454,6 @@ const LWCChart = ({
     suppressSync.current = false;
   }, [globalLogical]);
 
-  // ── Sync extraVisibleSet → extra chart lines ──
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
@@ -526,7 +514,6 @@ const LWCChart = ({
     };
   }, []);
 
-  // ── dimming: ใช้ allSelected รวมทั้ง rank 1-5 และ 6+ ──
   useEffect(() => {
     const allSelected = new Set([...highlighted, ...extraVisibleSet]);
     linesRef.current.forEach((s, i) => {
@@ -620,10 +607,8 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
         border: "1px solid rgba(255,255,255,0.07)",
         borderRadius: 4, overflow: "hidden",
         display: "flex", flexDirection: "column",
-        height: "100%",   
+        height: "100%",
       }}>
-
-            {/* header */}
       <div style={{
         display: "grid", gridTemplateColumns: COL,
         alignItems: "center", padding: "0 10px", height: 36,
@@ -641,12 +626,7 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
           </div>
         )}
       </div>
-
-      {/* rows */}
-      <div
-        className="custom-scrollbar"
-        style={{ overflowY: "auto", flex: 1, maxHeight: VISIBLE_ROWS * ROW_H }}
-      >
+      <div className="custom-scrollbar" style={{ overflowY: "auto", flex: 1, maxHeight: VISIBLE_ROWS * ROW_H }}>
         {data.slice(0, totalCount).map((row, i) => {
           const isTop5  = i < 5;
           const isHi    = isTop5 && hiArr.includes(i);
@@ -655,7 +635,6 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
           const flash   = flashMap[i];
           const recent  = recentMap[i];
           const cc      = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
-
           const rowOpacity = allSelected.size > 0 && !isSel ? 0.18 : 1;
           const rowBg      = flash === "up" ? "rgba(34,197,94,0.10)"
                            : flash === "down" ? "rgba(239,68,68,0.10)"
@@ -665,7 +644,6 @@ const RankTable = ({ data, flashMap = {}, recentMap = {}, highlighted, extraVisi
           const borderLeft = isHi    ? `3px solid ${PALETTE[i]}`
                            : isExtra ? `3px solid ${EXTRA_COLOR}`
                            : "3px solid transparent";
-
           return (
             <div
               key={i}
@@ -737,40 +715,24 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
     const isExtra = !isTop && extraVisibleSet.includes(i);
     const isSel   = allSelected.has(i);
     const cc      = row.isUp === true ? "#4ade80" : row.isUp === false ? "#f87171" : "#64748b";
-
     const rowOpacity = allSelected.size > 0 && !isSel ? 0.18 : 1;
-    const rowBg      = flash === "up" ? "rgba(34,197,94,0.08)"
-                     : flash === "down" ? "rgba(239,68,68,0.08)"
-                     : isHi    ? "rgba(59,130,246,0.08)"
-                     : isExtra ? "rgba(148,163,184,0.07)"
-                     : "transparent";
+    const rowBg      = flash === "up" ? "rgba(34,197,94,0.08)" : flash === "down" ? "rgba(239,68,68,0.08)" : isHi ? "rgba(59,130,246,0.08)" : isExtra ? "rgba(148,163,184,0.07)" : "transparent";
     const dotColor   = isTop ? PALETTE[i] : isExtra ? EXTRA_COLOR : "#334155";
-    const borderLeft = isHi    ? `3px solid ${PALETTE[i]}`
-                     : isExtra ? `3px solid ${EXTRA_COLOR}`
-                     : "3px solid transparent";
-
+    const borderLeft = isHi ? `3px solid ${PALETTE[i]}` : isExtra ? `3px solid ${EXTRA_COLOR}` : "3px solid transparent";
     return (
-      <div
-        onClick={(e) => onRowClick?.(i, e.ctrlKey || e.metaKey)}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "28px 16px 1fr 80px 60px 52px",
-          alignItems: "center", padding: "0 14px",
-          height: isTop ? 46 : 40,
-          borderBottom: "1px solid rgba(255,255,255,0.04)",
-          background: rowBg, borderLeft,
-          cursor: "pointer", opacity: rowOpacity,
-          transition: "background 0.3s, opacity 0.3s",
-        }}
-      >
-        <span style={{ fontSize: isTop ? 13 : 12, color: isTop ? "#64748b" : "#334155", fontWeight: 600, textAlign: "center", fontFamily: "monospace" }}>
-          {row.rank}
-        </span>
+      <div onClick={(e) => onRowClick?.(i, e.ctrlKey || e.metaKey)} style={{
+        display: "grid", gridTemplateColumns: "28px 16px 1fr 80px 60px 52px",
+        alignItems: "center", padding: "0 14px",
+        height: isTop ? 46 : 40,
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        background: rowBg, borderLeft,
+        cursor: "pointer", opacity: rowOpacity,
+        transition: "background 0.3s, opacity 0.3s",
+      }}>
+        <span style={{ fontSize: isTop ? 13 : 12, color: isTop ? "#64748b" : "#334155", fontWeight: 600, textAlign: "center", fontFamily: "monospace" }}>{row.rank}</span>
         <span style={{ width: isTop ? 10 : 8, height: isTop ? 10 : 8, borderRadius: "50%", background: dotColor, display: "inline-block", flexShrink: 0 }} />
         <span style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 6 }}>
-          <span style={{ fontSize: isTop ? 14 : 13, fontWeight: isTop ? 800 : 600, color: isTop || isExtra ? "#e2e8f0" : "#94a3b8", letterSpacing: "0.04em", fontFamily: "monospace" }}>
-            {row.symbol}
-          </span>
+          <span style={{ fontSize: isTop ? 14 : 13, fontWeight: isTop ? 800 : 600, color: isTop || isExtra ? "#e2e8f0" : "#94a3b8", letterSpacing: "0.04em", fontFamily: "monospace" }}>{row.symbol}</span>
           {flash  && <span style={{ fontSize: 9, color: flash === "up" ? "#4ade80" : "#f87171" }}>{flash === "up" ? "▲" : "▼"}</span>}
           {!flash && recent && <span style={{ fontSize: 8, color: recent === "up" ? "#4ade80" : "#f87171", opacity: 0.6 }}>{recent === "up" ? "▲" : "▼"}</span>}
         </span>
@@ -781,13 +743,13 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
           {row.isUp === true ? "+" : ""}{row.change}%
         </span>
         <span style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <button
-            onClick={e => { e.stopPropagation(); onChartFlipClick?.(row.symbol); }}
-            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 4, padding: "4px 7px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-            title={`Chart Flip — ${row.symbol}`}
+          <button onClick={e => { e.stopPropagation(); onChartFlipClick?.(row.symbol); }} style={{
+            background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 4, padding: "4px 7px", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }} title={`Chart Flip — ${row.symbol}`}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#34d399"; e.currentTarget.style.background = "rgba(52,211,153,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "transparent"; }}
-          >
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "transparent"; }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={cc} strokeWidth="1.5"/>
               <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={cc}/>
@@ -804,30 +766,16 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 14px", height: 44,
-        borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
-      }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", height: 44, borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: "0.1em" }}>RANKINGS</span>
         {allSelected.size > 0 && (
-          <span style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>
-            {allSelected.size}/{MAX_SELECT} selected
-          </span>
+          <span style={{ fontSize: 10, color: "#475569", fontFamily: "monospace" }}>{allSelected.size}/{MAX_SELECT} selected</span>
         )}
       </div>
-      <div
-          className="custom-scrollbar"
-          style={{ flex: 1, overflowY: "auto" }}
-        >
+      <div className="custom-scrollbar" style={{ flex: 1, overflowY: "auto" }}>
         {top5.map((row, i) => <RankRow key={i} row={row} i={i} isTop />)}
         {others.length > 0 && (
-          <div style={{
-            padding: "6px 14px", fontSize: 10, fontWeight: 700, color: "#334155",
-            letterSpacing: "0.1em",
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-            background: "#0a1525",
-          }}>
+          <div style={{ padding: "6px 14px", fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "0.1em", borderBottom: "1px solid rgba(255,255,255,0.04)", background: "#0a1525" }}>
             OTHER
           </div>
         )}
@@ -836,6 +784,55 @@ const FullscreenRankings = ({ data, flashMap = {}, recentMap = {}, totalCount, h
           return <RankRow key={i} row={row} i={i} isTop={false} />;
         })}
       </div>
+    </div>
+  );
+};
+
+/* ================= SHELLS ================= */
+const DesktopShell = ({ chart, table }) => (
+  <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+    <div style={{ flex: 1, minWidth: 0, height: TABLE_H }}>{chart}</div>
+    <div style={{ width: 460, flexShrink: 0, height: TABLE_H, overflow: "hidden" }}>{table}</div>
+  </div>
+);
+
+const MobileShell = ({ chart, table, timePeriod, setTimePeriod }) => {
+  const [activeTab, setActiveTab] = useState("chart");
+
+  const TabBtn = ({ id, label }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      style={{
+        flex: 1, padding: "9px 0",
+        background: "transparent", border: "none",
+        borderBottom: `2px solid ${activeTab === id ? "#3b82f6" : "transparent"}`,
+        color: activeTab === id ? "#e2e8f0" : "#475569",
+        fontSize: 12, fontWeight: activeTab === id ? 700 : 400,
+        cursor: "pointer", fontFamily: "inherit",
+        transition: "all 0.15s",
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Tab bar */}
+      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 8 }}>
+        <TabBtn id="chart" label="Chart" />
+        <TabBtn id="table" label="Rankings" />
+      </div>
+
+      {activeTab === "chart" && (
+  <div style={{ height: TABLE_H }}>
+    {React.cloneElement(chart, { height: TABLE_H })}
+  </div>
+)}
+
+      {activeTab === "table" && (
+        <div style={{ height: TABLE_H, overflow: "hidden" }}>{table}</div>
+      )}
     </div>
   );
 };
@@ -869,18 +866,12 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
     if (isCtrl) {
       setSelectedSet(prev => {
         const next = new Set(prev);
-        if (next.has(rowIdx)) {
-          next.delete(rowIdx);
-        } else if (next.size < MAX_SELECT) {
-          next.add(rowIdx);
-        }
+        if (next.has(rowIdx)) next.delete(rowIdx);
+        else if (next.size < MAX_SELECT) next.add(rowIdx);
         return next;
       });
     } else {
-      setSelectedSet(prev => {
-        if (prev.size === 1 && prev.has(rowIdx)) return new Set();
-        return new Set([rowIdx]);
-      });
+      setSelectedSet(prev => prev.size === 1 && prev.has(rowIdx) ? new Set() : new Set([rowIdx]));
     }
   }, []);
 
@@ -900,61 +891,44 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
     return () => window.removeEventListener("keydown", onKey);
   }, [isFullscreen]);
 
-  /* ── FULLSCREEN LAYOUT ── */
+  /* ── FULLSCREEN LAYOUT — ไม่แตะ ── */
   if (isFullscreen) {
     const isNarrowFS = bp === "xs" || bp === "sm" || bp === "md";
-
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#060e1a", display: "flex", flexDirection: "column" }}>
-        {/* top bar */}
         <div style={{
           minHeight: 52, background: "#07111c",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           display: "flex", alignItems: "center", gap: 8,
           padding: "8px 16px", flexShrink: 0, flexWrap: "wrap",
         }}>
-          <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
-            ---
-          </ToolHint>
-
-          <button
-            onClick={() => setIsFullscreen(false)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 6, padding: "5px 12px",
-              color: "#94a3b8", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
-            }}
+          <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>---</ToolHint>
+          <button onClick={() => setIsFullscreen(false)} style={{
+            display: "flex", alignItems: "center", gap: 5,
+            background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 6, padding: "5px 12px",
+            color: "#94a3b8", cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+          }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#64748b"; e.currentTarget.style.color = "#e2e8f0"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#94a3b8"; }}
-          >
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#94a3b8"; }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 3L5 8l5 5"/>
             </svg>
             back
           </button>
-
-          <button
-            onClick={handleRefresh}
-            style={{
-              width: 30, height: 30, borderRadius: 6,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "transparent", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b",
-            }}
-            title="Reset"
+          <button onClick={handleRefresh} style={{
+            width: 30, height: 30, borderRadius: 6,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "transparent", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b",
+          }} title="Reset"
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#64748b"; e.currentTarget.style.color = "#e2e8f0"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#64748b"; }}
-          >
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#64748b"; }}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M13.5 6A6 6 0 1 0 14 10"/><path d="M14 4v3h-3"/>
             </svg>
           </button>
-
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0", fontFamily: "monospace", letterSpacing: "0.04em" }}>
-            {category}
-          </span>
-
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0", fontFamily: "monospace", letterSpacing: "0.04em" }}>{category}</span>
           <span style={{
             fontSize: 11, fontWeight: 700, padding: "3px 12px", borderRadius: 99,
             background: isPos ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
@@ -965,7 +939,6 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             <span style={{ fontSize: 9 }}>{isPos ? "▲" : "▼"}</span>
             {isPos ? "BUY FLOW" : "SELL FLOW"}
           </span>
-
           {selectedSet.size > 0 && (
             <span style={{
               fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
@@ -976,33 +949,24 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
               {selectedSet.size}/{MAX_SELECT} เส้น
             </span>
           )}
-
           <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.08)", margin: "0 4px", flexShrink: 0 }} />
-
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
-            <InfoTooltip
-           text={`Ctrl+คลิก เพื่อเพิ่มหุ้นเปรียบเทียบ (รวมไม่เกิน ${MAX_SELECT} เส้น)`}
-              placement="bottom"   
-            />
+            <InfoTooltip text={`Ctrl+คลิก เพื่อเพิ่มหุ้นเปรียบเทียบ (รวมไม่เกิน ${MAX_SELECT} เส้น)`} placement="bottom" />
             {TIME_PERIODS.map(({ key, label, sub }) => {
               const isActive = timePeriod === key;
               return (
-                <button
-                  key={key}
-                  onClick={() => setTimePeriod(key)}
-                  style={{
-                    background: isActive ? "#1d4ed8" : "transparent",
-                    border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.10)",
-                    borderRadius: 6, padding: isNarrowFS ? "4px 10px" : "4px 14px",
-                    cursor: "pointer", color: isActive ? "#fff" : "#64748b",
-                    fontSize: 12, fontFamily: "inherit",
-                    display: "flex", flexDirection: "column", alignItems: "center",
-                    lineHeight: 1.3, transition: "all 0.15s",
-                    boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.3)" : "none",
-                  }}
+                <button key={key} onClick={() => setTimePeriod(key)} style={{
+                  background: isActive ? "#1d4ed8" : "transparent",
+                  border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 6, padding: isNarrowFS ? "4px 10px" : "4px 14px",
+                  cursor: "pointer", color: isActive ? "#fff" : "#64748b",
+                  fontSize: 12, fontFamily: "inherit",
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  lineHeight: 1.3, transition: "all 0.15s",
+                  boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.3)" : "none",
+                }}
                   onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; e.currentTarget.style.color = "#94a3b8"; } }}
-                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)"; e.currentTarget.style.color = "#64748b"; } }}
-                >
+                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)"; e.currentTarget.style.color = "#64748b"; } }}>
                   <span style={{ fontWeight: 600 }}>{label}</span>
                   {!isNarrowFS && <span style={{ fontSize: 10, opacity: 0.8 }}>{sub}</span>}
                 </button>
@@ -1010,8 +974,6 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             })}
           </div>
         </div>
-
-        {/* body */}
         <div style={{ flex: 1, display: "flex", flexDirection: isNarrowFS ? "column" : "row", minHeight: 0 }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0, padding: isNarrowFS ? "8px 8px 0" : "12px 0 12px 12px", display: "flex" }}>
             <LWCChart
@@ -1039,9 +1001,7 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             overflow: "hidden",
           }}>
             <FullscreenRankings
-              data={liveData}
-              flashMap={flashMap}
-              recentMap={recentMap}
+              data={liveData} flashMap={flashMap} recentMap={recentMap}
               totalCount={totalCount}
               highlighted={highlighted}
               extraVisibleSet={extraVisibleSet}
@@ -1055,13 +1015,45 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
   }
 
   /* ── NORMAL (card) LAYOUT ── */
+
+  // สร้าง elements ก่อนส่งเข้า Shell
+  const chartEl = (
+    <LWCChart
+      seriesData={allSeriesData}
+      highlighted={highlighted}
+      extraVisibleSet={extraVisibleSet}
+      allData={liveData}
+      height={TABLE_H}
+      chartId={chartId}
+      chartRefs={chartRefs}
+      onZoom={onZoom}
+      globalLogical={globalLogical}
+      setGlobalLogical={setGlobalLogical}
+      timePeriod={timePeriod}
+      showLabels={true}
+      labelData={liveData}
+    />
+  );
+
+  const tableEl = (
+    <RankTable
+      data={liveData}
+      flashMap={flashMap}
+      recentMap={recentMap}
+      highlighted={highlighted}
+      extraVisibleSet={extraVisibleSet}
+      totalCount={totalCount}
+      onRowClick={handleRowClick}
+      onChartFlipClick={onChartFlipClick}
+    />
+  );
+
   return (
     <div style={{ marginBottom: 16 }}>
-      <div 
-      className="bg-[#1e293b] rounded-xl border border-slate-700/60 shadow-lg"
-      style={{
-        padding: "16px 20px", display: "flex", flexDirection: "column",
-      }}>
+      <div
+        className="bg-[#1e293b] rounded-xl border border-slate-700/60 shadow-lg"
+        style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}
+      >
         <div style={{
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between",
@@ -1082,20 +1074,16 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
             <LastUpdateBadge lastUpdated={lastUpdated} />
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-            <button
-              onClick={handleFullscreen}
+            <button onClick={handleFullscreen}
               style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}
-              title="Fullscreen"
-            >
+              title="Fullscreen">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5"/>
               </svg>
             </button>
-            <button
-              onClick={handleRefresh}
+            <button onClick={handleRefresh}
               style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid rgba(255,255,255,0.12)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}
-              title="Refresh"
-            >
+              title="Refresh">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M13.5 6A6 6 0 1 0 14 10"/><path d="M14 4v3h-3"/>
               </svg>
@@ -1103,37 +1091,15 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, alignItems: "stretch" }}>
-          <div style={{ flex: 1, minWidth: 0, height: TABLE_H }}>
-            <LWCChart
-              seriesData={allSeriesData}
-              highlighted={highlighted}
-              extraVisibleSet={extraVisibleSet}
-              allData={liveData}
-              height={TABLE_H}
-              chartId={chartId}
-              chartRefs={chartRefs}
-              onZoom={onZoom}
-              globalLogical={globalLogical}
-              setGlobalLogical={setGlobalLogical}
-              timePeriod="all"
-              showLabels={true}
-              labelData={liveData}
+        {isMobile
+          ? <MobileShell
+              chart={chartEl}
+              table={tableEl}
+              timePeriod={timePeriod}
+              setTimePeriod={setTimePeriod}
             />
-          </div>
-          <div style={{ width: isMobile ? "100%" : 460, flexShrink: 0, height: TABLE_H, overflow: "hidden" }}>
-            <RankTable
-              data={liveData}
-              flashMap={flashMap}
-              recentMap={recentMap}
-              highlighted={highlighted}
-              extraVisibleSet={extraVisibleSet}
-              totalCount={totalCount}
-              onRowClick={handleRowClick}
-              onChartFlipClick={onChartFlipClick}
-            />
-          </div>
-        </div>
+          : <DesktopShell chart={chartEl} table={tableEl} />
+        }
       </div>
     </div>
   );
@@ -1175,10 +1141,7 @@ function IdeatradePoint({ onChartFlipClick }) {
   }), [allSections, activeCategory, searchQuery]);
 
   return (
-    <div
-        className="w-full min-h-screen bg-[#0f172a] text-white"
-        style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}
-      >
+    <div className="w-full min-h-screen bg-[#0f172a] text-white" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
@@ -1193,8 +1156,8 @@ function IdeatradePoint({ onChartFlipClick }) {
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 20, flexWrap: "wrap", rowGap: 8 }}>
           <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
-            Ideatradepoint 
-               </ToolHint>
+            Ideatradepoint
+          </ToolHint>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
               <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1210,37 +1173,28 @@ function IdeatradePoint({ onChartFlipClick }) {
               <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}>✕</button>
             )}
           </div>
-
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => {
               const isActive = activeCategory === cat;
               return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
-                  style={{
-                    padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
-                    background: isActive ? "#1d4ed8" : "transparent",
-                    border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.25)",
-                    color: isActive ? "#fff" : "#cbd5e1",
-                    transition: "all 0.15s", fontFamily: "inherit",
-                    boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.4), 0 2px 8px rgba(59,130,246,0.2)" : "none",
-                    whiteSpace: "nowrap",letterSpacing: "0.02em",
-                  }}
-                >{cat}</button>
+                <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? null : cat)} style={{
+                  padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  background: isActive ? "#1d4ed8" : "transparent",
+                  border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.25)",
+                  color: isActive ? "#fff" : "#cbd5e1",
+                  transition: "all 0.15s", fontFamily: "inherit",
+                  boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.4), 0 2px 8px rgba(59,130,246,0.2)" : "none",
+                  whiteSpace: "nowrap", letterSpacing: "0.02em",
+                }}>{cat}</button>
               );
             })}
           </div>
-
-          <button
-            onClick={() => navigate("/hisideatradepoint")}
-            style={{
-              marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
-              padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-              background: "transparent", border: "1px solid rgba(255,255,255,0.25)",
-              color: "#cbd5e1", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-            }}
-          >
+          <button onClick={() => navigate("/hisideatradepoint")} style={{
+            marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
+            padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+            background: "transparent", border: "1px solid rgba(255,255,255,0.25)",
+            color: "#cbd5e1", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+          }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
