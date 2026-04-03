@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
 import { useSubscription } from "@/context/SubscriptionContext"; 
+// 🟢 1. อิมพอร์ต useAuth เข้ามาเพื่อดึงข้อมูลจาก Firestore
+import { useAuth } from "@/context/AuthContext"; 
 
 import { auth } from "@/firebase"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -69,14 +71,14 @@ const getIcon = (key, active) => {
 /* ================= PROJECTS CONFIGURATION ================= */
 const projects = [
   { id: "fortune",   name: "Stock Fortune Teller", iconKey: "fortune"   },
-  { id: "petroleum", name: "Petroleum",             iconKey: "petroleum" },
-  { id: "rubber",    name: "Rubber Thai",           iconKey: "rubber"    },
-  { id: "flow",      name: "Flow Intraday",         iconKey: "flow"      },
-  { id: "s50",       name: "S50",                   iconKey: "s50"       },
-  { id: "gold",      name: "Gold",                  iconKey: "gold"      },
-  { id: "bidask",    name: "BidAsk",                iconKey: "bidask"    },
-  { id: "tickmatch", name: "TickMatch",             iconKey: "tickmatch" },
-  { id: "dr",        name: "DR",                    iconKey: "dr"        },
+  { id: "petroleum", name: "Petroleum",            iconKey: "petroleum" },
+  { id: "rubber",    name: "Rubber Thai",          iconKey: "rubber"    },
+  { id: "flow",      name: "Flow Intraday",        iconKey: "flow"      },
+  { id: "s50",       name: "S50",                  iconKey: "s50"       },
+  { id: "gold",      name: "Gold",                 iconKey: "gold"      },
+  { id: "bidask",    name: "BidAsk",               iconKey: "bidask"    },
+  { id: "tickmatch", name: "TickMatch",            iconKey: "tickmatch" },
+  { id: "dr",        name: "DR",                   iconKey: "dr"        },
 ];
 
 const PROJECT_PREVIEWS = {
@@ -131,19 +133,19 @@ const DWIconSVG = ({ active }) => (
   </svg>
 );
 
-/* ── HisRealFlow inline icon ── */
-const HisRealFlowIconSVG = ({ active }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke={active ? "#ffffff" : "#9ca3af"}
-    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-  >
-    <polyline points="2 20 6 10 10 14 14 6 18 10 22 4" />
-    <circle cx="6"  cy="10" r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
-    <circle cx="14" cy="6"  r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
-    <circle cx="22" cy="4"  r="1.2" fill={active ? "#ffffff" : "#9ca3af"} stroke="none" />
-    <line x1="2" y1="22" x2="22" y2="22" strokeOpacity="0.3" />
-  </svg>
-);
+const ChartFlipIconSVG = ({ active }) => {
+  const color = active ? "#ffffff" : "#9ca3af";
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={color} strokeWidth="1.2"/>
+      <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={color}/>
+      <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={color}/>
+      <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={color}/>
+      <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={color}/>
+      <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={color} strokeWidth="0.8" strokeLinecap="round"/>
+    </svg>
+  );
+};
 
 /* ================= FLOATING TOOLTIP ================= */
 const FloatingTooltip = ({ visible, top, text }) => {
@@ -156,20 +158,6 @@ const FloatingTooltip = ({ visible, top, text }) => {
       <div className="absolute top-1/2 -left-1.5 -mt-1.5 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-[#333333]"></div>
       {text}
     </div>
-  );
-};
-
-const ChartFlipIconSVG = ({ active }) => {
-  const color = active ? "#ffffff" : "#9ca3af";
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 3V16C3 18.7614 5.23858 21 8 21H21" stroke={color} strokeWidth="1.2"/>
-      <path d="M8 16.5C8 17.3284 7.32843 18 6.5 18C5.67157 18 5 17.3284 5 16.5C5 15.6716 5.67157 15 6.5 15C7.32843 15 8 15.6716 8 16.5Z" fill={color}/>
-      <path d="M11 8.5C11 9.32843 10.3284 10 9.5 10C8.67157 10 8 9.32843 8 8.5C8 7.67157 8.67157 7 9.5 7C10.3284 7 11 7.67157 11 8.5Z" fill={color}/>
-      <path d="M17 13.5C17 14.3284 16.3284 15 15.5 15C14.6716 15 14 14.3284 14 13.5C14 12.6716 14.6716 12 15.5 12C16.3284 12 17 12.6716 17 13.5Z" fill={color}/>
-      <path d="M21 6.5C21 7.32843 20.3284 8 19.5 8C18.6716 8 18 7.32843 18 6.5C18 5.67157 18.6716 5 19.5 5C20.3284 5 21 5.67157 21 6.5Z" fill={color}/>
-      <path d="M6.99847 15.5008L8.99962 9.49933M14.5 12.5L10.5012 8.9985M16 12.5L19 7.5" stroke={color} strokeWidth="0.8" strokeLinecap="round"/>
-    </svg>
   );
 };
 
@@ -186,6 +174,8 @@ const SidebarContent = ({
   const navigate = useNavigate();
   
   const { accessData } = useSubscription();
+  // 🟢 2. เรียกใช้งาน userData จากระบบ Auth ของคุณ
+  const { userData } = useAuth();
   
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [isMember, setIsMember] = useState(false);
@@ -197,9 +187,11 @@ const SidebarContent = ({
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
       
-      const hasPackages = Object.keys(accessData).length > 0;
+      // ตรวจสอบสถานะ Member ทั้งระบบเก่า (accessData) และระบบใหม่ (userData)
+      const hasOldPackages = Object.keys(accessData || {}).length > 0;
+      const hasNewPackages = userData?.mySubscriptions && userData.mySubscriptions.length > 0;
       
-      if (hasPackages) {
+      if (hasOldPackages || hasNewPackages) {
         setIsMember(true);
       } else {
         const savedProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
@@ -207,19 +199,44 @@ const SidebarContent = ({
       }
     });
     return () => unsubscribe();
-  }, [accessData]);
+  }, [accessData, userData]);
 
+  // 🟢 3. อัปเกรดฟังก์ชันเช็คสิทธิ์ ให้รองรับ Array mySubscriptions แบบเดียวกับ ManageSubscription
   const isToolUnlocked = (id) => {
-    const expireTimestamp = accessData[id];
-    if (!expireTimestamp) return false;
-    
-    let expireDate;
-    try {
-      expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
-    } catch (error) {
-      expireDate = new Date(0); 
+    // เช็คจากระบบเก่า (accessData)
+    const expireTimestamp = accessData?.[id];
+    if (expireTimestamp) {
+      let expireDate;
+      try {
+        expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
+      } catch (error) {
+        expireDate = new Date(0); 
+      }
+      if (expireDate > new Date()) return true;
     }
-    return expireDate > new Date();
+
+    // เช็คจากระบบใหม่ (userData.mySubscriptions)
+    if (userData && Array.isArray(userData.mySubscriptions)) {
+      const today = new Date();
+      
+      for (let sub of userData.mySubscriptions) {
+        // เทียบไอดีของเครื่องมือ (เช่น "rubber", "dr") และสถานะต้องไม่ใช่ inactive
+        if (sub.id?.toLowerCase() === id.toLowerCase() && sub.status !== 'inactive') {
+          const purchaseObj = new Date(sub.purchaseDate || Date.now());
+          let expireObj = new Date(purchaseObj);
+          
+          if (sub.cycle?.toLowerCase() === 'monthly') {
+            expireObj.setDate(expireObj.getDate() + 30);
+          } else if (sub.cycle?.toLowerCase() === 'yearly') {
+            expireObj.setFullYear(expireObj.getFullYear() + 1);
+          }
+
+          if (expireObj > today) return true; // ถ้ายงไม่หมดอายุ ให้ปลดล็อก!
+        }
+      }
+    }
+
+    return false;
   };
 
   /* ================= AUTH ACTIONS ================= */
@@ -257,24 +274,15 @@ const SidebarContent = ({
     onMobileClose?.(); 
   };
 
-  /* ─── DW navigation ── */
   const handleDWNavigation = () => {
     navigate("/dw");
     setActivePage("dw");
     onMobileClose?.();
   };
 
-    /* ─── Chart Flip navigation ── */
-    const handleChartFlipNavigation = () => {
+  const handleChartFlipNavigation = () => {
     navigate("/chart-flip-id");
     setActivePage("chart-flip-id");
-    onMobileClose?.();
-  };
-
-  /* ─── HisRealFlow navigation ── */
-  const handleHisRealFlowNavigation = () => {
-    navigate("/hisrealflow");
-    setActivePage("his-real-flow");
     onMobileClose?.();
   };
 
@@ -596,7 +604,6 @@ const SidebarContent = ({
           </div>
         </button>
 
-
         {/* ACCOUNT SECTION */}
         {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
 
@@ -612,10 +619,14 @@ const SidebarContent = ({
           {!isCollapsed && <span className="pointer-events-none">Profile</span>}
         </button>
 
-        {/* ✅ เปลี่ยนเงื่อนไขมาใช้ isLoggedIn แทน เพื่อให้คนที่ล็อกอินแล้วทุกคนเห็นเมนูนี้ */}
+        {/* 🟢 เปิดให้คนที่ล็อกอินแล้วเห็นเมนู Manage Subscription เสมอ */}
         {isLoggedIn && (
           <button
-            onClick={() => handleNavigation("subscription")}
+            onClick={() => {
+              navigate("/manage-subscription"); // ทำให้มั่นใจว่า Path เปลี่ยน
+              setActivePage("subscription"); 
+              onMobileClose?.();
+            }}
             onMouseEnter={(e) => handleMouseEnter(e, "Manage Subscription")}
             onMouseLeave={handleMouseLeave}
             className={`rounded-lg flex items-center shrink-0 transition-all mb-1 cursor-pointer relative group
