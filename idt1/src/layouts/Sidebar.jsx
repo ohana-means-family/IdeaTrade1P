@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
 import { useSubscription } from "@/context/SubscriptionContext"; 
-// 🟢 1. อิมพอร์ต useAuth เข้ามาเพื่อดึงข้อมูลจาก Firestore
+// 🟢 อิมพอร์ต useAuth เข้ามาเพื่อดึงข้อมูลจาก Firestore
 import { useAuth } from "@/context/AuthContext"; 
 
 import { auth } from "@/firebase"; 
@@ -11,7 +11,6 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import logo from "@/assets/images/logo.png";
 import ToggleIcon from "@/assets/icons/Vector.svg";
-
 
 /* ================= ICONS ================= */
 import preview from "@/assets/icons/preview.svg";
@@ -174,7 +173,6 @@ const SidebarContent = ({
   const navigate = useNavigate();
   
   const { accessData } = useSubscription();
-  // 🟢 2. เรียกใช้งาน userData จากระบบ Auth ของคุณ
   const { userData } = useAuth();
   
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -187,9 +185,8 @@ const SidebarContent = ({
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
       
-      // ตรวจสอบสถานะ Member ทั้งระบบเก่า (accessData) และระบบใหม่ (userData)
       const hasOldPackages = Object.keys(accessData || {}).length > 0;
-      const hasNewPackages = userData?.mySubscriptions && userData.mySubscriptions.length > 0;
+      const hasNewPackages = Object.keys(userData?.subscriptions || {}).length > 0;
       
       if (hasOldPackages || hasNewPackages) {
         setIsMember(true);
@@ -201,42 +198,20 @@ const SidebarContent = ({
     return () => unsubscribe();
   }, [accessData, userData]);
 
-  // 🟢 3. อัปเกรดฟังก์ชันเช็คสิทธิ์ ให้รองรับ Array mySubscriptions แบบเดียวกับ ManageSubscription
   const isToolUnlocked = (id) => {
-    // เช็คจากระบบเก่า (accessData)
-    const expireTimestamp = accessData?.[id];
-    if (expireTimestamp) {
-      let expireDate;
-      try {
-        expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
-      } catch (error) {
-        expireDate = new Date(0); 
-      }
-      if (expireDate > new Date()) return true;
+    const expireTimestamp = userData?.subscriptions?.[id.toLowerCase()] || accessData?.[id.toLowerCase()];
+    if (!expireTimestamp) return false;
+    
+    let expireDate;
+    try {
+      expireDate = typeof expireTimestamp.toDate === 'function' 
+        ? expireTimestamp.toDate() 
+        : new Date(expireTimestamp);
+    } catch (error) {
+      expireDate = new Date(0); 
     }
-
-    // เช็คจากระบบใหม่ (userData.mySubscriptions)
-    if (userData && Array.isArray(userData.mySubscriptions)) {
-      const today = new Date();
-      
-      for (let sub of userData.mySubscriptions) {
-        // เทียบไอดีของเครื่องมือ (เช่น "rubber", "dr") และสถานะต้องไม่ใช่ inactive
-        if (sub.id?.toLowerCase() === id.toLowerCase() && sub.status !== 'inactive') {
-          const purchaseObj = new Date(sub.purchaseDate || Date.now());
-          let expireObj = new Date(purchaseObj);
-          
-          if (sub.cycle?.toLowerCase() === 'monthly') {
-            expireObj.setDate(expireObj.getDate() + 30);
-          } else if (sub.cycle?.toLowerCase() === 'yearly') {
-            expireObj.setFullYear(expireObj.getFullYear() + 1);
-          }
-
-          if (expireObj > today) return true; // ถ้ายงไม่หมดอายุ ให้ปลดล็อก!
-        }
-      }
-    }
-
-    return false;
+    
+    return expireDate > new Date(); 
   };
 
   /* ================= AUTH ACTIONS ================= */
@@ -495,6 +470,7 @@ const SidebarContent = ({
                   />
                   {!isCollapsed && <span>{p.name}</span>}
                 </div>
+                {/* ✅ เปลี่ยนสีมงกุฎกลับมาเป็นสีทอง (#facc15) เสมอ ไม่ว่าปลดล็อกหรือไม่ */}
                 {!isCollapsed && <CrownIcon color="#facc15" />}
               </button>
             );
@@ -619,11 +595,10 @@ const SidebarContent = ({
           {!isCollapsed && <span className="pointer-events-none">Profile</span>}
         </button>
 
-        {/* 🟢 เปิดให้คนที่ล็อกอินแล้วเห็นเมนู Manage Subscription เสมอ */}
         {isLoggedIn && (
           <button
             onClick={() => {
-              navigate("/manage-subscription"); // ทำให้มั่นใจว่า Path เปลี่ยน
+              navigate("/manage-subscription"); 
               setActivePage("subscription"); 
               onMobileClose?.();
             }}
@@ -702,7 +677,6 @@ const SidebarContent = ({
   );
 };
 
-/* ================= SIDEBAR COMPONENT ================= */
 export default function Sidebar({
   collapsed,
   setCollapsed,
