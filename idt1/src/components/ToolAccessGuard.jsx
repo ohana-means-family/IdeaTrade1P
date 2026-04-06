@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useSubscription } from '../context/SubscriptionContext';
+// 🟢 1. เปลี่ยนมาใช้ useAuth แทน useSubscription
+import { useAuth } from '@/context/AuthContext'; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
 import WarningPopup from './WarningPopup';
 import ExpiredPopup from './ExpiredPopup';
 
 const ToolAccessGuard = ({ toolId, toolName, children }) => {
-  const { accessData, loading, isFreeAccess } = useSubscription();
+  // 🟢 2. ดึง userData จาก AuthContext
+  const { userData, loading } = useAuth();
   const [showWarning, setShowWarning] = useState(true);
   const [showExpired, setShowExpired] = useState(true);
 
@@ -17,11 +19,8 @@ const ToolAccessGuard = ({ toolId, toolName, children }) => {
     return <div className="h-screen flex items-center justify-center text-white">Loading data...</div>;
   }
 
-  if (isFreeAccess) {
-    return <>{children}</>;
-  }
-
-  const expireTimestamp = accessData[toolId];
+  // 🟢 3. ดึง Timestamp วันหมดอายุจาก Map: subscriptions
+  const expireTimestamp = userData?.subscriptions?.[toolId.toLowerCase()];
   
   let daysLeft = 0;
   let formattedDate = "No active plan";
@@ -34,6 +33,7 @@ const ToolAccessGuard = ({ toolId, toolName, children }) => {
       expireDate = new Date(0); 
     }
     const today = new Date();
+    // คำนวณส่วนต่างเป็นวัน
     const timeDiff = expireDate.getTime() - today.getTime();
     daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
     
@@ -43,19 +43,18 @@ const ToolAccessGuard = ({ toolId, toolName, children }) => {
   }
 
   // ⚪ 1. กรณี "ไม่เคยมีแพ็กเกจนี้เลย"
-  // ปล่อยให้แสดงเนื้อหาไปเลย (เพราะหน้าหลักอย่าง DRInsight.jsx จะเป็นคนเอาหน้าจอ Preview มาครอบทับบล็อกไว้อยู่แล้ว)
   if (!expireTimestamp) {
     return <>{children}</>;
   }
 
-  // 🔴 2. กรณี "เคยซื้อแพ็กเกจ แต่หมดอายุแล้ว"
+  // 🔴 2. กรณี "เคยซื้อแพ็กเกจ แต่หมดอายุแล้ว" (เหลือน้อยกว่าหรือเท่ากับ 0 วัน)
   if (daysLeft <= 0) {
-    // ถ้ายูสเซอร์กดปิด Popup (showExpired = false) ให้แสดงเนื้อหาปกติ (ไม่เบลอ)
+    // ถ้ายูสเซอร์กดปิด Popup ให้แสดงเนื้อหาตามปกติ
     if (!showExpired) {
       return <>{children}</>;
     }
 
-    // ถ้ายังไม่กดปิด ให้โชว์หน้าจอเบลอ + Popup หมดอายุ
+    // ถ้ายังไม่กดปิด ให้เบลอฉากหลัง + โชว์ Popup หมดอายุ
     return (
       <div className="relative h-screen overflow-hidden">
         <div className="pointer-events-none select-none blur-sm opacity-50 h-full">
@@ -70,7 +69,7 @@ const ToolAccessGuard = ({ toolId, toolName, children }) => {
     );
   }
 
-  // 🟡 3. กรณี "ใกล้หมดอายุ" (1-3 วัน)
+  // 🟡 3. กรณี "ใกล้หมดอายุ" (เหลือ 1 ถึง 3 วัน)
   const isExpiringSoon = daysLeft > 0 && daysLeft <= 3;
 
   return (
