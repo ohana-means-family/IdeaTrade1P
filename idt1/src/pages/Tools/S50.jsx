@@ -1,12 +1,14 @@
 // src/pages/tools/S50.jsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "../../context/SubscriptionContext";
+
+// 🟢 1. อิมพอร์ต useAuth เข้ามาใช้ตรวจสอบสิทธิ์จากศูนย์กลาง
+import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
+
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ToolHint from "@/components/ToolHint.jsx";
 import S50Dashboard from "./components/S50Dashboard.jsx";
 
-// ❌ เอา export default function S50() ที่ครอบตรงนี้ออกแล้ว
 const scrollbarHideStyle = {
   msOverflowStyle: 'none',
   scrollbarWidth: 'none'
@@ -210,10 +212,8 @@ function ChartCard({
   const hoverX = isHovering ? paddingLeft + globalHoverIndex * pointGap : null;
 
 return (
-    // 🟢 1. เติมคำว่า relative ลงไปใน className ของบรรทัดนี้ เพื่อล็อคไม่ให้ปุ่ม ? บินหลุดกรอบ
     <div className="relative bg-[#111827] border border-slate-700 rounded-xl flex flex-col">
 
-      {/* 🟢 2. ปรับตำแหน่ง ToolHint ให้อยู่มุมซ้ายบน ลอยออกมานอกการ์ดนิดนึง (-top-3, -left-3) */}
       {toolHint && (
         <div className="absolute -top-3 -left-3 z-20 shadow-lg rounded-full">
           {toolHint}
@@ -221,7 +221,6 @@ return (
       )}
 
       {/* Header */}
-      {/* 🟢 3. ถ้ากลัวปุ่มทับตัวอักษร อาจจะเพิ่ม pl-6 (เว้นซ้าย) ตรง Header เผื่อไว้หน่อยครับ */}
       <div className="px-4 pl-6 py-3 bg-[#0f172a] border-b border-slate-700/50 flex justify-between items-center rounded-t-xl">
         <span className="text-sm font-bold text-slate-300">{title}</span>
         <div className="flex items-center gap-2">
@@ -336,11 +335,14 @@ return (
 }
 
 // ============================================================
-// MAIN EXPORT S50 (ของจริงคือตัวนี้ครับ)
+// MAIN EXPORT S50 
 // ============================================================
 export default function S50() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
+
+  // 🟢 2. ดึงข้อมูล User จาก AuthContext เพื่อใช้ตรวจสอบสิทธิ์
+  const { userData, currentUser, loading } = useAuth();
 
   const [isMember, setIsMember] = useState(false);
   const [enteredTool, setEnteredTool] = useState(false);
@@ -358,43 +360,40 @@ export default function S50() {
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-  const { accessData, isFreeAccess, currentUser } = useSubscription();
-
- // ดึงค่าจาก localStorage (เปลี่ยน "token" เป็นชื่อ key ที่คุณใช้จริง)
-const user = localStorage.getItem("token");
 
   /* ===============================  MEMBER CHECK  ================================ */
+  // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
   useEffect(() => {
-    if (isFreeAccess) {
-      setIsMember(true);
-      return;
-    }
+    if (loading) return; 
 
-    const toolId = 's50';
+    const toolId = "s50";
 
-    if (accessData && accessData[toolId]) {
-      const expireTimestamp = accessData[toolId];
+    if (userData && userData.subscriptions && userData.subscriptions[toolId]) {
+      const expireTimestamp = userData.subscriptions[toolId];
       let expireDate;
-
-      try {
-        if (typeof expireTimestamp.toDate === 'function') {
-          expireDate = expireTimestamp.toDate();
-        } else {
-          expireDate = new Date(expireTimestamp);
-        }
-      } catch (e) {
-        expireDate = new Date(0);
+      try { 
+        expireDate = typeof expireTimestamp.toDate === "function" 
+          ? expireTimestamp.toDate() 
+          : new Date(expireTimestamp); 
+      } catch (e) { 
+        expireDate = new Date(0); 
       }
-
-      if (expireDate.getTime() > new Date().getTime()) {
-        setIsMember(true);
+      setIsMember(expireDate.getTime() > new Date().getTime());
+    } else { 
+      // Fallback สำหรับกรณีไม่ได้ล็อคอินหรือข้อมูลยังไม่มา
+      const saved = localStorage.getItem("userProfile");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setIsMember(parsed.role === "member" || parsed.role === "membership");
+        } catch (error) {
+          setIsMember(false);
+        }
       } else {
         setIsMember(false);
       }
-    } else {
-      setIsMember(false);
     }
-  }, [accessData, isFreeAccess]);
+  }, [userData, loading]);
 
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
@@ -674,14 +673,10 @@ const user = localStorage.getItem("token");
     CASE 3 : FULL DASHBOARD (Member + Entered)
   ========================================================== */
   return (
-    // 🟢 1. เปลี่ยนจาก h-screen overflow-hidden เป็น min-h-screen เพื่อใช้ Native Scroll ของเบราว์เซอร์
-    // 🟢 2. ปรับ px-6 เป็น p-3 sm:p-6 สำหรับมือถือ เพื่อให้ขอบไม่แคบไป และมีพื้นที่ร่องให้เอานิ้วไถจอได้ง่ายขึ้น
     <div className="w-full min-h-screen bg-[#0b111a] text-white p-3 sm:p-6 flex flex-col pb-24">
       
-      {/* 🟢 3. เอา overflow-y-auto ออก ปล่อยให้มัน Scroll อิสระ */}
       <div className="max-w-[1600px] w-full mx-auto flex-1">
         
-        {/* 🟢 4. ปรับ gap ให้เล็กลงในมือถือ (gap-4) และจอใหญ่ (gap-6) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <ChartCard 
             title="1. Last (SET50 Daily)" 
