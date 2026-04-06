@@ -1,12 +1,14 @@
 // src/pages/tools/BidAsk.jsx
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "../../context/SubscriptionContext";
+
+// 🟢 1. เปลี่ยนมาใช้ useAuth เพื่อเช็คสิทธิ์จากศูนย์กลาง
+import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
 
 import BidAskDashboard from "./components/BidAskDashboard.jsx";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
-import CloseIcon from "@mui/icons-material/Close"; // เพิ่ม Icon
+import CloseIcon from "@mui/icons-material/Close"; 
 import ToolHint from "@/components/ToolHint.jsx";
 
 const scrollbarHideStyle = {
@@ -26,26 +28,42 @@ export default function BidAsk() {
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-  const { accessData, isFreeAccess, currentUser } = useSubscription();
+  // 🟢 2. ดึงข้อมูล User จาก AuthContext
+  const { userData, currentUser, loading } = useAuth();
 
   /* =============================== MEMBER CHECK ================================ */
+  // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
   useEffect(() => {
-    if (isFreeAccess) {
-      setIsMember(true);
-      return;
-    }
-    const toolId = 'bidask';
-    if (accessData && accessData[toolId]) {
-      const expireTimestamp = accessData[toolId];
+    if (loading) return; 
+
+    const toolId = "bidask";
+
+    if (userData && userData.subscriptions && userData.subscriptions[toolId]) {
+      const expireTimestamp = userData.subscriptions[toolId];
       let expireDate;
-      try {
-        expireDate = typeof expireTimestamp.toDate === 'function' ? expireTimestamp.toDate() : new Date(expireTimestamp);
-      } catch (e) { expireDate = new Date(0); }
+      try { 
+        expireDate = typeof expireTimestamp.toDate === "function" 
+          ? expireTimestamp.toDate() 
+          : new Date(expireTimestamp); 
+      } catch (e) { 
+        expireDate = new Date(0); 
+      }
       setIsMember(expireDate.getTime() > new Date().getTime());
-    } else {
-      setIsMember(false);
+    } else { 
+      // Fallback
+      const saved = localStorage.getItem("userProfile");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setIsMember(parsed.role === "member" || parsed.role === "membership");
+        } catch (error) {
+          setIsMember(false);
+        }
+      } else {
+        setIsMember(false);
+      }
     }
-  }, [accessData, isFreeAccess]);
+  }, [userData, loading]);
 
   /* ================= SCROLL LOGIC ================= */
   const checkScroll = () => {
@@ -140,8 +158,8 @@ export default function BidAsk() {
              <button onClick={() => { setEnteredTool(true); localStorage.setItem("BidAskToolEntered", "true"); }} className="px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-lg hover:scale-105 transition-all">Start Using Tool</button>
           ) : (
             <div className="flex gap-4 justify-center">
-              {!currentUser && <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600">Sign In</button>}
-              <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold">Join Membership</button>
+              {!currentUser && <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600 hover:bg-slate-700 transition-colors">Sign In</button>}
+              <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold hover:brightness-110 shadow-lg shadow-cyan-500/25 transition-all">Join Membership</button>
             </div>
           )}
         </div>
@@ -258,7 +276,7 @@ function ReplayPanel({ toolHint }) {
         <div className="grid grid-cols-3 gap-3">
             <div className="bg-[#111827] border border-slate-600 rounded-md px-2 py-2 text-white text-xs">10:00</div>
             <div className="bg-[#0f172a] border border-slate-700 rounded-md px-2 py-2 text-slate-500 text-xs">16:30</div>
-            <button onClick={() => { if(symbol) setIsSearched(true); setIsPlaying(true); }} className="bg-indigo-600 hover:bg-indigo-500 rounded-md text-xs font-bold text-white">SEARCH</button>
+            <button onClick={() => { if(symbol) setIsSearched(true); setIsPlaying(true); }} className="bg-indigo-600 hover:bg-indigo-500 rounded-md text-xs font-bold text-white transition-colors">SEARCH</button>
         </div>
         <div className="mt-2 bg-black text-yellow-400 font-mono text-center py-1.5 rounded">10:00:00</div>
       </div>
@@ -278,8 +296,8 @@ function ReplayPanel({ toolHint }) {
 
       <div className="px-4 py-3 bg-[#0f172a] border-t border-slate-700 shrink-0">
         <div className="flex items-center gap-4">
-          <input type="range" min="0" max="100" value={sliderValue} onChange={(e) => setSliderValue(e.target.value)} className="flex-1 h-1 bg-slate-600 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-yellow-400 [&::-webkit-slider-thumb]:rounded-full" />
-          <button onClick={() => setIsPlaying(!isPlaying)} disabled={!isSearched} className={isSearched ? "text-white" : "text-slate-600"}>
+          <input type="range" min="0" max="100" value={sliderValue} onChange={(e) => setSliderValue(e.target.value)} className="flex-1 h-1 bg-slate-600 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-yellow-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" />
+          <button onClick={() => setIsPlaying(!isPlaying)} disabled={!isSearched} className={isSearched ? "text-white hover:text-yellow-400 transition-colors" : "text-slate-600"}>
             {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
           </button>
         </div>
