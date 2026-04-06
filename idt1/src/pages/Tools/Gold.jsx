@@ -1,7 +1,10 @@
 // src/pages/tools/Gold.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "../../context/SubscriptionContext";
+
+// 🟢 1. เปลี่ยนมาใช้ useAuth เพื่อดึงข้อมูลจากศูนย์กลาง
+import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
+
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ToolHint from "@/components/ToolHint.jsx";
 import GoldDashboard from "./components/GoldDashboard.jsx";
@@ -145,24 +148,42 @@ export default function Gold() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { accessData, isFreeAccess, currentUser } = useSubscription();
+  // 🟢 2. ดึงข้อมูลผู้ใช้จาก AuthContext
+  const { userData, currentUser, loading } = useAuth();
 
   /* ── Member check ── */
+  // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
   useEffect(() => {
-    if (isFreeAccess) { setIsMember(true); return; }
+    if (loading) return; 
+
     const toolId = "gold";
-    if (accessData?.[toolId]) {
+
+    if (userData && userData.subscriptions && userData.subscriptions[toolId]) {
+      const expireTimestamp = userData.subscriptions[toolId];
       let expireDate;
-      try {
-        expireDate = typeof accessData[toolId].toDate === "function"
-          ? accessData[toolId].toDate()
-          : new Date(accessData[toolId]);
-      } catch { expireDate = new Date(0); }
-      setIsMember(expireDate.getTime() > Date.now());
-    } else {
-      setIsMember(false);
+      try { 
+        expireDate = typeof expireTimestamp.toDate === "function" 
+          ? expireTimestamp.toDate() 
+          : new Date(expireTimestamp); 
+      } catch (e) { 
+        expireDate = new Date(0); 
+      }
+      setIsMember(expireDate.getTime() > new Date().getTime());
+    } else { 
+      // Fallback
+      const saved = localStorage.getItem("userProfile");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setIsMember(parsed.role === "member" || parsed.role === "membership");
+        } catch (error) {
+          setIsMember(false);
+        }
+      } else {
+        setIsMember(false);
+      }
     }
-  }, [accessData, isFreeAccess]);
+  }, [userData, loading]);
 
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
