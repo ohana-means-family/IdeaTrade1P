@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ToolHint from "@/components/ToolHint.jsx";
 
 const C = {
   bg:         "#0d1117",
@@ -214,17 +215,14 @@ function CalendarPopup({ value, onChange, onClose, alignRight=false }) {
       borderRadius:12,boxShadow:"0 20px 50px rgba(0,0,0,0.8)",
       padding:16,width:280,userSelect:"none",
     }}>
-      {/* Month nav */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
         <button onClick={()=>{if(vm===0){setVy(y=>y-1);setVm(11);}else setVm(m=>m-1);}} style={{background:"rgba(255,255,255,0.05)",border:"none",borderRadius:6,color:C.white,cursor:"pointer",padding:"4px 7px",display:"flex",alignItems:"center"}}><IcoChev dir="left"/></button>
         <span style={{fontSize:13,fontWeight:700,fontFamily:FONT,color:C.white}}>{MONTHS_TH[vm]} {vy}</span>
         <button onClick={()=>{if(vm===11){setVy(y=>y+1);setVm(0);}else setVm(m=>m+1);}} style={{background:"rgba(255,255,255,0.05)",border:"none",borderRadius:6,color:C.white,cursor:"pointer",padding:"4px 7px",display:"flex",alignItems:"center"}}><IcoChev dir="right"/></button>
       </div>
-      {/* Day headers */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:6}}>
         {DAYS_SHORT.map(d=><div key={d} style={{textAlign:"center",fontSize:9,fontWeight:600,fontFamily:FONT,color:C.mutedText}}>{d}</div>)}
       </div>
-      {/* Days grid */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:14}}>
         {cells.map((day,i)=>(
           <div key={i} onClick={()=>pick(day)} style={{
@@ -239,7 +237,6 @@ function CalendarPopup({ value, onChange, onClose, alignRight=false }) {
           >{day||""}</div>
         ))}
       </div>
-      {/* Time */}
       <div style={{borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a5568" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -273,7 +270,6 @@ function DateTimeInput({ label, onChange, defaultNow=false, error=false, alignRi
 
   return (
     <div ref={wr} style={{position:"relative",flex:1,minWidth:0}}>
-      {/* Floating label */}
       <span style={{
         position:"absolute",top:-8,left:10,zIndex:2,pointerEvents:"none",
         fontSize:9,fontWeight:600,letterSpacing:"0.06em",
@@ -313,12 +309,34 @@ function SymbolInput({ value, onChange, onEnter }) {
       }}>
         <span style={{color:foc||open?"#60a5fa":"#4a5568",flexShrink:0,display:"flex"}}><IcoSearch/></span>
         <input type="text" value={q}
-          onChange={e=>{setQ(e.target.value.toUpperCase());setOpen(true);onChange?.(e.target.value.toUpperCase());}}
-          onFocus={()=>{setFoc(true);setOpen(true);}} onBlur={()=>setFoc(false)}
-          onKeyDown={e=>{if(e.key==="Enter"){setOpen(false);onEnter?.();}}}
-          placeholder="Type a Symbol..."
-          style={{background:"transparent",border:"none",outline:"none",color:C.white,width:"100%",fontFamily:FONT,fontSize:12,fontWeight:600,letterSpacing:"0.03em"}}/>
-        <IcoDown/>
+        onChange={e=>{setQ(e.target.value.toUpperCase());setOpen(true);onChange?.(e.target.value.toUpperCase());}}
+        onFocus={()=>{setFoc(true);setOpen(true);}} onBlur={()=>setFoc(false)}
+        onKeyDown={e=>{if(e.key==="Enter"){setOpen(false);onEnter?.();}}}
+        placeholder="Type a Symbol..."
+        style={{background:"transparent",border:"none",outline:"none",color:C.white,width:"100%",fontFamily:FONT,fontSize:12,fontWeight:600,letterSpacing:"0.03em"}}/>
+      {q ? (
+        <button
+          onMouseDown={e=>{
+            e.preventDefault();
+            setQ("");
+            onChange?.("");
+            setOpen(false);
+          }}
+          style={{
+            background:"rgba(255,255,255,0.06)",border:"none",borderRadius:4,
+            color:"#94a3b8",cursor:"pointer",
+            width:18,height:18,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:0,
+            transition:"background 0.15s, color 0.15s",
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(248,113,113,0.18)";e.currentTarget.style.color="#f87171";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.06)";e.currentTarget.style.color="#94a3b8";}}
+        >
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+            <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+        </button>
+      ) : <IcoDown/>}
       </div>
       {open&&(
         <div style={{position:"absolute",top:40,left:0,right:0,zIndex:100,background:"#131a24",border:`1px solid rgba(96,165,250,0.3)`,borderTop:"none",borderRadius:"0 0 8px 8px",maxHeight:200,overflowY:"auto",boxShadow:"0 12px 30px rgba(0,0,0,0.7)"}}>
@@ -338,7 +356,7 @@ function SymbolInput({ value, onChange, onEnter }) {
   );
 }
 
-// ── DWPill (unchanged logic, updated style) ──
+// ── DWPill ──
 function DWPill({ dw, active, type, onClick }) {
   const isCall = type === "C";
   const col   = isCall ? "#fbbf24" : "#f472b6";
@@ -369,44 +387,65 @@ function DWPill({ dw, active, type, onClick }) {
   );
 }
 
-// ── DWSymbolPanel (unchanged logic, slightly updated style) ──
-function DWSymbolPanel({ underlying, selectedCall, selectedPut, onSelectCall, onSelectPut }) {
-  const callDWs=useMemo(()=>getDWByUnderlying(underlying,"C"),[underlying]);
-  const putDWs =useMemo(()=>getDWByUnderlying(underlying,"P"),[underlying]);
-  if(!underlying) return null;
-  const Empty=({type})=>(
+// ── DWSymbolPanel — now receives panelType ("call"|"put"|"both") ──
+function DWSymbolPanel({ underlying, selectedCall, selectedPut, onSelectCall, onSelectPut, panelType }) {
+  const callDWs = useMemo(() => getDWByUnderlying(underlying, "C"), [underlying]);
+  const putDWs  = useMemo(() => getDWByUnderlying(underlying, "P"), [underlying]);
+  if (!underlying) return null;
+
+  const showCall = panelType === "call" || panelType === "both";
+  const showPut  = panelType === "put"  || panelType === "both";
+
+  const Empty = ({ type }) => (
     <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",opacity:0.3,gap:4}}>
       <span style={{fontSize:9,color:C.mutedText,fontFamily:FONT}}>NO {type} DW</span>
     </div>
   );
+
   return (
-    <div style={{background:"#0f1720",borderTop:`1px solid rgba(255,255,255,0.07)`,padding:"10px 14px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,maxHeight:140,flexShrink:0,overflow:"hidden"}}>
-      <div style={{display:"flex",flexDirection:"column",minHeight:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
-          <span style={{width:5,height:5,borderRadius:"50%",background:"#fbbf24"}}/>
-          <span style={{fontSize:8,fontWeight:700,fontFamily:FONT,color:"#fbbf24",letterSpacing:"0.1em"}}>CALL</span>
+    <div style={{
+      background:"#0f1720",
+      borderTop:`1px solid rgba(255,255,255,0.07)`,
+      padding:"10px 14px",
+      display:"grid",
+      gridTemplateColumns: showCall && showPut ? "1fr 1fr" : "1fr",
+      gap:10,
+      maxHeight:140,
+      flexShrink:0,
+      overflow:"hidden",
+    }}>
+      {showCall && (
+        <div style={{display:"flex",flexDirection:"column",minHeight:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+            <span style={{width:5,height:5,borderRadius:"50%",background:"#fbbf24"}}/>
+            <span style={{fontSize:8,fontWeight:700,fontFamily:FONT,color:"#fbbf24",letterSpacing:"0.1em"}}>CALL</span>
+          </div>
+          {callDWs.length===0 ? <Empty type="CALL"/> :
+            <div className="dw-scroll" style={{overflowY:"auto",flex:1,display:"flex",flexWrap:"wrap",gap:3,alignContent:"flex-start",paddingRight:2}}>
+              {callDWs.map(d=><DWPill key={d.dw} dw={d} active={selectedCall===d.dw} type="C" onClick={()=>onSelectCall(selectedCall===d.dw?null:d.dw)}/>)}
+            </div>
+          }
         </div>
-        {callDWs.length===0?<Empty type="CALL"/>:
-          <div className="dw-scroll" style={{overflowY:"auto",flex:1,display:"flex",flexWrap:"wrap",gap:3,alignContent:"flex-start",paddingRight:2}}>
-            {callDWs.map(d=><DWPill key={d.dw} dw={d} active={selectedCall===d.dw} type="C" onClick={()=>onSelectCall(selectedCall===d.dw?null:d.dw)}/>)}
-          </div>}
-      </div>
-      <div style={{display:"flex",flexDirection:"column",minHeight:0,borderLeft:`1px solid rgba(255,255,255,0.07)`,paddingLeft:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
-          <span style={{width:5,height:5,borderRadius:"50%",background:"#f472b6"}}/>
-          <span style={{fontSize:8,fontWeight:700,fontFamily:FONT,color:"#f472b6",letterSpacing:"0.1em"}}>PUT</span>
+      )}
+      {showPut && (
+        <div style={{display:"flex",flexDirection:"column",minHeight:0,borderLeft:showCall&&showPut?`1px solid rgba(255,255,255,0.07)`:"none",paddingLeft:showCall&&showPut?10:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+            <span style={{width:5,height:5,borderRadius:"50%",background:"#f472b6"}}/>
+            <span style={{fontSize:8,fontWeight:700,fontFamily:FONT,color:"#f472b6",letterSpacing:"0.1em"}}>PUT</span>
+          </div>
+          {putDWs.length===0 ? <Empty type="PUT"/> :
+            <div className="dw-scroll" style={{overflowY:"auto",flex:1,display:"flex",flexWrap:"wrap",gap:3,alignContent:"flex-start",paddingRight:2}}>
+              {putDWs.map(d=><DWPill key={d.dw} dw={d} active={selectedPut===d.dw} type="P" onClick={()=>onSelectPut(selectedPut===d.dw?null:d.dw)}/>)}
+            </div>
+          }
         </div>
-        {putDWs.length===0?<Empty type="PUT"/>:
-          <div className="dw-scroll" style={{overflowY:"auto",flex:1,display:"flex",flexWrap:"wrap",gap:3,alignContent:"flex-start",paddingRight:2}}>
-            {putDWs.map(d=><DWPill key={d.dw} dw={d} active={selectedPut===d.dw} type="P" onClick={()=>onSelectPut(selectedPut===d.dw?null:d.dw)}/>)}
-          </div>}
-      </div>
+      )}
     </div>
   );
 }
 
 // ── ChartPanel ──
-function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGlobalHover, scrollRefs, loading, onRefresh }) {
+function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGlobalHover, scrollRefs, loading, onRefresh, onToggleDW, showDWPanel }) {
   const cfg=PANEL_CFG[panelKey];
   const scrollRef=useRef(null),bodyRef=useRef(null),drag=useRef({active:false,startX:0,origScroll:0});
   const [zoom,setZoom]=useState(1),[scrollPct,setScrollPct]=useState(1),[chartH,setChartH]=useState(160);
@@ -425,7 +464,6 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
   const lastVal=pts?pts[Math.min(vr.end,pts.length-1)]:null;
   const lastTagY=lastVal!=null?yNorm(lastVal,scale.min,scale.max,chartH):0;
 
-  // Mock change values for display
   const changeVal = lastVal != null && pts ? (lastVal - pts[0]).toFixed(2) : null;
   const changePct = lastVal != null && pts && pts[0] ? (((lastVal-pts[0])/pts[0])*100).toFixed(2) : null;
   const isUp = changeVal != null ? parseFloat(changeVal) >= 0 : true;
@@ -453,7 +491,6 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
   const isH=globalHover!==null&&hasData&&pts&&!drag.current.active;
   const hX=isH?PAD_L+globalHover*PT_GAP:null,hV=isH?pts[globalHover]:null,hY=isH?yNorm(hV,scale.min,scale.max,chartH):null;
 
-  // gradient id unique per panel
   const gradId = `grad-${panelKey}`;
 
   return (
@@ -508,24 +545,17 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
                   <stop offset="100%" stopColor="#22c55e" stopOpacity="0.01"/>
                 </linearGradient>
               </defs>
-              {/* Grid lines */}
               {ticks.map(t=><line key={t.label} x1={0} y1={t.y} x2={pts?svgW:600} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>)}
               <line x1={0} y1={chartH-PAD_B} x2={pts?svgW:600} y2={chartH-PAD_B} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
-              {/* Zero line */}
               {cfg.zeroline&&pts&&<line x1={0} y1={yNorm(0,scale.min,scale.max,chartH)} x2={svgW} y2={yNorm(0,scale.min,scale.max,chartH)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 5"/>}
-              {/* Area fill */}
               {hasData&&pts&&pts.length>1&&<path d={areaPath(pts,scale.min,scale.max,chartH)} fill={`url(#${gradId})`}/>}
-              {/* Line */}
               {hasData&&pts&&pts.length>1&&<path d={curvePath(pts,scale.min,scale.max,chartH)} fill="none" stroke="#22c55e" strokeWidth="1.5"/>}
-              {/* Time labels */}
               {pts&&labels&&labels.length>0&&(()=>{const step=Math.max(1,Math.floor(52/PT_GAP));return pts.map((_,i)=>{if(i%step!==0)return null;const l=labels[i];if(!l)return null;return <text key={i} x={PAD_L+i*PT_GAP} y={chartH-PAD_B+9} fill="#2d3d55" fontSize="7" textAnchor="middle" fontFamily={FONT}>{l.time}</text>;});})()}
-              {/* Hover crosshair */}
               {isH&&(<g>
                 <line x1={hX} y1={PAD_T} x2={hX} y2={chartH-PAD_B} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3 3"/>
                 <circle cx={hX} cy={hY} r="3.5" fill="#22c55e" stroke="#0a1019" strokeWidth="1.5"/>
                 {labels&&labels[globalHover]&&<text x={hX} y={chartH-PAD_B+9} fill="#e2e8f0" fontSize="7" fontWeight="600" textAnchor="middle" fontFamily={FONT}>{labels[globalHover].time}</text>}
               </g>)}
-              {/* Empty state */}
               {!hasData&&<text x="50%" y="50%" fill="#1a2a40" fontSize="11" textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="700" letterSpacing="0.12em">READY</text>}
             </svg>
           </div>
@@ -539,19 +569,36 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
         </div>
       </div>
 
-      {/* "Show Other Derivative Warrants" footer — only on CALL and PUT panels */}
+      {/* Toggle footer — only on CALL and PUT panels */}
       {(panelKey === "call" || panelKey === "put") && (
-        <div style={{
-          borderTop:`1px solid rgba(255,255,255,0.05)`,
-          padding:"11px 14px",
-          textAlign:"center",
-          cursor:"pointer",
-          background:"rgba(255,255,255,0.01)",
-          transition:"background .15s",
-        }}
-          onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}
-          onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.01)"}>
-          <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color:"#4a5568",letterSpacing:"0.01em"}}>Show Other Derivative Warrants</span>
+        <div
+          onClick={onToggleDW}
+          style={{
+            borderTop:`1px solid rgba(255,255,255,0.05)`,
+            padding:"11px 14px",
+            textAlign:"center",
+            cursor:"pointer",
+            background: showDWPanel ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
+            transition:"background .15s",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            gap:6,
+          }}
+          onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}
+          onMouseLeave={e=>e.currentTarget.style.background=showDWPanel?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.01)"}
+        >
+          <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color: showDWPanel ? "#94a3b8" : "#4a5568",letterSpacing:"0.01em",transition:"color .15s"}}>
+            {showDWPanel ? "Hide Derivative Warrants" : "Show Other Derivative Warrants"}
+          </span>
+          <svg
+            width="10" height="10" viewBox="0 0 24 24" fill="none"
+            stroke={showDWPanel ? "#94a3b8" : "#4a5568"} strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{transition:"transform .2s", transform: showDWPanel ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0}}
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </div>
       )}
     </div>
@@ -570,9 +617,15 @@ export default function DWViewCharts() {
   const [startDate,setStartDate]=useState(""); const [sdErr,setSdErr]=useState(false);
   const [gHover,setGHover]=useState(null);
   const [selCall,setSelCall]=useState(null); const [selPut,setSelPut]=useState(null);
+
+  // ── Per-panel DW toggle: { call: bool, put: bool } ──
+  const [showDWPanel,setShowDWPanel]=useState({ call: false, put: false });
+
   const scrollRefs=useRef({}); const hasData=submitted&&!!symbol.trim();
   const setHover=useCallback(idx=>setGHover(idx),[]);
-  useEffect(()=>{setSelCall(null);setSelPut(null);},[symbol]);
+
+  useEffect(()=>{ setSelCall(null); setSelPut(null); },[symbol]);
+  useEffect(()=>{ setShowDWPanel({ call: false, put: false }); },[symbol]);
 
   const doEnter=()=>{
     if(!symbol.trim())return;
@@ -585,10 +638,22 @@ export default function DWViewCharts() {
     setTimeout(()=>{const pts=genAllPts(symbol);const n=pts[Object.keys(pts)[0]].length;setLabels(generateLabels(startDate,tf,n));setAllPts(pts);setLdReset(false);},400);
   };
 
+  // Toggle a specific panel key ("call" or "put")
+  const handleToggleDW = useCallback((panelKey) => {
+    setShowDWPanel(v => ({ ...v, [panelKey]: !v[panelKey] }));
+  }, []);
+
+  // Determine what panelType to pass to DWSymbolPanel
+  const dwPanelType = useMemo(() => {
+    if (showDWPanel.call && showDWPanel.put) return "both";
+    if (showDWPanel.call) return "call";
+    if (showDWPanel.put) return "put";
+    return null;
+  }, [showDWPanel]);
+
   const chartCols = isMobile ? "1fr" : "1fr 1fr";
   const chartRows = isMobile ? "repeat(4,minmax(160px,1fr))" : "1fr 1fr";
 
-  // TF display labels for Figma style
   const TF_DISPLAY = [
     { key:"INTRADAY", label:"INTRADAY" },
     { key:"30 MIN",   label:"30 Min"   },
@@ -615,12 +680,9 @@ export default function DWViewCharts() {
         {/* ── Toolbar ── */}
         <div style={{background:"#0f1720",borderBottom:`1px solid rgba(255,255,255,0.06)`,padding:"10px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:10,flexWrap:"nowrap",minWidth:0}}>
 
-          {/* ? icon */}
-          <button style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.07)`,cursor:"pointer",color:"#4a5568",flexShrink:0,transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.color=C.white;}}
-            onMouseLeave={e=>{e.currentTarget.style.color="#4a5568";}}>
-            <IcoQuestion/>
-          </button>
+          <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
+              DW CHARTS
+          </ToolHint>
 
           {/* Reset/Refresh */}
           <button onMouseDown={e=>{e.preventDefault();doReset();}} disabled={!hasData||loading}
@@ -662,7 +724,6 @@ export default function DWViewCharts() {
             })}
           </div>
 
-          {/* Enter button — hidden in toolbar now (enter via symbol input or date) */}
           {!isMobile && (
             <button onClick={doEnter} disabled={!symbol.trim()||loading}
               style={{display:"flex",alignItems:"center",justifyContent:"center",
@@ -695,15 +756,23 @@ export default function DWViewCharts() {
               pts={allPts[key]??null} labels={labels}
               globalHover={gHover} setGlobalHover={setHover}
               scrollRefs={scrollRefs} loading={loading}
-              onRefresh={doReset}/>
+              onRefresh={doReset}
+              onToggleDW={() => handleToggleDW(key)}
+              showDWPanel={showDWPanel[key] ?? false}
+            />
           ))}
         </div>
 
-        {/* ── DW Selector (visible only when hasData) ── */}
-        {hasData&&(
-          <DWSymbolPanel underlying={symbol}
-            selectedCall={selCall} selectedPut={selPut}
-            onSelectCall={setSelCall} onSelectPut={setSelPut}/>
+        {/* ── DW Selector — shown when at least one panel's toggle is on ── */}
+        {hasData && dwPanelType && (
+          <DWSymbolPanel
+            underlying={symbol}
+            selectedCall={selCall}
+            selectedPut={selPut}
+            onSelectCall={setSelCall}
+            onSelectPut={setSelPut}
+            panelType={dwPanelType}
+          />
         )}
 
       </div>
