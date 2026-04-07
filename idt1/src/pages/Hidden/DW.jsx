@@ -288,11 +288,10 @@ function DateTimeInput({ label, onChange, defaultNow=false, error=false, alignRi
         borderRadius:8,transition:"border-color .15s",overflow:"hidden",
       }}>
         <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color:iso?C.white:error?"#f87171":"#4a5568",letterSpacing:"0.02em",userSelect:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>
-          {disp(iso)||(error?"Required":"Select date...")}
+          {disp(iso)||(error?"Start date is required":"Select date...")}
         </span>
         <span style={{color:open?"#60a5fa":"#4a5568",flexShrink:0,display:"flex"}}><IcoCal/></span>
       </div>
-      {error&&<div style={{marginTop:2,padding:"2px 10px"}}><span style={{fontSize:9,color:"#f87171",fontFamily:FONT,fontWeight:600}}>Start date is required</span></div>}
       {open&&<CalendarPopup value={iso} onChange={v=>{setIso(v);onChange?.(v);}} onClose={()=>setOpen(false)} alignRight={alignRight}/>}
     </div>
   );
