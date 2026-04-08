@@ -30,6 +30,7 @@ export default function AppRoutes() {
       
       <Route path="/hisrealflow" element={<Dashboard initialPage="hisrealflow" />} />
       <Route path="/dw" element={<Dashboard initialPage="dw" />} />
+      <Route path="/sectorrotation" element={<Dashboard initialPage="sectorrotation" />} />
 
       {/* 2. MIT */}
       <Route path="/mit" element={<Dashboard initialPage="mit" />} />
