@@ -953,32 +953,36 @@ export default function RubberThai() {
                   placeholder="Type a Symbol..."
                   className="flex-1 bg-transparent outline-none text-white text-xs sm:text-sm placeholder:text-slate-500 min-w-0"
                 />
-                <span
-                  onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                  className="text-slate-400 text-xs mr-2 cursor-pointer p-1 hover:bg-slate-800 rounded"
-                >
-                  ▾
-                </span>
-                {(symbol || symbolQuery) && (
-                  <button
-                    onClick={() => {
-                      if (refreshing) return;
-                      setShowSymbolDropdown(false);
-                      setGlobalHoverIndex(null);
-                      setRefreshing(true);
-                      setTimeout(() => {
-                        setSymbol("");
-                        setSymbolQuery("");
-                        setRefreshing(false);
-                      }, 700);
-                    }}
-                    className={`text-xs ml-2 p-1 rounded ${
-                      refreshing ? "text-slate-600 cursor-not-allowed" : "text-slate-400 hover:text-white hover:bg-slate-700"
-                    }`}
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {(symbol || symbolQuery) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (refreshing) return;
+                        setShowSymbolDropdown(false);
+                        setGlobalHoverIndex(null);
+                        setRefreshing(true);
+                        setTimeout(() => {
+                          setSymbol("");
+                          setSymbolQuery("");
+                          setRefreshing(false);
+                        }, 700);
+                      }}
+                      className={`text-xs ${
+                        refreshing ? "text-slate-600 cursor-not-allowed" : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Clear symbol"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <span
+                    onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
+                    className="text-slate-400 text-xs cursor-pointer"
                   >
-                    ✕
-                  </button>
-                )}
+                    ▾
+                  </span>
+                </div>
               </div>
 
               {showSymbolDropdown && (

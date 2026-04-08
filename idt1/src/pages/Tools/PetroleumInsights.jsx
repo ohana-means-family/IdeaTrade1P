@@ -901,13 +901,30 @@ export default function PetroleumInsights() {
                 <span className={`truncate pr-2 ${symbol ? "text-white" : "text-slate-300"}`}>
                   {symbol || "Select a symbol..."}
                 </span>
-                <span
-                  className={`text-slate-400 text-xs transition-transform duration-200 ${
-                    showSymbolDropdown ? "rotate-180" : ""
-                  }`}
-                >
-                  ▾
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {symbol && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSymbol("");
+                        setSymbolQuery("");
+                        setGlobalHoverIndex(null);
+                        setDataVersion((prev) => prev + 1);
+                      }}
+                      className="text-slate-400 hover:text-white text-xs"
+                      title="Clear symbol"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <span
+                    className={`text-slate-400 text-xs transition-transform duration-200 ${
+                      showSymbolDropdown ? "rotate-180" : ""
+                    }`}
+                  >
+                    ▾
+                  </span>
+                </div>
               </div>
 
               {showSymbolDropdown && (
