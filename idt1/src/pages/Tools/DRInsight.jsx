@@ -1109,44 +1109,40 @@ export default function DRInsight() {
 
             {/* Center panel */}
             <div className="col-span-6 flex flex-col gap-4 h-full overflow-hidden">
-              {isLoadingCharts ? (
-                ['chart1', 'chart2', 'chart3'].map((chartKey, index) => (
-                  <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl flex flex-col flex-1 overflow-hidden min-h-0">
-                    <div className="flex justify-between items-center px-4 py-2 border-b border-slate-800 bg-[#1e2433] shrink-0">
-                      <select disabled className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 opacity-50 cursor-not-allowed"><option>Select a symbol...</option></select>
+              {['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
+                const stockName = chartSelections[chartKey];
+                const lineColor = themeColors[index];
+                const data = chartData[chartKey];
+                return (
+                  <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl flex flex-col flex-1 overflow-hidden min-h-0 relative">
+                    <div className="flex justify-between items-center px-4 py-2 border-b border-slate-800 bg-[#1e2433] shrink-0 z-40 relative">
+                      <select
+                        value={stockName}
+                        disabled={isLoadingCharts}
+                        onChange={(e) => { handleStockClick(e.target.value); setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value })); }}
+                        className={`flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer ${isLoadingCharts ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
+                      >
+                        <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
+                        {allStockOptions.map(s => <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>)}
+                      </select>
+                      <div className={`flex gap-3 text-white ${isLoadingCharts ? 'opacity-50' : ''}`}>
+                        <button onClick={() => setFullscreenChart(chartKey)} disabled={isLoadingCharts} className="hover:text-cyan-400 transition disabled:cursor-not-allowed">⛶</button>
+                      </div>
                     </div>
-                    <WaveSkeleton delay={index * 0.2} height="100%" />
+                    <div className="flex-1 min-h-0 bg-[#0B1221] border border-slate-800/40 rounded-b-xl relative overflow-hidden">
+                      {isLoadingCharts ? (
+                        <WaveSkeleton delay={index * 0.2} height="100%" />
+                      ) : (
+                        <>
+                          {!stockName && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><span className="text-slate-500 text-sm">Select a symbol to display chart</span></div>}
+                          {stockName && data?.length > 0 && <TVChart data={data} themeColor={lineColor} />}
+                        </>
+                      )}
+                    </div>
                   </div>
-                ))
-              ) : (
-                ['chart1', 'chart2', 'chart3'].map((chartKey, index) => {
-                  const stockName = chartSelections[chartKey];
-                  const lineColor = themeColors[index];
-                  const data = chartData[chartKey];
-                  return (
-                    <div key={chartKey} className="bg-[#111827] border border-slate-700 rounded-xl flex flex-col flex-1 overflow-hidden min-h-0 relative">
-                      <div className="flex justify-between items-center px-4 py-2 border-b border-slate-800 bg-[#1e2433] shrink-0 z-40 relative">
-                        <select
-                          value={stockName}
-                          onChange={(e) => { handleStockClick(e.target.value); setChartSelections(prev => ({ ...prev, [chartKey]: e.target.value })); }}
-                          className="flex-1 mr-3 px-3 py-1.5 bg-[#1a2235] border border-slate-700/50 rounded text-sm text-slate-300 focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
-                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
-                        >
-                          <option value="" className="bg-[#1f2937] text-slate-300">Select a symbol...</option>
-                          {allStockOptions.map(s => <option key={s.dr} value={s.dr} className="bg-[#1f2937] text-slate-300">{s.dr} - {s.name}</option>)}
-                        </select>
-                        <div className="flex gap-3 text-white">
-                          <button onClick={() => setFullscreenChart(chartKey)} className="hover:text-cyan-400 transition">⛶</button>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-h-0 bg-[#0B1221] border border-slate-800/40 rounded-b-xl relative overflow-hidden">
-                        {!stockName && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><span className="text-slate-500 text-sm">Select a symbol to display chart</span></div>}
-                        {stockName && data?.length > 0 && <TVChart data={data} themeColor={lineColor} />}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                );
+              })}
             </div>
 
             {/* Right panel: Asia */}
