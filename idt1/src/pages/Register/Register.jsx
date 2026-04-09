@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Rocket from "./rocket"; 
 
-// ✅ ใช้ doc, setDoc, และ getDoc เพื่อบันทึกข้อมูลแบบระบุ ID (อีเมล) และตรวจสอบอีเมลซ้ำ
+// ✅ เปลี่ยนมาใช้ collection, addDoc, query, where, getDocs
 import { db } from "@/firebase"; 
-import { doc, setDoc, getDoc } from "firebase/firestore"; 
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore"; 
 
 const ErrorPopup = () => (
   <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
@@ -53,22 +53,21 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      // ทำให้อีเมลเป็นตัวเล็กทั้งหมดและตัดช่องว่าง เพื่อป้องกันความผิดพลาดตอนอ้างอิง ID
       const emailKey = formData.email.trim().toLowerCase(); 
+      const usersRef = collection(db, "users");
       
-      // 🟢 1. อ้างอิงไปยัง Document ที่ชื่อเป็น "อีเมล"
-      const docRef = doc(db, "users", emailKey);
+      // 🟢 1. ค้นหาว่าในฐานข้อมูล มีไฟล์ไหนที่มีฟิลด์ email ตรงกับที่กรอกไหม
+      const q = query(usersRef, where("email", "==", emailKey));
+      const querySnapshot = await getDocs(q);
       
-      // 🟢 2. ตรวจสอบว่ามีอีเมลนี้ในระบบหรือยัง
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
+      if (!querySnapshot.empty) {
         alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือไปที่หน้าล็อกอินครับ");
         setIsSubmitting(false);
-        return; // หยุดการทำงาน ไม่บันทึกทับข้อมูลเดิม
+        return; 
       }
 
-      // 🟢 3. บันทึกข้อมูลตั้งต้นทั้งหมดลงใน Document ชื่ออีเมลนั้น
-      await setDoc(docRef, {
+      // 🟢 2. ถ้าไม่มีอีเมลซ้ำ ให้สุ่มสร้าง Document ใหม่ (addDoc) รูปแบบเดิมเป๊ะ
+      await addDoc(usersRef, {
         email: emailKey,
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -80,14 +79,13 @@ export default function Register() {
         unlockedItems: []           
       });
 
-      // 🟢 4. ยิง API ไป Backend (ถ้ามี)
+      // 🟢 3. ยิง API ไป Backend (ถ้ามี)
       try {
         const response = await fetch('/api/register', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
-        
         const textData = await response.text(); 
         if (textData) {
           const data = JSON.parse(textData);
@@ -97,7 +95,6 @@ export default function Register() {
         console.log("บันทึกข้อมูลลง Firebase สำเร็จ");
       }
 
-      // 🟢 5. ไปหน้า Welcome
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
       localStorage.setItem("rememberedEmail", emailKey); 
       navigate("/"); 
