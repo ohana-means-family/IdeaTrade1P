@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Rocket from "./rocket"; 
 
-// ✅ Import getDoc เพิ่มเข้ามา เพื่อใช้เช็คข้อมูลซ้ำ
+// ✅ ใช้ doc, setDoc, และ getDoc เพื่อบันทึกข้อมูลแบบระบุ ID (อีเมล) และตรวจสอบอีเมลซ้ำ
 import { db } from "@/firebase"; 
 import { doc, setDoc, getDoc } from "firebase/firestore"; 
 
@@ -53,18 +53,21 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      const emailKey = formData.email.trim().toLowerCase();
+      // ทำให้อีเมลเป็นตัวเล็กทั้งหมดและตัดช่องว่าง เพื่อป้องกันความผิดพลาดตอนอ้างอิง ID
+      const emailKey = formData.email.trim().toLowerCase(); 
+      
+      // 🟢 1. อ้างอิงไปยัง Document ที่ชื่อเป็น "อีเมล"
       const docRef = doc(db, "users", emailKey);
       
-      // 🟢 1. เช็คก่อนว่าอีเมลนี้ เคยลงทะเบียนไว้ใน Database หรือยัง?
+      // 🟢 2. ตรวจสอบว่ามีอีเมลนี้ในระบบหรือยัง
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือไปที่หน้าล็อกอินครับ");
         setIsSubmitting(false);
-        return; // หยุดการทำงาน ไม่บันทึกทับของเดิม
+        return; // หยุดการทำงาน ไม่บันทึกทับข้อมูลเดิม
       }
 
-      // 🟢 2. ถ้ายืนยันว่าเป็นอีเมลใหม่ ให้บันทึกข้อมูล พร้อมโครงสร้างเริ่มต้น
+      // 🟢 3. บันทึกข้อมูลตั้งต้นทั้งหมดลงใน Document ชื่ออีเมลนั้น
       await setDoc(docRef, {
         email: emailKey,
         firstName: formData.firstName,
@@ -77,7 +80,7 @@ export default function Register() {
         unlockedItems: []           
       });
 
-      // 🟢 3. ยิง API ไปที่ Backend 
+      // 🟢 4. ยิง API ไป Backend (ถ้ามี)
       try {
         const response = await fetch('/api/register', { 
           method: 'POST',
@@ -94,7 +97,7 @@ export default function Register() {
         console.log("บันทึกข้อมูลลง Firebase สำเร็จ");
       }
 
-      // 🟢 4. เสร็จสิ้น เด้งไปหน้า Welcome
+      // 🟢 5. ไปหน้า Welcome
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
       localStorage.setItem("rememberedEmail", emailKey); 
       navigate("/"); 
@@ -111,7 +114,6 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
       <div className="w-full max-w-5xl bg-slate-800 rounded-2xl md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         
-        {/* LEFT SIDE */}
         <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-10 lg:p-12">
           <h2 className="text-3xl font-bold text-blue-500 mb-8 text-center">Registration</h2>
 
@@ -205,7 +207,6 @@ export default function Register() {
           </form>
         </div>
 
-        {/* RIGHT SIDE */}
         <div className="w-full min-h-[300px] h-80 sm:h-96 lg:w-1/2 lg:h-auto relative flex items-end justify-center pt-0 scale-100 bg-[#0d1624]">
            <Rocket />
         </div>
