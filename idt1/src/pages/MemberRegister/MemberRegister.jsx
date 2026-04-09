@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-// ✅ นำเข้า updateDoc เพื่อทำการอัปเดตข้อมูลทับของเดิมโดยไม่ทำให้ชื่อและเบอร์โทรหาย
-import { doc, getDoc, updateDoc, setDoc, Timestamp } from "firebase/firestore";
+// ✅ 1. เพิ่ม setDoc ที่นี่ครับ
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { db, auth } from "/src/firebase";
 
 import KbankIcon from "@/assets/icons/Kbank.png";
@@ -62,8 +62,10 @@ export default function MemberRegister() {
   const [copied, setCopied] = useState(false);
   const [isEditSummary, setIsEditSummary] = useState(false);
 
+  // ✅ 2. State สำหรับเก็บข้อมูล Subscription แบบละเอียด (วันหมดอายุ + รอบบิล)
   const [activeSubs, setActiveSubs] = useState({});
 
+  // ✅ 3. ฟังก์ชันจัดรูปแบบข้อมูลให้อ่านง่าย
   const processSubs = (mySubs = [], expirations = {}) => {
     const result = {};
     mySubs.forEach((sub) => {
@@ -71,6 +73,7 @@ export default function MemberRegister() {
       if (exp) {
         result[sub.id] = {
           cycle: sub.cycle ? sub.cycle.toLowerCase() : "monthly",
+          // รองรับทั้ง Firestore Timestamp และ ISO String จาก LocalStorage
           expireDate: exp.toDate ? exp.toDate() : new Date(exp),
         };
       }
@@ -78,17 +81,16 @@ export default function MemberRegister() {
     return result;
   };
 
+  // ✅ 4. ดึงข้อมูล User ตอนเปิดหน้า
   useEffect(() => {
     const fetchUserSubscriptions = async () => {
       setTimeout(async () => {
         const currentUser = auth.currentUser;
         let parsedSubs = {};
 
-        if (currentUser && currentUser.email) {
+        if (currentUser) {
           try {
-            // 🟢 เปลี่ยนการดึงข้อมูลโดยใช้อีเมลเป็น ID หลักเสมอ
-            const emailKey = currentUser.email.toLowerCase();
-            const userRef = doc(db, "users", emailKey);
+            const userRef = doc(db, "users", currentUser.uid);
             const userSnap = await getDoc(userRef);
             
             if (userSnap.exists()) {
@@ -99,6 +101,7 @@ export default function MemberRegister() {
             console.error("Error fetching user data:", error);
           }
         } else {
+          // Fallback สำหรับ LocalStorage
           const storedProfile = localStorage.getItem("userProfile");
           if (storedProfile) {
             const userData = JSON.parse(storedProfile);
@@ -113,6 +116,7 @@ export default function MemberRegister() {
     fetchUserSubscriptions();
   }, []);
 
+  // ✅ 5. ฟังก์ชันเช็คสถานะ ให้กดซื้อเพิ่มได้ตลอด (ปลดล็อค)
   const getToolStatus = (toolId, currentBillingCycle) => {
     const sub = activeSubs[toolId];
     if (!sub) return { isLocked: false, text: null };
@@ -121,15 +125,23 @@ export default function MemberRegister() {
     const now = new Date();
     const daysRemaining = (expireDate - now) / (1000 * 60 * 60 * 24);
 
+    // 5.1 ถ้าหมดอายุแล้ว
     if (daysRemaining < 0) {
       return { isLocked: false, text: "Expired" };
     }
+
+    // 5.2 ถ้าใกล้หมดอายุ (<= 7 วัน)
     if (daysRemaining <= 7) {
       return { isLocked: false, text: "Renew" };
     }
+
+    // 5.3 ถ้ายังมีอายุเหลือเยอะ
     if (cycle === "monthly" && currentBillingCycle === "yearly") {
+      // เดิมเป็นรายเดือน ตอนนี้อยู่หน้าแท็บรายปี -> ให้อัปเกรด
       return { isLocked: false, text: "Upgrade" }; 
     }
+
+    // กรณีอื่นๆ (รายปีซื้อเดือนเพิ่ม, รายเดือนซื้อเดือนเพิ่ม, รายปีซื้อปีเพิ่ม) -> ปลดล็อคให้ซื้อทบเวลาได้
     return { isLocked: false, text: "Extend" };
   };
 
@@ -142,6 +154,7 @@ export default function MemberRegister() {
                t.id.toLowerCase() === toolNameFromPopup.toLowerCase()
       );
 
+      // ✅ 6. เช็คก่อน preselect ว่าล็อคอยู่หรือไม่ (ตอนนี้ปลดล็อคหมดแล้ว ก็จะเข้าเงื่อนไขตลอด)
       if (matchedTool) {
         const { isLocked } = getToolStatus(matchedTool.id, "monthly");
         if (!isLocked) {
@@ -233,10 +246,8 @@ export default function MemberRegister() {
 
       const newToolIds = selectedTools.map((t) => t.id);
 
-      if (currentUser && currentUser.email) {
-        // 🟢 อ้างอิงไปที่ Document ที่เป็น "อีเมล" เสมอ เพื่อให้ชัวร์ว่าเซฟลงที่เดียวกัน
-        const emailKey = currentUser.email.toLowerCase();
-        const userRef = doc(db, "users", emailKey);
+      if (currentUser) {
+        const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         
         let oldUnlockedItems = [];
@@ -248,61 +259,40 @@ export default function MemberRegister() {
           oldUnlockedItems = userData.unlockedItems || [];
           oldSubscriptions = userData.mySubscriptions || [];
           currentSubExpirations = userData.subscriptions || {};
-          
-          const updatedSubscriptions = [
-            ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
-            ...newSubscriptions
-          ];
-          const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
-  
-          const newExpirations = { ...currentSubExpirations };
-          
-          selectedTools.forEach((t) => {
-            const isYearly = t.billing === "yearly";
-            let expireDate = new Date();
-            
-            const existingTimestamp = currentSubExpirations[t.id];
-            if (existingTimestamp && typeof existingTimestamp.toDate === "function" && existingTimestamp.toDate() > new Date()) {
-              expireDate = existingTimestamp.toDate();
-            }
-  
-            if (isYearly) {
-              expireDate.setFullYear(expireDate.getFullYear() + 1);
-            } else {
-              expireDate.setMonth(expireDate.getMonth() + 1);
-            }
-  
-            newExpirations[t.id] = Timestamp.fromDate(expireDate);
-          });
-  
-          // 🟢 ใช้ updateDoc แทน setDoc เพื่ออัปเดตแค่เฉพาะฟิลด์แพ็กเกจ ข้อมูลพื้นฐานจะไม่หาย
-          await updateDoc(userRef, {
-            role: "membership",
-            unlockedItems: mergedUnlockedItems,
-            mySubscriptions: updatedSubscriptions,
-            subscriptions: newExpirations 
-          });
-
-        } else {
-          // ถ้าไม่มี Document ที่ใช้อีเมลนี้ (กรณีที่สมัครผ่านระบบเก่าที่ไม่ได้ใช้อีเมลเป็น ID)
-          // ให้สร้างใหม่ด้วย setDoc
-          const newExpirations = {};
-          selectedTools.forEach((t) => {
-            const isYearly = t.billing === "yearly";
-            let expireDate = new Date();
-            if (isYearly) expireDate.setFullYear(expireDate.getFullYear() + 1);
-            else expireDate.setMonth(expireDate.getMonth() + 1);
-            newExpirations[t.id] = Timestamp.fromDate(expireDate);
-          });
-
-          await setDoc(userRef, {
-            email: emailKey,
-            role: "membership",
-            unlockedItems: newToolIds,
-            mySubscriptions: newSubscriptions,
-            subscriptions: newExpirations 
-          });
         }
+
+        const updatedSubscriptions = [
+          ...oldSubscriptions.filter(old => !newSubscriptions.find(newSub => newSub.id === old.id)),
+          ...newSubscriptions
+        ];
+        const mergedUnlockedItems = [...new Set([...oldUnlockedItems, ...newToolIds])];
+
+        const newExpirations = { ...currentSubExpirations };
+        
+        selectedTools.forEach((t) => {
+          const isYearly = t.billing === "yearly";
+          let expireDate = new Date();
+          
+          const existingTimestamp = currentSubExpirations[t.id];
+          if (existingTimestamp && existingTimestamp.toDate() > new Date()) {
+            expireDate = existingTimestamp.toDate();
+          }
+
+          if (isYearly) {
+            expireDate.setFullYear(expireDate.getFullYear() + 1);
+          } else {
+            expireDate.setMonth(expireDate.getMonth() + 1);
+          }
+
+          newExpirations[t.id] = Timestamp.fromDate(expireDate);
+        });
+
+        await setDoc(userRef, {
+          role: "membership",
+          unlockedItems: mergedUnlockedItems,
+          mySubscriptions: updatedSubscriptions,
+          subscriptions: newExpirations 
+        }, { merge: true });
 
       } else {
         const storedProfile = localStorage.getItem("userProfile");
