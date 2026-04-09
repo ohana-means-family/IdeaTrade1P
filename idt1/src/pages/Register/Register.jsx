@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Rocket from "./rocket"; // เช็คตำแหน่ง import Rocket ให้ถูกต้องด้วยนะครับ
+import Rocket from "./rocket"; 
 
-// ✅ Import Firebase เพิ่มเติม
+// ✅ Import collection และ addDoc สำหรับการสุ่ม ID แบบเดิม
 import { db } from "@/firebase"; 
-import { doc, setDoc } from "firebase/firestore"; 
+import { collection, addDoc } from "firebase/firestore"; 
 
-// 🌟 ย้าย ErrorPopup ออกมาไว้ข้างนอก component หลัก เพื่อไม่ให้มันถูก render ใหม่ซ้ำๆ ทุกครั้งที่พิมพ์
 const ErrorPopup = () => (
   <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
     <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span>
@@ -17,9 +16,6 @@ const ErrorPopup = () => (
 export default function Register() {
   const navigate = useNavigate();
 
-  // ======================
-  // Form State
-  // ======================
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -32,9 +28,6 @@ export default function Register() {
   const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ======================
-  // Handle Change
-  // ======================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -45,13 +38,9 @@ export default function Register() {
     if (name === "agree") setShowPrivacyPopup(false);
   };
 
-  // ======================
-  // Submit (บันทึกข้อมูลลง Firestore ก่อนล็อกอิน)
-  // ======================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // --- ตรวจสอบข้อมูลเบื้องต้น ---
     if (!formData.firstName.trim()) return setErrorField("firstName");
     if (!formData.lastName.trim()) return setErrorField("lastName");
     if (!formData.email.trim()) return setErrorField("email");
@@ -66,10 +55,9 @@ export default function Register() {
     try {
       const emailKey = formData.email.trim().toLowerCase();
       
-      // ✅ 1. บันทึกข้อมูลลงใน Firestore (users_temp) ของจริง
-      const docRef = doc(db, "users", emailKey);
-      
-      await setDoc(docRef, {
+      // 🟢 1. บันทึกข้อมูลลง Firestore (แบบเดิม: ให้ Firebase สุ่ม ID อัตโนมัติให้)
+      const usersCollectionRef = collection(db, "users");
+      await addDoc(usersCollectionRef, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
@@ -77,7 +65,7 @@ export default function Register() {
         registeredAt: new Date()
       });
 
-      // ✅ 2. ยิง API ไปที่ Backend ผ่าน Proxy
+      // 🟢 2. ยิง API ไปที่ Backend (ปรับปรุงโค้ดไม่ให้ Error แดงๆ ขึ้นใน Console)
       try {
         const response = await fetch('/api/register', { 
           method: 'POST',
@@ -85,21 +73,19 @@ export default function Register() {
           body: JSON.stringify(formData)
         });
         
-        // อ่านผลลัพธ์จาก Backend (เผื่อต้องการดู)
-        const data = await response.json();
-        if(!response.ok) {
-           console.warn("Backend แจ้งเตือน:", data.message);
+        const textData = await response.text(); 
+        if (textData) {
+          const data = JSON.parse(textData);
+          if(!response.ok) console.warn("Backend แจ้งเตือน:", data.message);
         }
       } catch (apiErr) {
-        console.warn("ไม่สามารถติดต่อ Backend ได้ ข้ามไปใช้ข้อมูลจาก Firebase แทน", apiErr);
+        console.log("โฟกัสการบันทึกที่ Firebase สำเร็จแล้ว (ไม่มี Backend ไม่เป็นไร)");
       }
 
-      // ✅ 3. ข้อมูลเข้า Firebase สำเร็จ เด้งไปหน้า Welcome เพื่อกรอก OTP ได้เลย
+      // 🟢 3. ข้อมูลเข้า Firebase สำเร็จ เด้งไปหน้า Welcome
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
-      
-      // จำอีเมลไว้ เพื่อให้หน้า Welcome ดึงไปแสดงได้เลย
       localStorage.setItem("rememberedEmail", emailKey); 
-      navigate("/"); // หรือ "/welcome" ตาม path หน้า login ของคุณ
+      navigate("/"); 
 
     } catch (error) {
       console.error("Error Registration:", error);
@@ -109,9 +95,6 @@ export default function Register() {
     }
   };
 
-  // ======================
-  // Render UI
-  // ======================
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
       <div className="w-full max-w-5xl bg-slate-800 rounded-2xl md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
@@ -121,7 +104,6 @@ export default function Register() {
           <h2 className="text-3xl font-bold text-blue-500 mb-8 text-center">Registration</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* First & Last Name */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative w-full">
                 <input 
@@ -147,7 +129,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="relative">
               <input 
                 type="email" 
@@ -160,7 +141,6 @@ export default function Register() {
               {errorField === "email" && <ErrorPopup />}
             </div>
 
-            {/* Phone */}
             <div className="relative">
               <input 
                 type="tel" 
@@ -173,7 +153,6 @@ export default function Register() {
               {errorField === "phone" && <ErrorPopup />}
             </div>
 
-            {/* Privacy Policy */}
             <div className="relative flex items-center gap-2 pt-2">
               <input 
                 type="checkbox" 
@@ -195,7 +174,6 @@ export default function Register() {
               )}
             </div>
 
-            {/* Buttons */}
             <div className="grid grid-cols-2 gap-4 pt-4 mt-2">
               <button 
                 type="button" 
