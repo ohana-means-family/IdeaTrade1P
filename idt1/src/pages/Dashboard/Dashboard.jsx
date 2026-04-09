@@ -31,7 +31,7 @@ import HisRealFlow from "@/pages/Hidden/hisrealflow";
 import DWViewCharts from "@/pages/Hidden/DW";
 import IdeaTradePoint from "@/pages/Hidden/ideatradepoint";
 import HisIdeaTradePoint from "@/pages/Hidden/hisideatradepoint";
-import SectorRotation from "@/pages/Hidden/SectorRotation";
+import SectorRotation from "@/pages/Hidden/Sectorrotation";
 
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
