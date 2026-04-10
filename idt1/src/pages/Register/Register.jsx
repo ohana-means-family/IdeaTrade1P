@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Rocket from "./rocket";
 
-// ✅ Import Firebase เพิ่มเติม
+// ✅ Import getDoc เพิ่มเข้ามา เพื่อใช้เช็คข้อมูลซ้ำ
 import { db } from "@/firebase"; 
-import { doc, setDoc } from "firebase/firestore"; 
+import { doc, setDoc, getDoc } from "firebase/firestore"; 
 
 // 🌟 ย้าย ErrorPopup ออกมาไว้ข้างนอก component หลัก เพื่อไม่ให้มันถูก render ใหม่ซ้ำๆ ทุกครั้งที่พิมพ์
 const ErrorPopup = () => (
@@ -66,21 +66,33 @@ export default function Register() {
     try {
       const emailKey = formData.email.trim().toLowerCase();
       
-      // ✅ 1. บันทึกข้อมูลลงใน Firestore (users_temp) ของจริง
+      // ✅ 1. อ้างอิงไปยัง Document ที่ชื่อเป็น "อีเมล"
       const docRef = doc(db, "users", emailKey);
       
+      // 🟢 เพิ่มการเช็คว่าอีเมลนี้เคยสมัครแล้วหรือยัง
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือไปที่หน้าล็อกอินครับ");
+        setIsSubmitting(false);
+        return; 
+      }
+
+      // 🟢 บันทึกข้อมูล พร้อมสร้างโครงสร้างพื้นฐานเผื่อไว้
       await setDoc(docRef, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         email: emailKey,
-        registeredAt: new Date()
+        registeredAt: new Date(),
+        role: "member",
+        mySubscriptions: [],        
+        subscriptions: {},          
+        unlockedItems: []
       });
 
-      // ✅ 2. ยิง API ไปที่ Backend ผ่าน Proxy (ถ้าไม่ได้ใช้แล้ว สามารถลบออกได้นะครับ)
-      // เปลี่ยนจาก localhost:8000 เป็นการเรียก /api/register แทน เพื่อให้วิ่งผ่าน Proxy ไปพอร์ต 5000 ของเรา
+      // ✅ 2. ยิง API ไปที่ Backend ผ่าน Proxy
       try {
-        const response = await fetch('/api/register', { // 🔴 แก้ไขตรงนี้
+        const response = await fetch('/api/register', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
@@ -98,9 +110,9 @@ export default function Register() {
       // ✅ 3. ข้อมูลเข้า Firebase สำเร็จ เด้งไปหน้า Welcome เพื่อกรอก OTP ได้เลย
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
       
-      // จำอีเมลไว้ เพื่อให้หน้า Welcome ดึงไปแสดงได้เลย
+      // จำอีเมลไว้ เพื่อให้หน้า Welcome (และหน้า MemberRegister) ดึงไปใช้งานได้เลย
       localStorage.setItem("rememberedEmail", emailKey); 
-      navigate("/"); // หรือ "/welcome" ตาม path หน้า login ของคุณ
+      navigate("/"); 
 
     } catch (error) {
       console.error("Error Registration:", error);
@@ -111,7 +123,6 @@ export default function Register() {
   };
 
   return (
-    // ... UI โค้ดเดิมของคุณทั้งหมด (ผมไม่ได้แก้ตรงนี้นะครับ)
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
       <div className="w-full max-w-5xl bg-slate-800 rounded-2xl md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         
