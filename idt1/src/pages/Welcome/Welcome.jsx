@@ -38,13 +38,27 @@ export default function Welcome() {
     return emailRegex.test(email);
   };
 
-  const setFreeAccess = (userEmail) => {
+const setFreeAccess = (userEmail) => {
     localStorage.setItem(
       "userProfile",
       JSON.stringify({
-        email: userEmail || email,
-        role: "free",
-        unlockedItems: [],
+        email: userEmail || email || "guest_free@example.com", // กันกรณีไม่ได้กรอกอีเมล
+        role: "membership", // 🟢 เปลี่ยนจาก "free" เป็น "membership"
+        unlockedItems: [    // 🟢 ปลดล็อคเครื่องมือทั้งหมดให้เลย
+          "fortune", "petroleum", "rubber", "flow", 
+          "s50", "gold", "bidask", "tickmatch", "dr"
+        ],
+        subscriptions: {    // 🟢 จำลองวันหมดอายุให้ใช้ได้ยาวๆ ถึงปี 2099
+          fortune: "2099-12-31T23:59:59.000Z",
+          petroleum: "2099-12-31T23:59:59.000Z",
+          rubber: "2099-12-31T23:59:59.000Z",
+          flow: "2099-12-31T23:59:59.000Z",
+          s50: "2099-12-31T23:59:59.000Z",
+          gold: "2099-12-31T23:59:59.000Z",
+          bidask: "2099-12-31T23:59:59.000Z",
+          tickmatch: "2099-12-31T23:59:59.000Z",
+          dr: "2099-12-31T23:59:59.000Z"
+        },
         lastLogin: new Date().toISOString()
       })
     );
