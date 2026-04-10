@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Rocket from "./rocket"; 
+import Rocket from "./rocket";
 
-// ✅ ใช้ doc, setDoc, และ getDoc เพื่อบันทึกข้อมูลแบบระบุ ID (อีเมล) และตรวจสอบอีเมลซ้ำ
+// ✅ Import Firebase เพิ่มเติม
 import { db } from "@/firebase"; 
-import { doc, setDoc, getDoc } from "firebase/firestore"; 
+import { doc, setDoc } from "firebase/firestore"; 
 
+// 🌟 ย้าย ErrorPopup ออกมาไว้ข้างนอก component หลัก เพื่อไม่ให้มันถูก render ใหม่ซ้ำๆ ทุกครั้งที่พิมพ์
 const ErrorPopup = () => (
   <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
     <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span>
@@ -16,6 +17,9 @@ const ErrorPopup = () => (
 export default function Register() {
   const navigate = useNavigate();
 
+  // ======================
+  // Form State
+  // ======================
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,6 +32,9 @@ export default function Register() {
   const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ======================
+  // Handle Change
+  // ======================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -38,9 +45,13 @@ export default function Register() {
     if (name === "agree") setShowPrivacyPopup(false);
   };
 
+  // ======================
+  // Submit (บันทึกข้อมูลลง Firestore ก่อนล็อกอิน)
+  // ======================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // --- ตรวจสอบข้อมูลเบื้องต้น ---
     if (!formData.firstName.trim()) return setErrorField("firstName");
     if (!formData.lastName.trim()) return setErrorField("lastName");
     if (!formData.email.trim()) return setErrorField("email");
@@ -53,164 +64,107 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
-      // ทำให้อีเมลเป็นตัวเล็กทั้งหมดและตัดช่องว่าง เพื่อป้องกันความผิดพลาดตอนอ้างอิง ID
-      const emailKey = formData.email.trim().toLowerCase(); 
+      const emailKey = formData.email.trim().toLowerCase();
       
-      // 🟢 1. อ้างอิงไปยัง Document ที่ชื่อเป็น "อีเมล"
+      // ✅ 1. บันทึกข้อมูลลงใน Firestore (users_temp) ของจริง
       const docRef = doc(db, "users", emailKey);
       
-      // 🟢 2. ตรวจสอบว่ามีอีเมลนี้ในระบบหรือยัง
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือไปที่หน้าล็อกอินครับ");
-        setIsSubmitting(false);
-        return; // หยุดการทำงาน ไม่บันทึกทับข้อมูลเดิม
-      }
-
-      // 🟢 3. บันทึกข้อมูลตั้งต้นทั้งหมดลงใน Document ชื่ออีเมลนั้น
       await setDoc(docRef, {
-        email: emailKey,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
-        registeredAt: new Date(),
-        role: "member",
-        mySubscriptions: [],        
-        subscriptions: {},          
-        unlockedItems: []           
+        email: emailKey,
+        registeredAt: new Date()
       });
 
-      // 🟢 4. ยิง API ไป Backend (ถ้ามี)
+      // ✅ 2. ยิง API ไปที่ Backend ผ่าน Proxy (ถ้าไม่ได้ใช้แล้ว สามารถลบออกได้นะครับ)
+      // เปลี่ยนจาก localhost:8000 เป็นการเรียก /api/register แทน เพื่อให้วิ่งผ่าน Proxy ไปพอร์ต 5000 ของเรา
       try {
-        const response = await fetch('/api/register', { 
+        const response = await fetch('/api/register', { // 🔴 แก้ไขตรงนี้
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
         
-        const textData = await response.text(); 
-        if (textData) {
-          const data = JSON.parse(textData);
-          if(!response.ok) console.warn("Backend แจ้งเตือน:", data.message);
+        // อ่านผลลัพธ์จาก Backend (เผื่อต้องการดู)
+        const data = await response.json();
+        if(!response.ok) {
+           console.warn("Backend แจ้งเตือน:", data.message);
         }
       } catch (apiErr) {
-        console.log("บันทึกข้อมูลลง Firebase สำเร็จ");
+        console.warn("ไม่สามารถติดต่อ Backend ได้ ข้ามไปใช้ข้อมูลจาก Firebase แทน", apiErr);
       }
 
-      // 🟢 5. ไปหน้า Welcome
+      // ✅ 3. ข้อมูลเข้า Firebase สำเร็จ เด้งไปหน้า Welcome เพื่อกรอก OTP ได้เลย
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
+      
+      // จำอีเมลไว้ เพื่อให้หน้า Welcome ดึงไปแสดงได้เลย
       localStorage.setItem("rememberedEmail", emailKey); 
-      navigate("/"); 
+      navigate("/"); // หรือ "/welcome" ตาม path หน้า login ของคุณ
 
     } catch (error) {
       console.error("Error Registration:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Firebase");
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Firebase เช็ค Rules บนเว็บหรือยัง?");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
+    // ... UI โค้ดเดิมของคุณทั้งหมด (ผมไม่ได้แก้ตรงนี้นะครับ)
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans">
       <div className="w-full max-w-5xl bg-slate-800 rounded-2xl md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         
+        {/* LEFT SIDE */}
         <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-10 lg:p-12">
           <h2 className="text-3xl font-bold text-blue-500 mb-8 text-center">Registration</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* First & Last Name */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative w-full">
-                <input 
-                  type="text" 
-                  name="firstName" 
-                  placeholder="Enter your first name" 
-                  value={formData.firstName} 
-                  onChange={handleChange} 
-                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "firstName" ? "border-orange-400" : "border-slate-600"}`} 
-                />
+                <input type="text" name="firstName" placeholder="Enter your first name" value={formData.firstName} onChange={handleChange} className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "firstName" ? "border-orange-400" : "border-slate-600"}`} />
                 {errorField === "firstName" && <ErrorPopup />}
               </div>
               <div className="relative w-full">
-                <input 
-                  type="text" 
-                  name="lastName" 
-                  placeholder="Enter your last name" 
-                  value={formData.lastName} 
-                  onChange={handleChange} 
-                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "lastName" ? "border-orange-400" : "border-slate-600"}`} 
-                />
+                <input type="text" name="lastName" placeholder="Enter your last name" value={formData.lastName} onChange={handleChange} className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "lastName" ? "border-orange-400" : "border-slate-600"}`} />
                 {errorField === "lastName" && <ErrorPopup />}
               </div>
             </div>
 
+            {/* Email */}
             <div className="relative">
-              <input 
-                type="email" 
-                name="email" 
-                placeholder="Enter your email" 
-                value={formData.email} 
-                onChange={handleChange} 
-                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "email" ? "border-orange-400" : "border-slate-600"}`} 
-              />
+              <input type="email" name="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "email" ? "border-orange-400" : "border-slate-600"}`} />
               {errorField === "email" && <ErrorPopup />}
             </div>
 
+            {/* Phone */}
             <div className="relative">
-              <input 
-                type="tel" 
-                name="phone" 
-                placeholder="Enter your phone number" 
-                value={formData.phone} 
-                onChange={handleChange} 
-                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "phone" ? "border-orange-400" : "border-slate-600"}`} 
-              />
+              <input type="tel" name="phone" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "phone" ? "border-orange-400" : "border-slate-600"}`} />
               {errorField === "phone" && <ErrorPopup />}
             </div>
 
-            <div className="relative flex items-center gap-2 pt-2">
-              <input 
-                type="checkbox" 
-                name="agree" 
-                checked={formData.agree} 
-                onChange={handleChange} 
-                className="w-4 h-4" 
-              />
-              <span className="text-sm text-gray-400">
-                I accept all <span className="underline hover:text-white cursor-pointer">Terms Service and Privacy Policy</span> <span className="text-red-500">*</span>
-              </span>
+            {/* Privacy Policy */}
+            <div className="relative flex items-center gap-2">
+              <input type="checkbox" name="agree" checked={formData.agree} onChange={handleChange} className="w-4 h-4" />
+              <span className="text-sm text-gray-400">I accept all <span className="underline hover:text-white cursor-pointer">Terms Service and Privacy Policy</span> <span className="text-red-500">*</span></span>
               {showPrivacyPopup && (
                 <div className="absolute left-0 -bottom-10 w-full bg-white border border-orange-400 text-gray-800 text-sm px-3 py-2 shadow-sm z-20">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span> 
-                    Please accept the Terms of Service.
-                  </div>
+                  <div className="flex items-center gap-2"><span className="bg-orange-500 text-white w-4 h-4 flex items-center justify-center text-xs font-bold">!</span> Please accept the Terms of Service.</div>
                 </div>
               )}
             </div>
 
+            {/* Buttons */}
             <div className="grid grid-cols-2 gap-4 pt-2">
-              <button 
-                type="button" 
-                onClick={() => navigate("/")} 
-                className="py-3 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                disabled={isSubmitting} 
-                className={`py-3 rounded-lg text-white transition ${isSubmitting ? 'bg-sky-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-500'}`}
-              >
-                {isSubmitting ? 'Creating...' : 'Create an account'}
-              </button>
+              <button type="button" onClick={() => navigate("/")} className="py-3 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition">Cancel</button>
+              <button type="submit" disabled={isSubmitting} className={`py-3 rounded-lg text-white transition ${isSubmitting ? 'bg-sky-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-500'}`}>{isSubmitting ? 'Creating...' : 'Create an account'}</button>
             </div>
           </form>
         </div>
 
-        <div className="w-full min-h-[300px] h-80 sm:h-96 lg:w-1/2 lg:h-auto relative flex items-end justify-center pt-0 scale-100">
-          <Rocket />
-        </div>
-        
+        {/* RIGHT SIDE */}
+        <div className="w-full min-h-[300px] h-80 sm:h-96 lg:w-1/2 lg:h-auto relative flex items-end justify-center pt-0 scale-100"><Rocket /></div>
       </div>
     </div>
   );

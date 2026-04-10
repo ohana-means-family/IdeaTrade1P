@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-// ✅ 1. เพิ่ม deleteDoc เข้ามา เพื่อใช้ลบไฟล์ temp (อีเมล) หลังจากย้ายข้อมูลเสร็จ
+// ✅ เพิ่ม deleteDoc เพื่อลบไฟล์ที่ใช้แค่ตอนพักข้อมูลสมัครสมาชิก
 import { doc, getDoc, setDoc, Timestamp, deleteDoc } from "firebase/firestore";
 import { db, auth } from "/src/firebase";
 
@@ -62,10 +62,8 @@ export default function MemberRegister() {
   const [copied, setCopied] = useState(false);
   const [isEditSummary, setIsEditSummary] = useState(false);
 
-  // ✅ 2. State สำหรับเก็บข้อมูล Subscription แบบละเอียด (วันหมดอายุ + รอบบิล)
   const [activeSubs, setActiveSubs] = useState({});
 
-  // ✅ 3. ฟังก์ชันจัดรูปแบบข้อมูลให้อ่านง่าย
   const processSubs = (mySubs = [], expirations = {}) => {
     const result = {};
     mySubs.forEach((sub) => {
@@ -73,7 +71,6 @@ export default function MemberRegister() {
       if (exp) {
         result[sub.id] = {
           cycle: sub.cycle ? sub.cycle.toLowerCase() : "monthly",
-          // รองรับทั้ง Firestore Timestamp และ ISO String จาก LocalStorage
           expireDate: exp.toDate ? exp.toDate() : new Date(exp),
         };
       }
@@ -81,7 +78,6 @@ export default function MemberRegister() {
     return result;
   };
 
-  // ✅ 4. ดึงข้อมูล User ตอนเปิดหน้า
   useEffect(() => {
     const fetchUserSubscriptions = async () => {
       setTimeout(async () => {
@@ -101,7 +97,6 @@ export default function MemberRegister() {
             console.error("Error fetching user data:", error);
           }
         } else {
-          // Fallback สำหรับ LocalStorage
           const storedProfile = localStorage.getItem("userProfile");
           if (storedProfile) {
             const userData = JSON.parse(storedProfile);
@@ -116,7 +111,6 @@ export default function MemberRegister() {
     fetchUserSubscriptions();
   }, []);
 
-  // ✅ 5. ฟังก์ชันเช็คสถานะ ให้กดซื้อเพิ่มได้ตลอด (ปลดล็อค)
   const getToolStatus = (toolId, currentBillingCycle) => {
     const sub = activeSubs[toolId];
     if (!sub) return { isLocked: false, text: null };
@@ -125,23 +119,18 @@ export default function MemberRegister() {
     const now = new Date();
     const daysRemaining = (expireDate - now) / (1000 * 60 * 60 * 24);
 
-    // 5.1 ถ้าหมดอายุแล้ว
     if (daysRemaining < 0) {
       return { isLocked: false, text: "Expired" };
     }
 
-    // 5.2 ถ้าใกล้หมดอายุ (<= 7 วัน)
     if (daysRemaining <= 7) {
       return { isLocked: false, text: "Renew" };
     }
 
-    // 5.3 ถ้ายังมีอายุเหลือเยอะ
     if (cycle === "monthly" && currentBillingCycle === "yearly") {
-      // เดิมเป็นรายเดือน ตอนนี้อยู่หน้าแท็บรายปี -> ให้อัปเกรด
       return { isLocked: false, text: "Upgrade" }; 
     }
 
-    // กรณีอื่นๆ (รายปีซื้อเดือนเพิ่ม, รายเดือนซื้อเดือนเพิ่ม, รายปีซื้อปีเพิ่ม) -> ปลดล็อคให้ซื้อทบเวลาได้
     return { isLocked: false, text: "Extend" };
   };
 
@@ -154,7 +143,6 @@ export default function MemberRegister() {
                t.id.toLowerCase() === toolNameFromPopup.toLowerCase()
       );
 
-      // ✅ 6. เช็คก่อน preselect ว่าล็อคอยู่หรือไม่ (ตอนนี้ปลดล็อคหมดแล้ว ก็จะเข้าเงื่อนไขตลอด)
       if (matchedTool) {
         const { isLocked } = getToolStatus(matchedTool.id, "monthly");
         if (!isLocked) {
@@ -247,7 +235,7 @@ export default function MemberRegister() {
       const newToolIds = selectedTools.map((t) => t.id);
 
       if (currentUser) {
-        // 🟢 อ้างอิงเอกสารหลักโดยใช้ UID แบบดั้งเดิม
+        // 🟢 1. ใช้ UID เป็น ID หลักเหมือนที่คุณต้องการ
         const uid = currentUser.uid;
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
@@ -264,7 +252,7 @@ export default function MemberRegister() {
           currentSubExpirations = existingData.subscriptions || {};
         }
 
-        // 🟢 ไปดึงข้อมูลชื่อ-นามสกุล ที่พักไว้ตอนสมัครในไฟล์อีเมล
+        // 🟢 2. ดึงข้อมูลชื่อ-นามสกุล ที่พักไว้ตอนสมัครในไฟล์อีเมล
         let registrationData = {};
         const storedEmail = localStorage.getItem("rememberedEmail");
         const emailKey = (currentUser.email || storedEmail)?.toLowerCase();
@@ -274,7 +262,7 @@ export default function MemberRegister() {
           const tempSnap = await getDoc(tempRef);
           if (tempSnap.exists()) {
             registrationData = tempSnap.data();
-            // เมื่อดึงข้อมูลเสร็จ ลบไฟล์อีเมลทิ้ง เพื่อไม่ให้ DB รก
+            // 🟢 เมื่อดึงข้อมูลเสร็จ ลบไฟล์อีเมลทิ้ง เพื่อไม่ให้ DB รก
             await deleteDoc(tempRef).catch(() => console.log("ลบไฟล์ Temp ไม่ได้"));
           }
         }
@@ -305,11 +293,11 @@ export default function MemberRegister() {
           newExpirations[t.id] = Timestamp.fromDate(expireDate);
         });
 
-        // 🟢 บันทึกข้อมูลรวมทั้งหมดลง UID แบบ { merge: true } รับประกันของไม่หาย
+        // 🟢 3. บันทึกข้อมูลแบบ { merge: true } โดยเอาข้อมูลสมัคร (registrationData) มารวมด้วย
         await setDoc(userRef, {
-          ...registrationData, // ข้อมูลจากตอนสมัคร
-          ...existingData,     // ข้อมูลที่มีอยู่เดิมใน UID
-          email: emailKey || existingData.email || "", // กันเหนียวฟิลด์อีเมล
+          ...registrationData, // <- ดึงชื่อ เบอร์ อีเมล มาใส่
+          ...existingData,     // <- ข้อมูลเดิมใน UID ถ้ามี
+          email: emailKey || existingData.email || "", // กันเหนียว
           role: "membership",
           unlockedItems: mergedUnlockedItems,
           mySubscriptions: updatedSubscriptions,
@@ -423,66 +411,15 @@ export default function MemberRegister() {
 
           {/* Tools */}
           <div className="bg-[#0F1B2D] p-5 rounded-xl">
-            <div className="flex items-center justify-between mb-4 gap-3">
-              <h2 className="text-xl font-semibold">Select Your Tools</h2>
-
-              {(() => {
-                // tools ที่เลือกได้ใน cycle ปัจจุบัน (ไม่นับอันที่ล็อค)
-                const selectableTools = TOOLS.filter(
-                  (tool) => !getToolStatus(tool.id, billingCycle).isLocked
-                );
-
-                const allSelected =
-                  selectableTools.length > 0 &&
-                  selectableTools.every((tool) =>
-                    selectedTools.some(
-                      (t) => t.id === tool.id && t.billing === billingCycle
-                    )
-                  );
-
-                const handleSelectAll = () => {
-                  if (allSelected) {
-                    // Deselect เฉพาะ cycle ปัจจุบัน
-                    setSelectedTools((prev) =>
-                      prev.filter((t) => t.billing !== billingCycle)
-                    );
-                  } else {
-                    // Select all ของ cycle ปัจจุบัน (คงของอีก cycle ไว้)
-                    setSelectedTools((prev) => {
-                      const others = prev.filter((t) => t.billing !== billingCycle);
-                      const current = selectableTools.map((tool) => ({
-                        id: tool.id,
-                        billing: billingCycle,
-                      }));
-                      return [...others, ...current];
-                    });
-                  }
-                };
-
-                return (
-                  <button
-                    onClick={handleSelectAll}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition whitespace-nowrap
-                      ${
-                        allSelected
-                          ? "border-red-500/50 text-red-400 hover:bg-red-500/10"
-                          : "border-[#0E6BA8] text-[#0EA5E9] hover:bg-[#0E6BA8]/20"
-                      }`}
-                  >
-                    {allSelected ? "Deselect All" : "Select All"}
-                  </button>
-                );
-              })()}
-            </div>
-
+            <h2 className="text-xl font-semibold mb-4">Select Your Tools</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               {TOOLS.map((tool) => {
                 const { isLocked, text } = getToolStatus(tool.id, billingCycle);
-
+                
                 const active = selectedTools.some(
                   (t) => t.id === tool.id && t.billing === billingCycle
                 );
-
+                
                 return (
                   <div
                     key={tool.id}
@@ -492,7 +429,7 @@ export default function MemberRegister() {
                     className={`px-4 md:px-5 py-4 rounded-xl border flex items-center gap-2 min-h-[72px] transition-all
                     ${
                       isLocked
-                        ? "border-[#1F3354] bg-[#0A1224] opacity-50 cursor-not-allowed"
+                        ? "border-[#1F3354] bg-[#0A1224] opacity-50 cursor-not-allowed" 
                         : active
                         ? "border-[#0E6BA8] bg-[#102B46] cursor-pointer"
                         : "border-[#1F3354] bg-[#13233A] cursor-pointer hover:border-[#0E6BA8]/50"
