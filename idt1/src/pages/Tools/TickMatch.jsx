@@ -3,8 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
-// 🟢 1. เปลี่ยนมาใช้ useAuth แทน useSubscription จากระบบเก่า
-import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
+import { useAuth } from "@/context/AuthContext";
 
 import TickMatchDashboard from "./components/TickMatchDashboard.jsx";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
@@ -906,7 +905,8 @@ function FullscreenSymbolInput({ value, onChange }) {
             </div>
             {open && (
                 <div className="absolute left-0 top-full mt-2 w-56 bg-[#0d1526] border border-slate-600/60 rounded-xl shadow-2xl z-[200] overflow-hidden">
-                    <div className="max-h-64 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                    {/* ใช้ custom-scrollbar แทน scrollbarHideStyle */}
+                    <div className="custom-scrollbar max-h-64 overflow-y-auto">
                         {filtered.length === 0 ? (
                             <div className="px-3 py-3 text-slate-600 text-[11px] text-center">ไม่พบ — กด Enter เพื่อใช้ "{query}"</div>
                         ) : filtered.map((sym, idx) => {
@@ -937,11 +937,9 @@ export default function TickMatch() {
     const scrollDirection = useRef(1);
     const isPaused = useRef(false);
 
-    // 🟢 2. ดึงข้อมูลผู้ใช้จาก AuthContext
     const { userData, currentUser, loading } = useAuth();
 
     /* =============================== MEMBER CHECK ================================ */
-    // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
     useEffect(() => {
         if (loading) return;
 
@@ -959,7 +957,6 @@ export default function TickMatch() {
             }
             setIsMember(expireDate.getTime() > new Date().getTime());
         } else {
-            // Fallback
             const saved = localStorage.getItem("userProfile");
             if (saved) {
                 try {
@@ -1065,19 +1062,15 @@ export default function TickMatch() {
             "1DIV", "NVDA", "TSLA"
         ];
 
-        // 🌟 กรองรายชื่อหุ้น (Filter Logic)
         const filteredSymbols = useMemo(() => {
             if (!symbol) return STOCK_LIST.slice(0, 8);
             const q = symbol.toUpperCase();
             return STOCK_LIST.filter(s => s.includes(q)).slice(0, 8);
         }, [symbol]);
 
-        const todayMax = new Date().toISOString().split("T")[0];
-
         const handleSearch = () => {
             if (!symbol.trim()) return;
             setIsSyncing(true);
-            // ปิด dropdown ทันทีที่กด search
             setShowSymbolDropdown(false);
             setTimeout(() => {
                 setHasSearched(true);
@@ -1104,7 +1097,6 @@ export default function TickMatch() {
         const total = totalBuy + totalSell;
         const buyPercent = total === 0 ? 50 : (totalBuy / total) * 100;
 
-        // ─── Chart Modal rendered via Portal to document.body ───────────────
         const chartModal = isChartModalOpen && createPortal(
             <div className="fixed inset-0 bg-[#0d1117] z-[9999] flex flex-col">
                 <div className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border-b border-slate-800 flex-shrink-0">
@@ -1116,19 +1108,13 @@ export default function TickMatch() {
                         onClick={() => {
                             if (!activeSymbol) return;
                             setIsSyncing(true);
-                            setTimeout(() => {
-                                setIsSyncing(false);
-                            }, 700);
+                            setTimeout(() => { setIsSyncing(false); }, 700);
                         }}
                         className="w-10 h-10 bg-[#0f172a] border border-slate-700 rounded-lg flex items-center justify-center hover:border-cyan-500 transition-all flex-shrink-0 group"
                         title="รีเฟรชข้อมูล"
                     >
                         <RefreshIcon
-                            sx={{
-                                fontSize: 16,
-                                color: isSyncing ? "#3b82f6" : "#ffffff",
-                                transition: "color 0.3s ease"
-                            }}
+                            sx={{ fontSize: 16, color: isSyncing ? "#3b82f6" : "#ffffff", transition: "color 0.3s ease" }}
                             className={`${isSyncing ? "animate-spin" : "group-hover:text-cyan-400"}`}
                         />
                     </button>
@@ -1177,7 +1163,7 @@ export default function TickMatch() {
                                 </button>
                             </div>
 
-                            {/* 🌟 SYMBOL INPUT */}
+                            {/* SYMBOL INPUT */}
                             <div className="flex-1 relative">
                                 <label className="absolute left-1.5 -top-2 text-[9px] px-1 bg-[#111827] text-slate-400 font-bold z-10 uppercase">Symbol *</label>
                                 <div className={`flex items-center bg-[#0B1221] border rounded h-[36px] px-3 transition-all ${isFocused ? 'border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.2)]' : 'border-slate-700'}`}>
@@ -1199,7 +1185,7 @@ export default function TickMatch() {
 
                                 {/* Dropdown List */}
                                 {showSymbolDropdown && filteredSymbols.length > 0 && (
-                                    <div className="absolute left-0 right-0 mt-1 bg-[#0d1526] border border-slate-700 rounded-md shadow-2xl z-[110] max-h-48 overflow-y-auto border-t-0">
+                                    <div className="absolute left-0 right-0 mt-1 bg-[#0d1526] border border-slate-700 rounded-md shadow-2xl z-[110] max-h-48 overflow-y-auto border-t-0 custom-scrollbar">
                                         {filteredSymbols.map((item) => (
                                             <div
                                                 key={item}
@@ -1270,7 +1256,7 @@ export default function TickMatch() {
                     </div>
 
                     {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 touch-pan-y overscroll-none rounded-b-lg" style={scrollbarHideStyle}>
+                    <div className="custom-scrollbar flex-1 overflow-y-auto px-3 pb-3 space-y-2 touch-pan-y overscroll-none rounded-b-lg">
 
                         {/* Tick Table */}
                         <div className="rounded overflow-hidden border border-slate-800/50 bg-[#0B1221]">
@@ -1281,7 +1267,7 @@ export default function TickMatch() {
                                 <div className="p-2 text-center">Type</div>
                                 <div className="p-2 text-right">Sum</div>
                             </div>
-                            <div className="overflow-y-auto max-h-[200px] touch-pan-y overscroll-none" style={scrollbarHideStyle}>
+                            <div className="custom-scrollbar overflow-y-auto max-h-[200px] touch-pan-y overscroll-none">
                                 {filteredTicks.length > 0 ? filteredTicks.map((row, idx) => (
                                     <div key={idx} className="grid grid-cols-5 text-xs font-mono text-slate-300 border-b border-slate-800/30 hover:bg-slate-800/50 transition-colors">
                                         <div className="p-2 text-center text-slate-400">{row.time}</div>
@@ -1341,7 +1327,7 @@ export default function TickMatch() {
                                             </div>
                                         </div>
 
-                                        <div className="overflow-y-auto max-h-[180px] touch-pan-y overscroll-none" style={scrollbarHideStyle}>
+                                        <div className="custom-scrollbar overflow-y-auto max-h-[180px] touch-pan-y overscroll-none">
                                             <table className="w-full text-center border-collapse">
                                                 <thead className="bg-[#1f2937] text-slate-400 text-[10px] font-medium sticky top-0 z-10">
                                                     <tr><th className="p-1.5">ครั้งที่</th><th className="p-1.5">Time</th><th className="p-1.5">From Acc. Vol</th><th className="p-1.5">To Acc. Vol</th></tr>
@@ -1388,7 +1374,6 @@ export default function TickMatch() {
                     </div>
                 </div>
 
-                {/* ✅ Chart Modal — rendered via Portal to document.body (fixes overlap) */}
                 {chartModal}
             </>
         );
@@ -1422,7 +1407,7 @@ export default function TickMatch() {
                     </div>
                 </div>
 
-                {/* 🌟 4 Main Features Section 🌟 */}
+                {/* 4 Main Features Section */}
                 <div className="w-full max-w-5xl mb-12">
                     <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
                         4 Main Features
@@ -1521,19 +1506,27 @@ export default function TickMatch() {
     /* ── CASE 3: Full Dashboard ── */
     const todayStr = new Date().toISOString().split('T')[0];
     return (
-        <div className="w-full min-h-screen bg-[#0b111a] text-white p-3 sm:p-6 flex flex-col pb-24">
-            <div className="max-w-[1600px] w-full mx-auto flex-1">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    <AnalysisPanel defaultSymbol="" defaultDate={todayStr}
-                        toolHint={
-                            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-                                Match tick-by-tick data patterns, recognize trading flow correlations, detect relationships between assets, and analyze pattern-based insights
-                            </ToolHint>
-                        }
-                    />
-                    <AnalysisPanel defaultSymbol="" defaultDate={todayStr} />
+        <>
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+            `}</style>
+            <div className="w-full min-h-screen bg-[#0b111a] text-white p-3 sm:p-6 flex flex-col pb-24">
+                <div className="max-w-[1600px] w-full mx-auto flex-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                        <AnalysisPanel defaultSymbol="" defaultDate={todayStr}
+                            toolHint={
+                                <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+                                    Match tick-by-tick data patterns, recognize trading flow correlations, detect relationships between assets, and analyze pattern-based insights
+                                </ToolHint>
+                            }
+                        />
+                        <AnalysisPanel defaultSymbol="" defaultDate={todayStr} />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
