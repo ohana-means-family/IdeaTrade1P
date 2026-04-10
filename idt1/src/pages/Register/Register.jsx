@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Rocket from "./rocket"; 
 
-// ✅ เปลี่ยนมาใช้ collection, addDoc, query, where, getDocs
+// ✅ ใช้ doc, setDoc, และ getDoc เพื่อบันทึกข้อมูลแบบระบุ ID (อีเมล) และตรวจสอบอีเมลซ้ำ
 import { db } from "@/firebase"; 
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore"; 
+import { doc, setDoc, getDoc } from "firebase/firestore"; 
 
 const ErrorPopup = () => (
   <div className="absolute left-0 -bottom-9 z-20 w-full flex items-center gap-2 bg-white text-gray-800 text-sm px-3 py-2 border border-orange-400 shadow-sm">
@@ -53,21 +53,22 @@ export default function Register() {
 
     setIsSubmitting(true);
     try {
+      // ทำให้อีเมลเป็นตัวเล็กทั้งหมดและตัดช่องว่าง เพื่อป้องกันความผิดพลาดตอนอ้างอิง ID
       const emailKey = formData.email.trim().toLowerCase(); 
-      const usersRef = collection(db, "users");
       
-      // 🟢 1. ค้นหาว่าในฐานข้อมูล มีไฟล์ไหนที่มีฟิลด์ email ตรงกับที่กรอกไหม
-      const q = query(usersRef, where("email", "==", emailKey));
-      const querySnapshot = await getDocs(q);
+      // 🟢 1. อ้างอิงไปยัง Document ที่ชื่อเป็น "อีเมล"
+      const docRef = doc(db, "users", emailKey);
       
-      if (!querySnapshot.empty) {
+      // 🟢 2. ตรวจสอบว่ามีอีเมลนี้ในระบบหรือยัง
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
         alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือไปที่หน้าล็อกอินครับ");
         setIsSubmitting(false);
-        return; 
+        return; // หยุดการทำงาน ไม่บันทึกทับข้อมูลเดิม
       }
 
-      // 🟢 2. ถ้าไม่มีอีเมลซ้ำ ให้สุ่มสร้าง Document ใหม่ (addDoc) รูปแบบเดิมเป๊ะ
-      await addDoc(usersRef, {
+      // 🟢 3. บันทึกข้อมูลตั้งต้นทั้งหมดลงใน Document ชื่ออีเมลนั้น
+      await setDoc(docRef, {
         email: emailKey,
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -79,13 +80,14 @@ export default function Register() {
         unlockedItems: []           
       });
 
-      // 🟢 3. ยิง API ไป Backend (ถ้ามี)
+      // 🟢 4. ยิง API ไป Backend (ถ้ามี)
       try {
         const response = await fetch('/api/register', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
+        
         const textData = await response.text(); 
         if (textData) {
           const data = JSON.parse(textData);
@@ -95,6 +97,7 @@ export default function Register() {
         console.log("บันทึกข้อมูลลง Firebase สำเร็จ");
       }
 
+      // 🟢 5. ไปหน้า Welcome
       alert("บันทึกข้อมูลเรียบร้อย! กรุณายืนยันตัวตนด้วย OTP"); 
       localStorage.setItem("rememberedEmail", emailKey); 
       navigate("/"); 
@@ -123,7 +126,7 @@ export default function Register() {
                   placeholder="Enter your first name" 
                   value={formData.firstName} 
                   onChange={handleChange} 
-                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg outline-none focus:border-blue-400 transition-colors ${errorField === "firstName" ? "border-orange-400" : "border-slate-600"}`} 
+                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "firstName" ? "border-orange-400" : "border-slate-600"}`} 
                 />
                 {errorField === "firstName" && <ErrorPopup />}
               </div>
@@ -134,7 +137,7 @@ export default function Register() {
                   placeholder="Enter your last name" 
                   value={formData.lastName} 
                   onChange={handleChange} 
-                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg outline-none focus:border-blue-400 transition-colors ${errorField === "lastName" ? "border-orange-400" : "border-slate-600"}`} 
+                  className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "lastName" ? "border-orange-400" : "border-slate-600"}`} 
                 />
                 {errorField === "lastName" && <ErrorPopup />}
               </div>
@@ -147,7 +150,7 @@ export default function Register() {
                 placeholder="Enter your email" 
                 value={formData.email} 
                 onChange={handleChange} 
-                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg outline-none focus:border-blue-400 transition-colors ${errorField === "email" ? "border-orange-400" : "border-slate-600"}`} 
+                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "email" ? "border-orange-400" : "border-slate-600"}`} 
               />
               {errorField === "email" && <ErrorPopup />}
             </div>
@@ -159,7 +162,7 @@ export default function Register() {
                 placeholder="Enter your phone number" 
                 value={formData.phone} 
                 onChange={handleChange} 
-                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg outline-none focus:border-blue-400 transition-colors ${errorField === "phone" ? "border-orange-400" : "border-slate-600"}`} 
+                className={`w-full bg-slate-700/50 text-white border px-4 py-3 rounded-lg ${errorField === "phone" ? "border-orange-400" : "border-slate-600"}`} 
               />
               {errorField === "phone" && <ErrorPopup />}
             </div>
@@ -170,10 +173,10 @@ export default function Register() {
                 name="agree" 
                 checked={formData.agree} 
                 onChange={handleChange} 
-                className="w-4 h-4 cursor-pointer accent-blue-500" 
+                className="w-4 h-4" 
               />
               <span className="text-sm text-gray-400">
-                I accept all <span className="underline hover:text-white cursor-pointer transition-colors">Terms Service and Privacy Policy</span> <span className="text-red-500">*</span>
+                I accept all <span className="underline hover:text-white cursor-pointer">Terms Service and Privacy Policy</span> <span className="text-red-500">*</span>
               </span>
               {showPrivacyPopup && (
                 <div className="absolute left-0 -bottom-10 w-full bg-white border border-orange-400 text-gray-800 text-sm px-3 py-2 shadow-sm z-20">
@@ -185,18 +188,18 @@ export default function Register() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 mt-2">
+            <div className="grid grid-cols-2 gap-4 pt-2">
               <button 
                 type="button" 
                 onClick={() => navigate("/")} 
-                className="py-3 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 font-semibold transition-colors shadow-md"
+                className="py-3 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition"
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
                 disabled={isSubmitting} 
-                className={`py-3 rounded-lg text-white font-semibold transition-all shadow-md ${isSubmitting ? 'bg-sky-400/70 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-500 hover:shadow-sky-500/30'}`}
+                className={`py-3 rounded-lg text-white transition ${isSubmitting ? 'bg-sky-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-500'}`}
               >
                 {isSubmitting ? 'Creating...' : 'Create an account'}
               </button>
@@ -204,8 +207,8 @@ export default function Register() {
           </form>
         </div>
 
-        <div className="w-full min-h-[300px] h-80 sm:h-96 lg:w-1/2 lg:h-auto relative flex items-end justify-center pt-0 scale-100 bg-[#0d1624]">
-           <Rocket />
+        <div className="w-full min-h-[300px] h-80 sm:h-96 lg:w-1/2 lg:h-auto relative flex items-end justify-center pt-0 scale-100">
+          <Rocket />
         </div>
         
       </div>
