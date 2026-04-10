@@ -24,40 +24,17 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     setResent(false);
     setOtp(Array(OTP_LENGTH).fill(""));
     
-    // 🟢 1. เมื่อเปิด Modal ขึ้นมา ให้ขึ้นสถานะ loading รอไว้เลย
-    setStatus("loading"); 
+    // 🟢 ตั้งค่าเป็น idle ทันที เพราะ OTP ถูกส่งมาจากหน้าหลักแล้ว
+    setStatus("idle"); 
 
-    // 🟢 2. เรียกฟังก์ชันขอ OTP ทันที เพื่อให้ Backend สร้าง OTP เก็บไว้ใน Memory
-    const requestInitialOtp = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/request-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email.trim().toLowerCase() })
-        });
-        
-        const data = await response.json();
-        if (response.ok && data.success) {
-           // ขอสำเร็จ ค่อยเปลี่ยนกลับเป็น idle ให้กรอกได้
-           setStatus("idle"); 
-           setTimeout(() => hiddenInputRef.current?.focus(), 100);
-        } else {
-           throw new Error(data.error || "ไม่สามารถขอ OTP ได้");
-        }
-      } catch (err) {
-        console.error("Initial OTP request error:", err);
-        setStatus("error");
-        alert("ไม่สามารถส่ง OTP ได้ กรุณาลองใหม่อีกครั้ง");
-      }
-    };
-
-    requestInitialOtp();
+    // โฟกัสช่องกรอกอัตโนมัติ
+    setTimeout(() => hiddenInputRef.current?.focus(), 100);
 
     const interval = setInterval(() => {
       setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [open, email]); // 🟢 ใส่ email เป็น dependency เพื่อให้ชัวร์ว่ารันใหม่ถ้าอีเมลเปลี่ยน
+  }, [open]); // 🟢 เอา email ออกจาก dependency แล้ว
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -131,7 +108,7 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
   /* 📩 Resend OTP Logic */
   const resendOtp = async () => {
     setOtp(Array(OTP_LENGTH).fill(""));
-    setStatus("loading"); // 🟢 ตอนกดส่งใหม่ ก็ให้ขึ้น loading รอแป๊บนึง
+    setStatus("loading"); 
     setTimeLeft(300);
     setResent(true);
     
@@ -143,7 +120,7 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
       });
 
       if (response.ok) {
-        setStatus("idle"); // ส่งเสร็จกลับมา idle
+        setStatus("idle"); 
         setTimeout(() => hiddenInputRef.current?.focus(), 100);
       } else {
         throw new Error("Failed to resend");
