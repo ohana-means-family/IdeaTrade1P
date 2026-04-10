@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { auth, db } from "@/firebase"; 
 import { signInWithCustomToken } from "firebase/auth";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+// ✅ เอา deleteDoc ออก เพราะเราจะไม่ย้ายและลบไฟล์อีเมลแล้ว
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // 🟢 ปรับ URL สำรองให้ตรงกับ Production (Render) หรือ Local (8000) ของคุณ
 const API_URL = import.meta.env.VITE_API_URL || "https://ideatrade1p.onrender.com";
@@ -39,7 +40,7 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  /* ✅ Verify OTP Logic + Data Merging */
+  /* ✅ Verify OTP Logic */
   const verifyOtp = async (code) => {
     setStatus("loading");
     try {
@@ -58,29 +59,33 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
          throw new Error(data.error || "Verification failed"); 
       }
 
-      // 1. ล็อกอินเข้าสู่ระบบจริงเพื่อเอา UID
-      const userCredential = await signInWithCustomToken(auth, data.token);
-      const user = userCredential.user;
+      // 1. ล็อกอินเข้าสู่ระบบจริงด้วย Firebase Auth
+      await signInWithCustomToken(auth, data.token);
 
-      // 2. กระบวนการย้ายข้อมูลจาก [ชื่อไฟล์เป็น Email] -> [ชื่อไฟล์เป็น UID]
-      if (user) {
-        // 🟢 ครอบ try-catch ย่อยไว้ เพื่อป้องกัน Security Rules บล็อกจนล็อกอินพัง
-        try {
-          const formattedEmail = email.trim().toLowerCase();
-          const emailDocRef = doc(db, "users", formattedEmail);
-          const emailDocSnap = await getDoc(emailDocRef);
+      // 2. 🟢 เปลี่ยนมาอัปเดตข้อมูลลงในไฟล์ "อีเมล" แทนการย้ายไป UID
+      try {
+        const formattedEmail = email.trim().toLowerCase();
+        const emailDocRef = doc(db, "users", formattedEmail);
+        const emailDocSnap = await getDoc(emailDocRef);
 
-          if (emailDocSnap.exists()) {
-            const userData = emailDocSnap.data();
-            const uidDocRef = doc(db, "users", user.uid);
-            
-            await setDoc(uidDocRef, userData, { merge: true });
-            await deleteDoc(emailDocRef);
-            console.log("Successfully merged user data from Email to UID");
-          }
-        } catch (migrationError) {
-          console.log("Migration skipped (อาจเพราะอัปเดตข้อมูลเป็น UID แล้ว หรือติด Rules):", migrationError.message);
+        // ถ้ามีไฟล์อีเมลอยู่แล้ว ให้อัปเดตเวลาล็อกอินล่าสุด
+        if (emailDocSnap.exists()) {
+          await setDoc(emailDocRef, {
+            lastLoginAt: new Date(),
+          }, { merge: true });
+        } else {
+          // ถ้าไม่มี (ล็อกอินครั้งแรกโดยไม่ได้สมัคร) ก็สร้างใหม่ให้เลย
+          await setDoc(emailDocRef, {
+            email: formattedEmail,
+            role: "free",
+            unlockedItems: [],
+            mySubscriptions: [],
+            subscriptions: {},
+            lastLoginAt: new Date(),
+          });
         }
+      } catch (error) {
+        console.log("Firestore update skipped:", error.message);
       }
 
       setStatus("success");
