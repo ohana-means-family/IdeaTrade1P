@@ -1,12 +1,10 @@
 // src/pages/ManageSubscription.jsx
 import React, { useState, useEffect } from 'react';
 import './Subscriptions.css'; 
-import { doc, updateDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+// ✅ 1. นำเข้า onSnapshot เพื่อใช้ติดตามการเปลี่ยนแปลงข้อมูลแบบเรียลไทม์
+import { doc, updateDoc, collection, query, where, getDocs, Timestamp, onSnapshot } from "firebase/firestore";
 import { db, auth } from "@/firebase"; 
 import { useNavigate } from 'react-router-dom';
-
-// ⚠️ เช็ค Path นี้ให้ตรงกับตำแหน่งไฟล์ AuthContext ของคุณ
-import { useAuth } from '@/context/AuthContext'; 
 
 const ManageSubscription = () => {
   const [activeSubs, setActiveSubs] = useState([]);
@@ -14,16 +12,12 @@ const ManageSubscription = () => {
   const [endedSubs, setEndedSubs] = useState([]);
   const [summary, setSummary] = useState({ monthly: 0, yearly: 0 });
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true); // ✅ เพิ่ม state loading สำหรับหน้านี้โดยเฉพาะ
   
   const navigate = useNavigate();
-  
-  const authContext = useAuth();
-  const userData = authContext?.userData || null;
-  const loading = authContext?.loading || false;
-  const currentUser = authContext?.currentUser || auth.currentUser;
 
   useEffect(() => {
-    // 🟢 รับค่า expirations (ที่เป็น Object เก็บ Timestamp ของแต่ละเครื่องมือ) เข้ามาด้วย
+    // ฟังก์ชันสำหรับจัดรูปแบบและคำนวณวันหมดอายุ
     const processAndSetSubscriptions = (savedSubs = [], expirations = {}) => {
       let active = [];
       let expiring = [];
@@ -46,11 +40,9 @@ const ManageSubscription = () => {
           let expireDateStr = "Unknown";
           let daysLeft = 0;
           
-          // 🟢 ดึงข้อมูลวันหมดอายุจาก Map: subscriptions
           const toolExpireData = expirations[sub.id]; 
           
           if (toolExpireData) {
-            // แปลง Firestore Timestamp เป็น Date Object
             const expireObj = typeof toolExpireData.toDate === 'function' 
               ? toolExpireData.toDate() 
               : new Date(toolExpireData);
@@ -75,7 +67,6 @@ const ManageSubscription = () => {
             priceValue: priceValue 
           };
 
-          // 🟢 แยกการ์ดตามจำนวนวันที่เหลือ (ใช้ daysLeft ที่คำนวณจาก Timestamp)
           if (daysLeft <= 0 || sub.status === 'inactive') {
             ended.push(formattedItem);
           } else if (daysLeft > 0 && daysLeft <= 3) {
@@ -96,18 +87,38 @@ const ManageSubscription = () => {
       setExpiringSubs(expiring);
       setActiveSubs(active);
       setSummary({ monthly: totalM, yearly: totalY });
+      setLoading(false);
     };
 
-    if (!loading) {
-      if (userData && userData.mySubscriptions) {
-        // 🟢 โยนทั้ง Array แพ็กเกจที่ซื้อ และ Object วันหมดอายุ ไปประมวลผลพร้อมกัน
-        processAndSetSubscriptions(userData.mySubscriptions, userData.subscriptions || {});
-      } else {
-        processAndSetSubscriptions([], {}); 
-      }
-    }
+    // ✅ 2. ดึงอีเมลเพื่อใช้อ้างอิงไฟล์ใน Firestore
+    const storedEmail = localStorage.getItem("rememberedEmail");
+    const emailKey = (auth.currentUser?.email || storedEmail)?.toLowerCase();
 
-  }, [userData, loading]); 
+    if (emailKey) {
+      // ✅ 3. ใช้ onSnapshot เพื่อดึงข้อมูลแบบ Real-time
+      const docRef = doc(db, "users", emailKey);
+      
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          processAndSetSubscriptions(userData.mySubscriptions, userData.subscriptions || {});
+        } else {
+          console.log("ไม่พบข้อมูลผู้ใช้");
+          processAndSetSubscriptions([], {});
+        }
+      }, (error) => {
+        console.error("Error listening to document:", error);
+        setLoading(false);
+      });
+
+      // คืนค่า unsubscribe เพื่อหยุดฟังข้อมูลตอนปิดหน้านี้
+      return () => unsubscribe();
+    } else {
+      // Fallback ถ้าไม่มีข้อมูลอีเมล
+      processAndSetSubscriptions([], {});
+      setLoading(false);
+    }
+  }, []); 
 
   const gridCols = "grid-cols-[2.5fr_1.5fr_2.5fr_1.5fr_1.5fr_2fr]";
 
@@ -117,9 +128,12 @@ const ManageSubscription = () => {
     });
   };
 
-  /* ======================= 🟢 TEST BLOCK: อัปเดตที่ช่อง subscriptions (Timestamp) ======================= */
+  /* ======================= 🟢 TEST BLOCK ======================= */
   const handleTestStatus = async (item, mode) => {
-    if (!currentUser) {
+    const storedEmail = localStorage.getItem("rememberedEmail");
+    const userEmail = (auth.currentUser?.email || storedEmail)?.toLowerCase();
+
+    if (!userEmail) {
       alert("ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
       return;
     }
@@ -132,24 +146,14 @@ const ManageSubscription = () => {
     }
 
     try {
-      const userEmail = currentUser.email || currentUser.uid;
-      const q = query(collection(db, "users"), where("email", "==", userEmail));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        const userRef = doc(db, "users", userDoc.id);
-        
-        // 🟢 อัปเดตเฉพาะเจาะจงลงไปที่ Map: subscriptions.{ชื่อเครื่องมือ} เป็น Timestamp ตรงๆ
-        await updateDoc(userRef, {
-          [`subscriptions.${item.id}`]: Timestamp.fromDate(targetExpireDate)
-        });
-        
-        console.log(`✅ จำลองสถานะสำเร็จ! (${mode}) ให้กับ ${item.id}`);
-        window.location.reload(); 
-      } else {
-        alert("ไม่พบข้อมูลบัญชีของคุณในระบบ");
-      }
+      const userRef = doc(db, "users", userEmail);
+      
+      await updateDoc(userRef, {
+        [`subscriptions.${item.id}`]: Timestamp.fromDate(targetExpireDate)
+      });
+      
+      console.log(`✅ จำลองสถานะสำเร็จ! (${mode}) ให้กับ ${item.id}`);
+      // 🟢 ไม่ต้องใส่ window.location.reload() แล้ว เพราะ onSnapshot จะอัปเดต UI ให้อัตโนมัติ!
     } catch (error) {
       console.error("❌ Error updating test status:", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล: " + error.message);
