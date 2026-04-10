@@ -23,16 +23,41 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
     setTimeLeft(300);
     setResent(false);
     setOtp(Array(OTP_LENGTH).fill(""));
-    setStatus("idle");
+    
+    // 🟢 1. เมื่อเปิด Modal ขึ้นมา ให้ขึ้นสถานะ loading รอไว้เลย
+    setStatus("loading"); 
 
-    // 🟢 โฟกัสช่องกรอกอัตโนมัติเมื่อเปิด Modal
-    setTimeout(() => hiddenInputRef.current?.focus(), 100);
+    // 🟢 2. เรียกฟังก์ชันขอ OTP ทันที เพื่อให้ Backend สร้าง OTP เก็บไว้ใน Memory
+    const requestInitialOtp = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/request-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim().toLowerCase() })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.success) {
+           // ขอสำเร็จ ค่อยเปลี่ยนกลับเป็น idle ให้กรอกได้
+           setStatus("idle"); 
+           setTimeout(() => hiddenInputRef.current?.focus(), 100);
+        } else {
+           throw new Error(data.error || "ไม่สามารถขอ OTP ได้");
+        }
+      } catch (err) {
+        console.error("Initial OTP request error:", err);
+        setStatus("error");
+        alert("ไม่สามารถส่ง OTP ได้ กรุณาลองใหม่อีกครั้ง");
+      }
+    };
+
+    requestInitialOtp();
 
     const interval = setInterval(() => {
       setTimeLeft((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, email]); // 🟢 ใส่ email เป็น dependency เพื่อให้ชัวร์ว่ารันใหม่ถ้าอีเมลเปลี่ยน
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -106,18 +131,26 @@ export default function OtpModal({ open, onClose, onSuccess, email }) {
   /* 📩 Resend OTP Logic */
   const resendOtp = async () => {
     setOtp(Array(OTP_LENGTH).fill(""));
-    setStatus("idle");
+    setStatus("loading"); // 🟢 ตอนกดส่งใหม่ ก็ให้ขึ้น loading รอแป๊บนึง
     setTimeLeft(300);
     setResent(true);
-    hiddenInputRef.current?.focus();
+    
     try {
-      await fetch(`${API_URL}/api/request-otp`, {
+      const response = await fetch(`${API_URL}/api/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
+
+      if (response.ok) {
+        setStatus("idle"); // ส่งเสร็จกลับมา idle
+        setTimeout(() => hiddenInputRef.current?.focus(), 100);
+      } else {
+        throw new Error("Failed to resend");
+      }
     } catch (err) {
       console.error("Resend error:", err);
+      setStatus("error");
     }
   };
 

@@ -81,16 +81,8 @@ app.post('/api/request-otp', async (req, res) => {
     const { email } = req.body;
     const formattedEmail = email.trim().toLowerCase();
 
-    // 1. เช็คว่ามีผู้ใช้นี้ใน Firebase Auth หรือไม่
-    try {
-      await admin.auth().getUserByEmail(formattedEmail);
-    } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        // 🟢 ส่ง Error กลับไปให้ Frontend รู้ว่าหาอีเมลไม่เจอ
-        return res.status(404).json({ success: false, error: "Email not found" });
-      }
-      throw error;
-    }
+    // 🟢 1. เอาการเช็ค getUserByEmail ออกไปเลยครับ เพราะตอนสมัครใหม่ยังไม่มี User ใน Auth
+    // (เราจะสร้างบัญชี Auth ก็ต่อเมื่อยืนยัน OTP ผ่านแล้ว ในขั้นตอนที่ 3)
 
     // 2. สร้างรหัส OTP 6 หลัก (แบบสุ่ม)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -101,7 +93,7 @@ app.post('/api/request-otp', async (req, res) => {
       expiresAt: Date.now() + 5 * 60 * 1000 // 5 นาที
     });
 
-    // 4. 🚀 TODO: โค้ดสำหรับส่งอีเมลจริงๆ
+    // 4. 🚀 TODO: โค้ดสำหรับส่งอีเมลจริงๆ (ตอนนี้ให้มันปริ้นท์ออก Console ไปก่อน)
     console.log(`\n📧 [SIMULATE EMAIL] ส่ง OTP: ${otp} ไปยังอีเมล: ${formattedEmail}\n`);
 
     res.json({ success: true, message: "OTP sent successfully" });
@@ -138,9 +130,22 @@ app.post('/api/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, error: "รหัส OTP ไม่ถูกต้อง" });
     }
 
-    // 🌟 4. ถ้ารหัสถูกต้อง ให้หา UID ของผู้ใช้จาก Firebase Auth
-    const userRecord = await admin.auth().getUserByEmail(formattedEmail);
-    const uid = userRecord.uid;
+    // 🌟 4. ถ้ารหัสถูกต้อง ให้เช็คว่ามี User ใน Auth หรือยัง ถ้ายังไม่มีให้สร้างใหม่เลย!
+    let uid;
+    try {
+      const userRecord = await admin.auth().getUserByEmail(formattedEmail);
+      uid = userRecord.uid;
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // 🟢 ถ้าไม่มี User (แปลว่าเพิ่งสมัครสดๆ ร้อนๆ) ก็สร้างให้เลยตรงนี้!
+        const newUserRecord = await admin.auth().createUser({
+          email: formattedEmail,
+        });
+        uid = newUserRecord.uid;
+      } else {
+        throw error;
+      }
+    }
 
     // 🟢 เช็คว่า Backend อ่าน UID ได้ถูกต้องหรือไม่!
     console.log(`\n👀 [DEBUG] กำลังสร้าง Token ให้ Email: ${formattedEmail}`);

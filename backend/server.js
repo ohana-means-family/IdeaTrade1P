@@ -1,19 +1,16 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import admin from "firebase-admin"; // 👈 นำเข้า Firebase Admin
+import admin from "firebase-admin";
 
 dotenv.config();
 
 // 🌟 1. ตั้งค่า Firebase Admin (ใช้ข้อมูลจาก .env)
 if (!admin.apps.length) {
-  // ดึงคีย์มาเก็บในตัวแปรก่อน
   let formattedKey = process.env.FIREBASE_PRIVATE_KEY;
   
   if (formattedKey) {
-    // ทริคปราบเซียน: ลบเครื่องหมายคำพูด (") ที่หัวและท้ายออกให้หมด (เผื่อติดมาตอนก๊อปใส่ Render)
     formattedKey = formattedKey.replace(/^"|"$/g, '');
-    // แปลงอักขระ \n ให้กลายเป็นการขึ้นบรรทัดใหม่จริงๆ
     formattedKey = formattedKey.replace(/\\n/g, '\n');
   }
 
@@ -21,7 +18,7 @@ if (!admin.apps.length) {
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: formattedKey, // 👈 ใช้คีย์ที่ล้างทำความสะอาดแล้ว
+      privateKey: formattedKey,
     }),
   });
   console.log("🔥 Firebase Admin Initialized! (With Auto-Format Key)");
@@ -29,9 +26,11 @@ if (!admin.apps.length) {
 
 const app = express();
 
-// ตั้งค่า CORS ให้รองรับการเรียกจาก Vercel
 app.use(cors());
 app.use(express.json());
+
+// 🟢 สร้าง Map เพื่อเก็บ OTP ไว้ใน Memory ชั่วคราว
+const otpStorage = new Map();
 
 // 1. Route เช็คสถานะเซิร์ฟเวอร์
 app.get("/", (req, res) => {
@@ -43,18 +42,25 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "เชื่อมต่อหน้าบ้านกับหลังบ้านสำเร็จแล้ว! 🎉" });
 });
 
-// 3. API สำหรับขอ OTP (จุดที่หน้าบ้าน Welcome.jsx จะยิงมา)
+// 3. API สำหรับขอ OTP
 app.post("/api/request-otp", async (req, res) => { 
   const { email } = req.body;
-  console.log("📩 มีคนขอ OTP มาที่อีเมล:", email);
+  const formattedEmail = email.trim().toLowerCase();
+  console.log("📩 มีคนขอ OTP มาที่อีเมล:", formattedEmail);
 
   // สร้างรหัส OTP 6 หลักแบบสุ่ม
-  const otpCode = Math.floor(100000 + Math.random() * 900000);
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // 🟢 เก็บ OTP ไว้ใน Memory พร้อมเวลาหมดอายุ 5 นาที
+  otpStorage.set(formattedEmail, {
+    code: otpCode,
+    expiresAt: Date.now() + 5 * 60 * 1000
+  });
 
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWFvhTdfmWyIOlQT6feXrQCy-qVfMR7f_5y0-v74HqZGLkpMF4USXcBYXdADJKgxiH/exec"; 
 
   const emailPayload = {
-    to: email,
+    to: formattedEmail,
     subject: "รหัส OTP สำหรับเข้าสู่ระบบ IdeaTrade",
     htmlBody: `
       <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
@@ -78,7 +84,7 @@ app.post("/api/request-otp", async (req, res) => {
     const result = await response.json();
 
     if (result.success) {
-      console.log(`✅ ส่ง OTP [${otpCode}] ไปที่ ${email} สำเร็จผ่าน Google Script!`);
+      console.log(`✅ ส่ง OTP [${otpCode}] ไปที่ ${formattedEmail} สำเร็จผ่าน Google Script!`);
       res.json({ 
         success: true, 
         message: "ระบบได้ส่งรหัส OTP ไปยังอีเมลของคุณแล้ว" 
@@ -102,19 +108,43 @@ app.post("/api/request-otp", async (req, res) => {
   }
 });
 
-// 🌟 4. API สำหรับยืนยัน OTP (อัปเดตเป็นของจริงแล้ว)
-app.post("/api/verify-otp", async (req, res) => { // 👈 เติม async ตรงนี้
+// 🌟 4. API สำหรับยืนยัน OTP (อัปเดตเป็นเช็คของจริงแล้ว!)
+app.post("/api/verify-otp", async (req, res) => { 
   const { email, otp } = req.body;
-  console.log("🔑 กำลังเช็ค OTP:", otp, "ของอีเมล:", email);
+  const formattedEmail = email.trim().toLowerCase();
+  console.log("🔑 กำลังเช็ค OTP:", otp, "ของอีเมล:", formattedEmail);
   
-  // (ณ ตอนนี้ระบบจะยอมให้ผ่านเลยถ้ากดยืนยัน OTP อนาคตเราค่อยมาเพิ่มการเช็คเลข OTP ให้ตรงกัน)
+  // 🟢 1. ดึง OTP ที่เก็บไว้ออกมาเช็ค
+  const storedData = otpStorage.get(formattedEmail);
 
+  if (!storedData) {
+    console.log("❌ ไม่พบข้อมูล OTP หรือหมดเวลาแล้ว");
+    return res.status(400).json({ success: false, error: "ไม่พบรหัส OTP กรุณากดส่งใหม่อีกครั้ง" });
+  }
+
+  // 🟢 2. เช็คเวลาหมดอายุ
+  if (Date.now() > storedData.expiresAt) {
+    otpStorage.delete(formattedEmail);
+    console.log("❌ รหัส OTP หมดอายุ");
+    return res.status(400).json({ success: false, error: "รหัส OTP หมดอายุแล้ว กรุณากดส่งใหม่" });
+  }
+
+  // 🟢 3. เช็คว่าเลขตรงกันไหม! (จุดสำคัญที่สุด)
+  if (String(storedData.code) !== String(otp)) {
+    console.log("❌ ลูกค้ากรอก OTP ผิด");
+    return res.status(400).json({ success: false, error: "รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่" });
+  }
+
+  // 🟢 ถ้ามาถึงตรงนี้แปลว่า รหัสถูก! เวลาไม่หมด! 
   try {
-    // 🌟 เสก Custom Token ของจริง! (ใช้ email เป็นรหัสประจำตัวผู้ใช้)
-    const customToken = await admin.auth().createCustomToken(email);
+    // 🌟 เสก Custom Token ของจริง!
+    const customToken = await admin.auth().createCustomToken(formattedEmail);
     
-    console.log("✅ สร้าง Token ของจริงสำเร็จสำหรับ:", email);
+    console.log("✅ ยืนยัน OTP และสร้าง Token สำเร็จสำหรับ:", formattedEmail);
     
+    // ลบ OTP ออกจากหน่วยความจำเพื่อความปลอดภัย
+    otpStorage.delete(formattedEmail);
+
     // ส่ง Token กลับไปให้หน้าบ้าน
     res.json({ 
       success: true, 
