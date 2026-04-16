@@ -76,16 +76,18 @@ export default function BidAsk() {
         setTimeout(() => { isPaused.current = false; }, 500);
     };
 
-    // 🟢 ปรับ Auto Scroll ให้สมูทขึ้น ใช้ requestAnimationFrame แทน setInterval ถ้าระบบรองรับ
+    // 🟢 แก้ไข 2: ใช้ requestAnimationFrame + Delta time เพื่อการเลื่อนที่สมูทขั้นสุด (60fps/120fps)
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
         let animationFrameId;
-        const speed = 1;
+        let lastTime = performance.now();
+        const speed = 0.05; // ความเร็ว 0.05 px ต่อ ms (ปรับให้ลื่นไหลพอดี)
 
-        const scrollLoop = () => {
+        const scrollLoop = (time) => {
             if (!isPaused.current && container) {
+                const deltaTime = time - lastTime;
                 const { scrollLeft, scrollWidth, clientWidth } = container;
                 const maxScroll = scrollWidth - clientWidth;
                 
@@ -95,16 +97,13 @@ export default function BidAsk() {
                     scrollDirection.current = 1;
                 }
                 
-                container.scrollLeft += scrollDirection.current * speed;
-                checkScroll();
+                container.scrollLeft += scrollDirection.current * (deltaTime * speed);
             }
-            // เรียกซ้ำเพื่อความลื่นไหล
+            lastTime = time;
             animationFrameId = requestAnimationFrame(scrollLoop);
         };
 
-        // เริ่มลูป
         animationFrameId = requestAnimationFrame(scrollLoop);
-
         return () => cancelAnimationFrame(animationFrameId);
     }, [isMember, enteredTool]);
 
@@ -146,7 +145,8 @@ export default function BidAsk() {
                         <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-green-500/80" />
                     </div>
                 </div>
-                <div className="aspect-[3/4] md:aspect-[17/10] w-full bg-[#0B1221] relative overflow-hidden group">
+                {/* 🟢 แก้ไข 1: เปลี่ยนเป็น aspect-video (16:9) เพื่อให้กรอบเตี้ยลงและกระชับในหน้าจอมือถือ */}
+                <div className="aspect-video md:aspect-[17/10] w-full bg-[#0B1221] relative overflow-hidden group">
                     <div className="absolute inset-0 opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out">
                         <BidAskDashboard />
                     </div>
@@ -165,7 +165,6 @@ export default function BidAsk() {
                     <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 
-                {/* 🟢 ปรับขนาดกล่องบน Mobile ให้กระชับขึ้น (w-[260px]) เพื่อไม่ให้ยาวเกินไป */}
                 <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-4 md:gap-6 py-2 md:py-4 px-1 hide-scrollbar" style={scrollbarHideStyle}>
                     {features.map((item, index) => (
                         <div key={index} className="w-[260px] md:w-[350px] lg:w-[400px] flex-shrink-0 snap-center group/card bg-[#0f172a]/60 border border-slate-700/50 p-6 md:p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300">
@@ -246,12 +245,9 @@ export default function BidAsk() {
                 <div className="flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6 overflow-visible pt-2 md:pt-4">
                     <ReplayPanel
                         toolHint={
-                            // 🟢 ToolHint z-index ควรอยู่ต่ำกว่า Sidebar (ที่ปกติน่าจะ z-40 หรือ z-50)
-                            <div className="z-30">
-                                <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-                                    Replay market tick-by-tick data, analyze bid/ask pressure, and visualize order flow intelligence to decipher "big money" moves
-                                </ToolHint>
-                            </div>
+                            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                                Replay market tick-by-tick data, analyze bid/ask pressure, and visualize order flow intelligence to decipher "big money" moves
+                            </ToolHint>
                         }
                     />
                     <ReplayPanel />
@@ -326,8 +322,8 @@ function ReplayPanel({ toolHint }) {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
             `}</style>
             
-            {/* 🟢 ToolHint container ที่ปรับ z-index ให้อยู่ใต้ Sidebar (ใช้ z-30) */}
-            {toolHint && <div className="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 z-30">{toolHint}</div>}
+            {/* 🟢 แก้ไข 3: ปรับ z-index ให้อยู่ระดับ 10 เพื่อไม่ให้ทะลุ Sidebar (ซึ่งปกติอยู่ > 40) */}
+            {toolHint && <div className="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 z-10">{toolHint}</div>}
             
             <div className="p-2 sm:p-3 md:p-4 border-b border-slate-700 bg-[#0f172a] shrink-0 relative">
                 <div className="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-3">
