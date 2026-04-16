@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 
-// 🟢 1. เปลี่ยนมาใช้ useAuth เพื่อเช็คสิทธิ์จากศูนย์กลาง
-import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
+// 🟢 ดึงข้อมูลผู้ใช้จากศูนย์กลาง
+import { useAuth } from "@/context/AuthContext"; 
 
 import BidAskDashboard from "./components/BidAskDashboard.jsx";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -11,51 +11,45 @@ import PauseIcon from "@mui/icons-material/Pause";
 import CloseIcon from "@mui/icons-material/Close";
 import ToolHint from "@/components/ToolHint.jsx";
 
-const scrollbarHideStyle = {
-    msOverflowStyle: 'none',
-    scrollbarWidth: 'none'
-};
+const scrollbarHideStyle = { msOverflowStyle: "none", scrollbarWidth: "none" };
 
 export default function BidAsk() {
     const navigate = useNavigate();
+
     const [isMember, setIsMember] = useState(false);
     const [enteredTool, setEnteredTool] = useState(false);
 
     const scrollContainerRef = useRef(null);
     const [showLeft, setShowLeft] = useState(false);
     const [showRight, setShowRight] = useState(true);
-
     const scrollDirection = useRef(1);
     const isPaused = useRef(false);
 
-    // 🟢 2. ดึงข้อมูล User จาก AuthContext
     const { userData, currentUser, loading } = useAuth();
 
-    /* =============================== MEMBER CHECK ================================ */
-    // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
+    /* ================= MEMBER CHECK ================= */
     useEffect(() => {
-        if (loading) return;
+        if (loading) return; 
 
-        const toolId = "bidask";
+        const toolId = "bidask"; 
 
         if (userData && userData.subscriptions && userData.subscriptions[toolId]) {
             const expireTimestamp = userData.subscriptions[toolId];
             let expireDate;
-            try {
-                expireDate = typeof expireTimestamp.toDate === "function"
-                    ? expireTimestamp.toDate()
-                    : new Date(expireTimestamp);
-            } catch (e) {
-                expireDate = new Date(0);
+            try { 
+                expireDate = typeof expireTimestamp.toDate === "function" 
+                    ? expireTimestamp.toDate() 
+                    : new Date(expireTimestamp); 
+            } catch (e) { 
+                expireDate = new Date(0); 
             }
             setIsMember(expireDate.getTime() > new Date().getTime());
-        } else {
-            // Fallback
+        } else { 
             const saved = localStorage.getItem("userProfile");
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    setIsMember(parsed.role === "member" || parsed.role === "membership");
+                    setIsMember(parsed.role === "member" || parsed.role === "membership" || parsed.unlockedItems?.includes("bidask"));
                 } catch (error) {
                     setIsMember(false);
                 }
@@ -76,39 +70,34 @@ export default function BidAsk() {
     const scroll = (direction) => {
         if (!scrollContainerRef.current) return;
         isPaused.current = true;
-        const { current } = scrollContainerRef;
-        const scrollAmount = 350;
-        if (direction === "left") {
-            current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-            scrollDirection.current = -1;
-        } else {
-            current.scrollBy({ left: scrollAmount, behavior: "smooth" });
-            scrollDirection.current = 1;
-        }
+        scrollContainerRef.current.scrollBy({ left: direction === "left" ? -350 : 350, behavior: "smooth" });
+        scrollDirection.current = direction === "left" ? -1 : 1;
         setTimeout(checkScroll, 300);
-        setTimeout(() => { isPaused.current = false }, 500);
+        setTimeout(() => { isPaused.current = false; }, 500);
     };
 
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
-        const speed = 1;
-        const intervalTime = 15;
-        const autoScrollInterval = setInterval(() => {
+        const id = setInterval(() => {
             if (isPaused.current || !container) return;
             const { scrollLeft, scrollWidth, clientWidth } = container;
             const maxScroll = scrollWidth - clientWidth;
-            if (scrollDirection.current === 1 && Math.ceil(scrollLeft) >= maxScroll - 2) {
-                scrollDirection.current = -1;
-            } else if (scrollDirection.current === -1 && scrollLeft <= 2) {
-                scrollDirection.current = 1;
-            }
-            container.scrollLeft += (scrollDirection.current * speed);
+            if (scrollDirection.current === 1 && Math.ceil(scrollLeft) >= maxScroll - 2) scrollDirection.current = -1;
+            else if (scrollDirection.current === -1 && scrollLeft <= 2) scrollDirection.current = 1;
+            container.scrollLeft += scrollDirection.current;
             checkScroll();
-        }, intervalTime);
-        return () => clearInterval(autoScrollInterval);
+        }, 15);
+        return () => clearInterval(id);
     }, [isMember, enteredTool]);
 
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener("resize", checkScroll);
+        return () => window.removeEventListener("resize", checkScroll);
+    }, []);
+
+    /* ================= SHARED PREVIEW JSX ================= */
     const features = [
         { title: "Historical Market Replay", desc: "Replay market tick-by-tick to analyze order flow impact." },
         { title: "Supply & Demand Profiling", desc: "Analyze order density at every price level." },
@@ -116,68 +105,128 @@ export default function BidAsk() {
         { title: "Momentum Visualization", desc: "Visualize bid/ask pressure over time." }
     ];
 
-    // ฟังก์ชันช่วย Render หน้า Preview / Landing
-    const renderLandingPage = (showStartBtn = false) => (
-        <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-            <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-            <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
-                        <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">BidAsk</span>
-                    </h1>
-                    <p className="text-slate-400 text-lg">Deciphering "Big Money" through Order Flow Intelligence</p>
-                </div>
-                <div className="relative group w-full max-w-5xl mb-16">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
-                    <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="aspect-[16/9] w-full bg-[#0B1221]"><BidAskDashboard /></div>
+    const headerJSX = (
+        <div className="text-center mb-10">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
+                <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
+                    BidAsk
+                </span>
+            </h1>
+            <p className="text-slate-400 text-lg md:text-xl font-light">
+                Deciphering "Big Money" through Order Flow Intelligence
+            </p>
+        </div>
+    );
+
+    const dashboardPreviewJSX = (
+        <div className="relative group w-full max-w-5xl mb-16">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700" />
+            <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="bg-[#0f172a] px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
+                    <div className="flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-green-500/80" />
                     </div>
                 </div>
-                <div className="w-full max-w-5xl mb-12">
-                    <h2 className="text-2xl font-bold mb-8 border-l-4 border-cyan-500 pl-4">4 Main Features</h2>
-                    <div className="relative group" onMouseEnter={() => isPaused.current = true} onMouseLeave={() => isPaused.current = false}>
-                        <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white flex items-center justify-center transition-all ${showLeft ? 'opacity-100' : 'opacity-0'}`}>
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                        <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-4 py-4 hide-scrollbar" style={scrollbarHideStyle}>
-                            {features.map((item, index) => (
-                                <div key={index} className="w-[280px] md:w-[350px] flex-shrink-0 bg-[#0f172a]/60 border border-slate-700/50 p-6 rounded-xl hover:border-cyan-500/30 transition duration-300">
-                                    <h3 className="text-lg font-bold text-white mb-3">{item.title}</h3>
-                                    <p className="text-slate-400 text-sm">{item.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                        <button onClick={() => scroll("right")} className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white flex items-center justify-center transition-all ${showRight ? 'opacity-100' : 'opacity-0'}`}>
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                        </button>
+                <div className="aspect-[3/4] md:aspect-[17/10] w-full bg-[#0B1221] relative overflow-hidden group">
+                    <div className="absolute inset-0 opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out">
+                        <BidAskDashboard />
                     </div>
-                </div>
-                <div className="text-center w-full max-w-md mx-auto mt-4">
-                    {showStartBtn ? (
-                        <button onClick={() => { setEnteredTool(true); localStorage.setItem("BidAskToolEntered", "true"); }} className="px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-lg hover:scale-105 transition-all">Start Using Tool</button>
-                    ) : (
-                        <div className="flex gap-4 justify-center">
-                            {!currentUser && <button onClick={() => navigate("/login")} className="px-8 py-3 rounded-full bg-slate-800 border border-slate-600 hover:bg-slate-700 transition-colors">Sign In</button>}
-                            <button onClick={() => navigate("/member-register")} className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 font-bold hover:brightness-110 shadow-lg shadow-cyan-500/25 transition-all">Join Membership</button>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
     );
 
-    if (!isMember) return renderLandingPage(false);
-    if (isMember && !enteredTool) return renderLandingPage(true);
+    const featuresSectionJSX = (
+        <div className="w-full max-w-5xl mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
+                4 Main Features
+            </h2>
+            <div className="relative group" onMouseEnter={() => isPaused.current = true} onMouseLeave={() => isPaused.current = false}>
+                <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`} aria-label="Scroll Left">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar" style={scrollbarHideStyle}>
+                    {features.map((item, index) => (
+                        <div key={index} className="w-[350px] md:w-[400px] flex-shrink-0 snap-center group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300">
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">{item.title}</h3>
+                            <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={() => scroll("right")} className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20 w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`} aria-label="Scroll Right">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+        </div>
+    );
 
-    // ส่วน Dashboard จริง
+    /* ==========================================================
+       CASE 1 : PREVIEW VERSION (Not Member)
+    ========================================================== */
+    if (!isMember) {
+        return (
+            <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
+                <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
+                    {headerJSX}
+                    {dashboardPreviewJSX}
+                    {featuresSectionJSX}
+                    <div className="text-center w-full max-w-md mx-auto mt-4 flex flex-col md:flex-row items-center justify-center gap-4">
+                        {!currentUser && (
+                            <button onClick={() => navigate("/login")} className="w-full md:w-auto px-8 py-3 rounded-full bg-slate-800 text-white font-semibold border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all duration-300">
+                                Sign In
+                            </button>
+                        )}
+                        <button onClick={() => navigate("/member-register")} className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300">
+                            Join Membership
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    /* ==========================================================
+       CASE 2 : START SCREEN (MEMBER BUT NOT ENTERED)
+    ========================================================== */
+    if (!enteredTool) {
+        return (
+            <div className="relative w-full min-h-screen text-white overflow-hidden animate-fade-in pb-20">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
+                <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
+                    {headerJSX}
+                    {dashboardPreviewJSX}
+                    {featuresSectionJSX}
+                    <div className="text-center w-full max-w-md mx-auto mt-4">
+                        <button
+                            onClick={() => setEnteredTool(true)}
+                            className="group relative inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 transition-all duration-300"
+                        >
+                            <span className="mr-2">Start Using Tool</span>
+                            <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    /* ==========================================================
+       CASE 3 : FULL PRODUCTION DASHBOARD
+    ========================================================== */
     return (
         <div className="w-full min-h-screen lg:h-[calc(100dvh-64px)] lg:overflow-hidden bg-[#0b111a] text-white px-3 md:px-6 py-3 md:py-6 flex flex-col">
-            <div className="max-w-[1800px] mx-auto flex-1 lg:min-h-0 flex flex-col">
+            <div className="w-full max-w-none mx-auto flex-1 lg:min-h-0 flex flex-col">
                 <div className="flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 overflow-visible pt-4">
                     <ReplayPanel
                         toolHint={
-                            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+                            <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
                                 Replay market tick-by-tick data, analyze bid/ask pressure, and visualize order flow intelligence to decipher "big money" moves
                             </ToolHint>
                         }
@@ -211,7 +260,9 @@ function ReplayPanel({ toolHint }) {
     const [startTime, setStartTime] = useState("10:00");
     const [endTime, setEndTime] = useState("14:46");
     const [currentTime, setCurrentTime] = useState("10:00:00");
-    const [orderBook, setOrderBook] = useState(Array(10).fill({ bidVol: 0, bid: "-", ask: "-", askVol: 0 }));
+    
+    // 🟢 เปลี่ยนข้อมูลจำลองให้สร้าง 20 บรรทัดแทน 10 บรรทัด เพื่อให้ข้อมูลเต็มกรอบพอดี
+    const [orderBook, setOrderBook] = useState(Array(20).fill({ bidVol: 0, bid: "-", ask: "-", askVol: 0 }));
 
     const totalBid = orderBook.reduce((sum, row) => sum + (row.bidVol || 0), 0);
     const totalAsk = orderBook.reduce((sum, row) => sum + (row.askVol || 0), 0);
@@ -219,7 +270,6 @@ function ReplayPanel({ toolHint }) {
     const sum5Bid = orderBook.slice(0, 5).reduce((sum, row) => sum + (row.bidVol || 0), 0);
     const sum5Ask = orderBook.slice(0, 5).reduce((sum, row) => sum + (row.askVol || 0), 0);
     const sum5Total = sum5Bid + sum5Ask;
-    const bidRatio = sum5Total > 0 ? (sum5Bid / sum5Total) * 100 : 50;
 
     useEffect(() => {
         if (!isPlaying) return;
@@ -234,9 +284,10 @@ function ReplayPanel({ toolHint }) {
 
     useEffect(() => {
         if (!isSearched) return;
-        // จำลองการเปลี่ยน OrderBook ตาม Slider
         const basePrice = 72 - (sliderValue * 0.02);
-        const newBook = Array(10).fill(0).map((_, i) => ({
+        
+        // 🟢 สร้างข้อมูลการสุ่มจำลองแบบ 20 บรรทัด
+        const newBook = Array(20).fill(0).map((_, i) => ({
             bidVol: Math.floor(200000 + Math.random() * 400000),
             bid: (basePrice - i * 0.25).toFixed(2),
             ask: (basePrice - i * 0.25 + 0.25).toFixed(2),
@@ -256,7 +307,6 @@ function ReplayPanel({ toolHint }) {
             {toolHint && <div className="absolute -top-3 -left-3 z-50">{toolHint}</div>}
             <div className="p-3 md:p-4 border-b border-slate-700 bg-[#0f172a] shrink-0 relative">
                 <div className="flex flex-wrap gap-3 mb-3">
-                    {/* SYMBOL INPUT */}
                     <div className="relative flex-1 min-w-[200px] basis-full sm:basis-auto">
                         <div className={`flex items-center bg-[#111827] border rounded-md px-3 py-2 ${isFocused ? 'border-cyan-500' : 'border-slate-600'}`}>
                             <input
@@ -343,30 +393,23 @@ function ReplayPanel({ toolHint }) {
             </div>
 
             <div className="flex-1 min-h-0 flex flex-col bg-[#0b111a]">
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
                     {orderBook.map((row, i) => (
                         <OrderRow key={i} bidVol={row.bidVol.toLocaleString()} bid={row.bid} ask={row.ask} askVol={row.askVol.toLocaleString()} />
                     ))}
                 </div>
                 <div className="shrink-0 grid grid-cols-4 items-center border-t border-slate-700 bg-[#111827] text-[10px] xl:text-xs h-10 px-1 sm:px-0">
-                    {/* Col 1: Total Bid (aligns with Vol BID) */}
                     <div className="flex items-center justify-end pr-1 sm:pr-3 font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">
                         <span className="hidden xl:inline">Total:&nbsp;</span>{totalBid.toLocaleString()}
                     </div>
-
-                    {/* Col 2: SUM5 BID center (aligns with BID price) */}
                     <div className="flex items-center justify-center gap-1 xl:gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
                         <span className="text-blue-400 text-[8px] xl:text-[10px] font-semibold hidden lg:inline">SUM5 BID</span>
                         <span className="text-white font-bold">{sum5Bid.toLocaleString()}</span>
                     </div>
-
-                    {/* Col 3: SUM5 ASK center (aligns with ASK price) */}
                     <div className="flex items-center justify-center gap-1 xl:gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
                         <span className="text-red-400 text-[8px] xl:text-[10px] font-semibold hidden lg:inline">SUM5 ASK</span>
                         <span className="text-white font-bold">{sum5Ask.toLocaleString()}</span>
                     </div>
-
-                    {/* Col 4: Total Ask (aligns with Vol ASK) */}
                     <div className="flex items-center justify-start pl-1 sm:pl-3 font-bold text-red-400 whitespace-nowrap overflow-hidden text-ellipsis">
                         <span className="hidden xl:inline">Total:&nbsp;</span>{totalAsk.toLocaleString()}
                     </div>
@@ -393,7 +436,8 @@ function OrderRow({ bidVol, bid, ask, askVol }) {
     const bidWidth = (parseInt(bidVol.replace(/,/g, "")) / 600000) * 100;
     const askWidth = (parseInt(askVol.replace(/,/g, "")) / 600000) * 100;
     return (
-        <div className="grid grid-cols-4 items-center text-[10px] sm:text-xs h-8 border-b border-slate-800 relative">
+        // 🟢 ลด min-h-[32px] ให้เหลือ min-h-[24px] เพื่อให้ทั้ง 20 แถวบีบอัดพอดีกับกรอบ
+        <div className="grid grid-cols-4 items-center text-[10px] sm:text-xs flex-1 min-h-[24px] border-b border-slate-800 relative">
             <div className="relative text-right pr-3 text-slate-300 overflow-hidden h-full flex items-center justify-end">
                 <div className="absolute right-0 top-0 h-full bg-blue-900/40" style={{ width: `${bidWidth}%` }} />
                 <span className="relative z-10">{bidVol === "0" ? "-" : bidVol}</span>
@@ -421,7 +465,6 @@ function StatSection({ title }) {
 
 // ---------------- CUSTOM DATE PICKER ----------------
 
-/* ================= DATE HELPERS ================= */
 function getTradingDates(numDays = 2087) {
     const dates = [];
     const base = new Date("2019-01-02");
@@ -454,7 +497,6 @@ function formatDisplay(key) {
 }
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/* ================= DATE PICKER ================= */
 const DatePicker = memo(({ dates, selected, onChange, label, disabled }) => {
     const [open, setOpen] = useState(false);
     const [view, setView] = useState("day");
@@ -559,7 +601,7 @@ const DatePicker = memo(({ dates, selected, onChange, label, disabled }) => {
     );
 
     return (
-        <div ref={ref} style={{ flexShrink: 0, position: "relative", opacity: disabled ? 0.5 : 1 }}>
+        <div ref={ref} style={{ flexShrink: 0, position: "relative", opacity: disabled ? 0.8 : 1 }}>
             {label && <label className="absolute left-2 -top-2 text-[10px] px-1 bg-[#0f172a] text-slate-300 z-10 pointer-events-none">{label}</label>}
             <button onClick={() => {
                 if (disabled) return;
@@ -567,21 +609,26 @@ const DatePicker = memo(({ dates, selected, onChange, label, disabled }) => {
                 setOpen(o => !o); setView("day");
             }} style={{
                 display: "flex", alignItems: "center", gap: 7, padding: "0 12px", height: 38,
-                background: open ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
-                border: `0.5px solid ${open ? "rgba(59,130,246,0.5)" : "rgba(59,130,246,0.25)"}`,
-                borderRadius: 8, cursor: disabled ? "default" : "pointer", color: "#93c5fd", fontSize: 12, fontWeight: 500,
-                fontFamily: "monospace", transition: "all .15s", width: "100%", justifyContent: "space-between"
+                // 🟢 ลบพื้นหลังสีฟ้าออก ใช้สีทึบเดียวกันหมด
+                background: "#111827",
+                border: disabled ? "1px solid #334155" : (open ? "1px solid #06b6d4" : "1px solid #475569"),
+                borderRadius: 6, cursor: disabled ? "default" : "pointer", 
+                // 🟢 ใช้สีอักษรขาวเทาเหมือนกล่องอื่น
+                color: disabled ? "#94a3b8" : "#f8fafc", 
+                fontSize: 12, fontWeight: 500, fontFamily: "monospace", transition: "all .15s", width: "100%", justifyContent: "space-between"
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {/* 🟢 เปลี่ยนสีไอคอน SVG ให้เป็นเทาๆ (slate-400) ไม่ให้เด่นสีฟ้า */}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={disabled ? "#64748b" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" />
                         <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
                     {formatDisplay(selected)}
                 </div>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ opacity: .6, transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+                {/* 🟢 เปลี่ยนสีลูกศรให้เข้าตีมเทา */}
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={disabled ? "#64748b" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ opacity: .8, transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
                     <polyline points="6 9 12 15 18 9" />
                 </svg>
             </button>
