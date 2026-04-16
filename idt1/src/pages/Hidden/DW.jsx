@@ -3,13 +3,13 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import ToolHint from "@/components/ToolHint.jsx";
 
 const C = {
-  bg:         "#0d1117",
-  surface:    "#0d1117",
-  panel:      "#131a24",
-  header:     "#0f1720",
-  border:     "rgba(255,255,255,0.07)",
-  mutedText:  "#4a5568",
-  dimText:    "#2d3748",
+  bg:         "#0f172a",
+  surface:    "#0f172a",
+  panel:      "#1e293b",
+  header:     "#1e293b",
+  border:     "rgba(100,116,139,0.4)",
+  mutedText:  "#64748b",
+  dimText:    "#334155",
   white:      "#e2e8f0",
   green:      "#22c55e",
   greenDim:   "rgba(34,197,94,0.15)",
@@ -187,10 +187,8 @@ const IcoCal   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const IcoEnter  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>;
 const IcoSearch = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const IcoChev   = ({dir="left"}) => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{dir==="left"?<polyline points="15 18 9 12 15 6"/>:<polyline points="9 18 15 12 9 6"/>}</svg>;
-const IcoRefresh = ({spinning}) => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={spinning?{animation:"dw-spin 0.7s linear infinite"}:{}}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>;
 const IcoSpinner = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{animation:"dw-spin 0.7s linear infinite"}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const IcoInfo   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
-const IcoQuestion = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 const IcoDown   = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
 
 // ── Calendar Popup ──
@@ -211,7 +209,7 @@ function CalendarPopup({ value, onChange, onClose, alignRight=false }) {
     <div style={{
       position:"absolute",top:"calc(100% + 6px)",
       left:alignRight?"auto":0, right:alignRight?0:"auto",
-      zIndex:200,background:"#131a24",border:`1px solid rgba(255,255,255,0.1)`,
+      zIndex:200,background:"#1e293b",border:`1px solid rgba(100,116,139,0.4)`,
       borderRadius:12,boxShadow:"0 20px 50px rgba(0,0,0,0.8)",
       padding:16,width:280,userSelect:"none",
     }}>
@@ -237,15 +235,15 @@ function CalendarPopup({ value, onChange, onClose, alignRight=false }) {
           >{day||""}</div>
         ))}
       </div>
-      <div style={{borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:12}}>
+      <div style={{borderTop:`1px solid rgba(100,116,139,0.3)`,paddingTop:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a5568" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           {[["Hr",h,23,setH],["Min",mi,59,setMi]].map(([lbl,val,max,setter],ii)=>(
             <React.Fragment key={lbl}>
-              {ii===1&&<div style={{fontSize:18,fontWeight:700,color:"#4a5568",lineHeight:1}}>:</div>}
+              {ii===1&&<div style={{fontSize:18,fontWeight:700,color:"#64748b",lineHeight:1}}>:</div>}
               <input type="number" min={0} max={max} value={String(val).padStart(2,"0")}
                 onChange={e=>{const n=Math.max(0,Math.min(max,Number(e.target.value)));setter(n);if(sel)emit(sel.getFullYear(),sel.getMonth(),sel.getDate(),ii===0?n:h,ii===1?n:mi);}}
-                style={{width:44,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:6,color:C.white,fontFamily:FONT,fontSize:13,fontWeight:700,textAlign:"center",padding:"5px 2px",outline:"none"}}/>
+                style={{width:44,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(100,116,139,0.3)`,borderRadius:6,color:C.white,fontFamily:FONT,fontSize:13,fontWeight:700,textAlign:"center",padding:"5px 2px",outline:"none"}}/>
             </React.Fragment>
           ))}
         </div>
@@ -274,19 +272,19 @@ function DateTimeInput({ label, onChange, defaultNow=false, error=false, alignRi
         position:"absolute",top:-8,left:10,zIndex:2,pointerEvents:"none",
         fontSize:9,fontWeight:600,letterSpacing:"0.06em",
         color:error?"#f87171":open?"#60a5fa":C.mutedText,
-        background:"#131a24",padding:"0 4px",fontFamily:FONT,textTransform:"uppercase",
+        background:"#1e293b",padding:"0 4px",fontFamily:FONT,textTransform:"uppercase",
       }}>{label}</span>
       <div onClick={()=>setOpen(o=>!o)} style={{
         display:"flex",alignItems:"center",justifyContent:"space-between",
         padding:"0 12px",height:40,gap:8,cursor:"pointer",
         background:"rgba(255,255,255,0.03)",
-        border:`1px solid ${error?"#f87171":open?"rgba(96,165,250,0.5)":"rgba(255,255,255,0.08)"}`,
+        border:`1px solid ${error?"#f87171":open?"rgba(96,165,250,0.5)":"rgba(100,116,139,0.3)"}`,
         borderRadius:8,transition:"border-color .15s",overflow:"hidden",
       }}>
-        <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color:iso?C.white:error?"#f87171":"#4a5568",letterSpacing:"0.02em",userSelect:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>
+        <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color:iso?C.white:error?"#f87171":C.mutedText,letterSpacing:"0.02em",userSelect:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>
           {disp(iso)||(error?"Start date is required":"Select date...")}
         </span>
-        <span style={{color:open?"#60a5fa":"#4a5568",flexShrink:0,display:"flex"}}><IcoCal/></span>
+        <span style={{color:open?"#60a5fa":C.mutedText,flexShrink:0,display:"flex"}}><IcoCal/></span>
       </div>
       {open&&<CalendarPopup value={iso} onChange={v=>{setIso(v);onChange?.(v);}} onClose={()=>setOpen(false)} alignRight={alignRight}/>}
     </div>
@@ -304,10 +302,10 @@ function SymbolInput({ value, onChange, onEnter }) {
       <div onClick={()=>setOpen(true)} style={{
         display:"flex",alignItems:"center",height:40,padding:"0 12px",gap:8,
         background:"rgba(255,255,255,0.03)",
-        border:`1px solid ${open||foc?"rgba(96,165,250,0.5)":"rgba(255,255,255,0.08)"}`,
+        border:`1px solid ${open||foc?"rgba(96,165,250,0.5)":"rgba(100,116,139,0.3)"}`,
         borderRadius:open?"8px 8px 0 0":8,cursor:"text",transition:"border-color .15s",
       }}>
-        <span style={{color:foc||open?"#60a5fa":"#4a5568",flexShrink:0,display:"flex"}}><IcoSearch/></span>
+        <span style={{color:foc||open?"#60a5fa":C.mutedText,flexShrink:0,display:"flex"}}><IcoSearch/></span>
         <input type="text" value={q}
         onChange={e=>{setQ(e.target.value.toUpperCase());setOpen(true);onChange?.(e.target.value.toUpperCase());}}
         onFocus={()=>{setFoc(true);setOpen(true);}} onBlur={()=>setFoc(false)}
@@ -339,10 +337,10 @@ function SymbolInput({ value, onChange, onEnter }) {
       ) : <IcoDown/>}
       </div>
       {open&&(
-        <div style={{position:"absolute",top:40,left:0,right:0,zIndex:100,background:"#131a24",border:`1px solid rgba(96,165,250,0.3)`,borderTop:"none",borderRadius:"0 0 8px 8px",maxHeight:200,overflowY:"auto",boxShadow:"0 12px 30px rgba(0,0,0,0.7)"}}>
+        <div style={{position:"absolute",top:40,left:0,right:0,zIndex:100,background:"#1e293b",border:`1px solid rgba(96,165,250,0.3)`,borderTop:"none",borderRadius:"0 0 8px 8px",maxHeight:200,overflowY:"auto",boxShadow:"0 12px 30px rgba(0,0,0,0.7)"}}>
           {filtered.length>0 ? filtered.map(sym=>(
             <div key={sym} onMouseDown={e=>{e.preventDefault();setQ(sym);onChange?.(sym);setOpen(false);}}
-              style={{padding:"8px 14px",cursor:"pointer",borderBottom:`1px solid rgba(255,255,255,0.04)`,background:sym===value?"rgba(37,99,235,0.1)":"transparent",display:"flex",alignItems:"center"}}
+              style={{padding:"8px 14px",cursor:"pointer",borderBottom:`1px solid rgba(100,116,139,0.15)`,background:sym===value?"rgba(37,99,235,0.1)":"transparent",display:"flex",alignItems:"center"}}
               onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}
               onMouseLeave={e=>e.currentTarget.style.background=sym===value?"rgba(37,99,235,0.1)":"transparent"}>
               <span style={{fontFamily:FONT,fontSize:12,fontWeight:600,color:sym===value?"#60a5fa":C.white,letterSpacing:"0.04em"}}>{sym}</span>
@@ -371,7 +369,7 @@ function DWPill({ dw, active, type, onClick }) {
     setItmHov(true);
   };
   return (
-    <div onClick={onClick} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${active?colA+"0.5)":"rgba(255,255,255,0.06)"}`,background:active?colA+"0.1)":"rgba(255,255,255,0.02)",color:active?col:"#64748b",fontFamily:FONT,fontSize:9,fontWeight:active?700:500,letterSpacing:"0.04em",cursor:"pointer",transition:"all .1s",userSelect:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+    <div onClick={onClick} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${active?colA+"0.5)":"rgba(100,116,139,0.2)"}`,background:active?colA+"0.1)":"rgba(255,255,255,0.02)",color:active?col:C.mutedText,fontFamily:FONT,fontSize:9,fontWeight:active?700:500,letterSpacing:"0.04em",cursor:"pointer",transition:"all .1s",userSelect:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
       {dw.dw}
       {dw.netCash>0&&(
         <span ref={badgeRef} style={{background:colA+"0.2)",color:col,fontSize:7,fontWeight:800,padding:"1px 3px",borderRadius:3,cursor:"default"}}
@@ -387,7 +385,7 @@ function DWPill({ dw, active, type, onClick }) {
   );
 }
 
-// ── DWSymbolPanel — now receives panelType ("call"|"put"|"both") ──
+// ── DWSymbolPanel ──
 function DWSymbolPanel({ underlying, selectedCall, selectedPut, onSelectCall, onSelectPut, panelType }) {
   const callDWs = useMemo(() => getDWByUnderlying(underlying, "C"), [underlying]);
   const putDWs  = useMemo(() => getDWByUnderlying(underlying, "P"), [underlying]);
@@ -404,8 +402,8 @@ function DWSymbolPanel({ underlying, selectedCall, selectedPut, onSelectCall, on
 
   return (
     <div style={{
-      background:"#0f1720",
-      borderTop:`1px solid rgba(255,255,255,0.07)`,
+      background:"#1e293b",
+      borderTop:`1px solid rgba(100,116,139,0.3)`,
       padding:"10px 14px",
       display:"grid",
       gridTemplateColumns: showCall && showPut ? "1fr 1fr" : "1fr",
@@ -428,7 +426,7 @@ function DWSymbolPanel({ underlying, selectedCall, selectedPut, onSelectCall, on
         </div>
       )}
       {showPut && (
-        <div style={{display:"flex",flexDirection:"column",minHeight:0,borderLeft:showCall&&showPut?`1px solid rgba(255,255,255,0.07)`:"none",paddingLeft:showCall&&showPut?10:0}}>
+        <div style={{display:"flex",flexDirection:"column",minHeight:0,borderLeft:showCall&&showPut?`1px solid rgba(100,116,139,0.2)`:"none",paddingLeft:showCall&&showPut?10:0}}>
           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
             <span style={{width:5,height:5,borderRadius:"50%",background:"#f472b6"}}/>
             <span style={{fontSize:8,fontWeight:700,fontFamily:FONT,color:"#f472b6",letterSpacing:"0.1em"}}>PUT</span>
@@ -494,14 +492,14 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
   const gradId = `grad-${panelKey}`;
 
   return (
-    <div style={{display:"flex",flexDirection:"column",background:"#0f1720",borderRadius:12,overflow:"hidden",minHeight:0,border:`1px solid rgba(255,255,255,0.06)`}}>
+    <div style={{display:"flex",flexDirection:"column",background:"#1e293b",borderRadius:12,overflow:"hidden",minHeight:0,border:`1px solid rgba(100,116,139,0.3)`}}>
       {/* Panel header */}
-      <div style={{padding:"10px 14px 8px",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+      <div style={{padding:"10px 14px 8px",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between",background:"#1e293b",borderBottom:`1px solid rgba(100,116,139,0.2)`}}>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <span style={{color:C.white,fontSize:13,fontWeight:700,fontFamily:FONT,letterSpacing:"0.02em"}}>
             {cfg.label || (symbol||"Symbol")}
           </span>
-          <span style={{color:"#3d4f6b",display:"flex",cursor:"pointer"}} title={cfg.subtitle}><IcoInfo/></span>
+          <span style={{color:C.mutedText,display:"flex",cursor:"pointer"}} title={cfg.subtitle}><IcoInfo/></span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           {hasData&&lastVal!=null&&(
@@ -515,19 +513,19 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
               </span>
             </>
           )}
-          <button onClick={onRefresh} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:6,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.07)`,cursor:"pointer",color:"#4a5568",transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.color=C.white;e.currentTarget.style.borderColor="rgba(255,255,255,0.15)";}}
-            onMouseLeave={e=>{e.currentTarget.style.color="#4a5568";e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";}}>
+          <button onClick={onRefresh} style={{display:"flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:6,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(100,116,139,0.3)`,cursor:"pointer",color:C.mutedText,transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.color=C.white;e.currentTarget.style.borderColor="rgba(100,116,139,0.6)";}}
+            onMouseLeave={e=>{e.currentTarget.style.color=C.mutedText;e.currentTarget.style.borderColor="rgba(100,116,139,0.3)";}}>
             <RefreshIcon fontSize="small" className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
       {/* Chart body */}
-      <div ref={bodyRef} style={{flex:1,minHeight:0,display:"flex",position:"relative",background:"#0a1019"}}>
+      <div ref={bodyRef} style={{flex:1,minHeight:0,display:"flex",position:"relative",background:"#0f172a"}}>
         {loading&&(
-          <div style={{position:"absolute",inset:0,zIndex:30,background:"#0a1019",display:"flex",flexDirection:"column",padding:"12px 10px",gap:8}}>
-            <style>{`@keyframes dw-sks{0%{background-position:-600px 0}100%{background-position:600px 0}}.dw-sk{border-radius:6px;background:linear-gradient(90deg,#111827 25%,#1a2436 50%,#111827 75%);background-size:600px 100%;animation:dw-sks 1.4s infinite linear}`}</style>
+          <div style={{position:"absolute",inset:0,zIndex:30,background:"#0f172a",display:"flex",flexDirection:"column",padding:"12px 10px",gap:8}}>
+            <style>{`@keyframes dw-sks{0%{background-position:-600px 0}100%{background-position:600px 0}}.dw-sk{border-radius:6px;background:linear-gradient(90deg,#0f172a 25%,#1e293b 50%,#0f172a 75%);background-size:600px 100%;animation:dw-sks 1.4s infinite linear}`}</style>
             <div className="dw-sk" style={{height:3,width:"100%"}}/>
             {[0.6,0.4,0.75,0.5].map((w,i)=><div key={i} className="dw-sk" style={{height:2,width:`${w*100}%`,opacity:0.6,animationDelay:`${i*0.1}s`}}/>)}
           </div>
@@ -541,29 +539,29 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
             <svg width={pts?svgW*zoom:"100%"} height="100%" viewBox={`0 0 ${pts?svgW:600} ${chartH}`} preserveAspectRatio="none" style={{display:"block",overflow:"visible"}}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25"/>
+                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.20"/>
                   <stop offset="100%" stopColor="#22c55e" stopOpacity="0.01"/>
                 </linearGradient>
               </defs>
               {ticks.map(t=><line key={t.label} x1={0} y1={t.y} x2={pts?svgW:600} y2={t.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>)}
-              <line x1={0} y1={chartH-PAD_B} x2={pts?svgW:600} y2={chartH-PAD_B} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
-              {cfg.zeroline&&pts&&<line x1={0} y1={yNorm(0,scale.min,scale.max,chartH)} x2={svgW} y2={yNorm(0,scale.min,scale.max,chartH)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 5"/>}
+              <line x1={0} y1={chartH-PAD_B} x2={pts?svgW:600} y2={chartH-PAD_B} stroke="rgba(100,116,139,0.2)" strokeWidth="1"/>
+              {cfg.zeroline&&pts&&<line x1={0} y1={yNorm(0,scale.min,scale.max,chartH)} x2={svgW} y2={yNorm(0,scale.min,scale.max,chartH)} stroke="rgba(100,116,139,0.25)" strokeWidth="1" strokeDasharray="3 5"/>}
               {hasData&&pts&&pts.length>1&&<path d={areaPath(pts,scale.min,scale.max,chartH)} fill={`url(#${gradId})`}/>}
               {hasData&&pts&&pts.length>1&&<path d={curvePath(pts,scale.min,scale.max,chartH)} fill="none" stroke="#22c55e" strokeWidth="1.5"/>}
-              {pts&&labels&&labels.length>0&&(()=>{const step=Math.max(1,Math.floor(52/PT_GAP));return pts.map((_,i)=>{if(i%step!==0)return null;const l=labels[i];if(!l)return null;return <text key={i} x={PAD_L+i*PT_GAP} y={chartH-PAD_B+9} fill="#2d3d55" fontSize="7" textAnchor="middle" fontFamily={FONT}>{l.time}</text>;});})()}
+              {pts&&labels&&labels.length>0&&(()=>{const step=Math.max(1,Math.floor(52/PT_GAP));return pts.map((_,i)=>{if(i%step!==0)return null;const l=labels[i];if(!l)return null;return <text key={i} x={PAD_L+i*PT_GAP} y={chartH-PAD_B+9} fill={C.dimText} fontSize="7" textAnchor="middle" fontFamily={FONT}>{l.time}</text>;});})()}
               {isH&&(<g>
                 <line x1={hX} y1={PAD_T} x2={hX} y2={chartH-PAD_B} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3 3"/>
-                <circle cx={hX} cy={hY} r="3.5" fill="#22c55e" stroke="#0a1019" strokeWidth="1.5"/>
+                <circle cx={hX} cy={hY} r="3.5" fill="#22c55e" stroke="#0f172a" strokeWidth="1.5"/>
                 {labels&&labels[globalHover]&&<text x={hX} y={chartH-PAD_B+9} fill="#e2e8f0" fontSize="7" fontWeight="600" textAnchor="middle" fontFamily={FONT}>{labels[globalHover].time}</text>}
               </g>)}
-              {!hasData&&<text x="50%" y="50%" fill="#1a2a40" fontSize="11" textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="700" letterSpacing="0.12em">READY</text>}
+              {!hasData&&<text x="50%" y="50%" fill={C.dimText} fontSize="11" textAnchor="middle" dominantBaseline="central" fontFamily={FONT} fontWeight="700" letterSpacing="0.12em">READY</text>}
             </svg>
           </div>
         </div>
         {/* Y-axis */}
-        <div style={{width:Y_AXIS_W,flexShrink:0,background:"#0a1019",borderLeft:`1px solid rgba(255,255,255,0.04)`,position:"relative",height:"100%"}}>
+        <div style={{width:Y_AXIS_W,flexShrink:0,background:"#0f172a",borderLeft:`1px solid rgba(100,116,139,0.15)`,position:"relative",height:"100%"}}>
           <svg width={Y_AXIS_W} height="100%" style={{display:"block",overflow:"visible",position:"absolute",inset:0}}>
-            {ticks.map(t=>{if(lastVal!=null&&Math.abs(t.y-lastTagY)<12)return null;return <text key={t.label} x={Y_AXIS_W-4} y={t.y} fill="#2d3d55" fontSize="8" textAnchor="end" dominantBaseline="central" fontFamily={FONT}>{t.label}</text>;})}
+            {ticks.map(t=>{if(lastVal!=null&&Math.abs(t.y-lastTagY)<12)return null;return <text key={t.label} x={Y_AXIS_W-4} y={t.y} fill={C.dimText} fontSize="8" textAnchor="end" dominantBaseline="central" fontFamily={FONT}>{t.label}</text>;})}
             {hasData&&lastVal!=null&&(()=>{const ns=fmtVal(lastVal,panelKey),tw=ns.length*5.5+8,th=15,tx=Y_AXIS_W-tw-2;return(<g style={{transition:"transform 0.1s ease-out",transform:`translateY(${lastTagY}px)`}}><rect x={tx} y={-th/2} width={tw} height={th} fill="#22c55e" rx="2"/><text x={tx+tw/2} y={0} fill="#071010" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="central" fontFamily={FONT}>{ns}</text></g>);})()}
           </svg>
         </div>
@@ -574,7 +572,7 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
         <div
           onClick={onToggleDW}
           style={{
-            borderTop:`1px solid rgba(255,255,255,0.05)`,
+            borderTop:`1px solid rgba(100,116,139,0.2)`,
             padding:"11px 14px",
             textAlign:"center",
             cursor:"pointer",
@@ -588,12 +586,12 @@ function ChartPanel({ panelKey, hasData, symbol, pts, labels, globalHover, setGl
           onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}
           onMouseLeave={e=>e.currentTarget.style.background=showDWPanel?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.01)"}
         >
-          <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color: showDWPanel ? "#94a3b8" : "#4a5568",letterSpacing:"0.01em",transition:"color .15s"}}>
+          <span style={{fontFamily:FONT,fontSize:11,fontWeight:500,color: showDWPanel ? "#94a3b8" : C.mutedText,letterSpacing:"0.01em",transition:"color .15s"}}>
             {showDWPanel ? "Hide Derivative Warrants" : "Show Other Derivative Warrants"}
           </span>
           <svg
             width="10" height="10" viewBox="0 0 24 24" fill="none"
-            stroke={showDWPanel ? "#94a3b8" : "#4a5568"} strokeWidth="2.5"
+            stroke={showDWPanel ? "#94a3b8" : C.mutedText} strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round"
             style={{transition:"transform .2s", transform: showDWPanel ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0}}
           >
@@ -618,7 +616,6 @@ export default function DWViewCharts() {
   const [gHover,setGHover]=useState(null);
   const [selCall,setSelCall]=useState(null); const [selPut,setSelPut]=useState(null);
 
-  // ── Per-panel DW toggle: { call: bool, put: bool } ──
   const [showDWPanel,setShowDWPanel]=useState({ call: false, put: false });
 
   const scrollRefs=useRef({}); const hasData=submitted&&!!symbol.trim();
@@ -638,12 +635,10 @@ export default function DWViewCharts() {
     setTimeout(()=>{const pts=genAllPts(symbol);const n=pts[Object.keys(pts)[0]].length;setLabels(generateLabels(startDate,tf,n));setAllPts(pts);setLdReset(false);},400);
   };
 
-  // Toggle a specific panel key ("call" or "put")
   const handleToggleDW = useCallback((panelKey) => {
     setShowDWPanel(v => ({ ...v, [panelKey]: !v[panelKey] }));
   }, []);
 
-  // Determine what panelType to pass to DWSymbolPanel
   const dwPanelType = useMemo(() => {
     if (showDWPanel.call && showDWPanel.put) return "both";
     if (showDWPanel.call) return "call";
@@ -667,18 +662,18 @@ export default function DWViewCharts() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:1}
-        input::placeholder{color:#3d4f6b!important;font-family:${FONT};font-size:12px;font-weight:500}
+        input::placeholder{color:#64748b!important;font-family:${FONT};font-size:12px;font-weight:500}
         @keyframes dw-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         .dw-scroll::-webkit-scrollbar{width:2px}
         .dw-scroll::-webkit-scrollbar-track{background:transparent}
-        .dw-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px}
+        .dw-scroll::-webkit-scrollbar-thumb{background:rgba(100,116,139,0.3);border-radius:4px}
         ::-webkit-scrollbar{display:none}
       `}</style>
 
       <div style={{width:"100%",height:"100dvh",background:C.bg,color:"#fff",display:"flex",flexDirection:"column",fontFamily:FONT,overflow:"hidden"}}>
 
         {/* ── Toolbar ── */}
-        <div style={{background:"#0f1720",borderBottom:`1px solid rgba(255,255,255,0.06)`,padding:"10px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:10,flexWrap:"nowrap",minWidth:0}}>
+        <div style={{background:"#1e293b",borderBottom:`1px solid rgba(100,116,139,0.3)`,padding:"10px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:10,flexWrap:"nowrap",minWidth:0}}>
 
           <ToolHint onViewDetails={() => window.scrollTo({ top: 0 })}>
               DW CHARTS
@@ -686,9 +681,9 @@ export default function DWViewCharts() {
 
           {/* Reset/Refresh */}
           <button onMouseDown={e=>{e.preventDefault();doReset();}} disabled={!hasData||loading}
-            style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.07)`,cursor:hasData?"pointer":"not-allowed",color:hasData?"#4a5568":C.dimText,flexShrink:0,transition:"all .15s"}}
+            style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(100,116,139,0.3)`,cursor:hasData?"pointer":"not-allowed",color:hasData?C.mutedText:C.dimText,flexShrink:0,transition:"all .15s"}}
             onMouseEnter={e=>{if(hasData){e.currentTarget.style.color=C.white;}}}
-            onMouseLeave={e=>{e.currentTarget.style.color=hasData?"#4a5568":C.dimText;}}>
+            onMouseLeave={e=>{e.currentTarget.style.color=hasData?C.mutedText:C.dimText;}}>
             <RefreshIcon fontSize="small" className={loading ? "animate-spin" : ""} />
           </button>
 
@@ -713,11 +708,12 @@ export default function DWViewCharts() {
               return (
                 <button key={key} onClick={()=>setTf(key)}
                   style={{padding:"6px 14px",borderRadius:8,cursor:"pointer",
-                    border:`1px solid ${act?"rgba(255,255,255,0.18)":"rgba(255,255,255,0.06)"}`,
-                    background:act?"rgba(255,255,255,0.08)":"transparent",
-                    color:act?C.white:"#4a5568",
+                    border:`1px solid ${act?"#3b82f6":"rgba(100,116,139,0.3)"}`,
+                    background:act?"rgba(37,99,235,0.15)":"transparent",
+                    color:act?"#60a5fa":C.mutedText,
                     fontSize:12,fontWeight:act?600:500,transition:"all .15s",fontFamily:FONT,
-                    whiteSpace:"nowrap",letterSpacing:"0.01em"}}>
+                    whiteSpace:"nowrap",letterSpacing:"0.01em",
+                    boxShadow:act?"0 0 0 1px rgba(59,130,246,0.3)":"none"}}>
                   {label}
                 </button>
               );
@@ -728,8 +724,8 @@ export default function DWViewCharts() {
             <button onClick={doEnter} disabled={!symbol.trim()||loading}
               style={{display:"flex",alignItems:"center",justifyContent:"center",
                 gap:6,height:36,padding:"0 16px",borderRadius:8,flexShrink:0,
-                background:symbol.trim()?"linear-gradient(135deg,#22c55e,#16a34a)":"rgba(255,255,255,0.03)",
-                border:`1px solid ${symbol.trim()?"rgba(34,197,94,0.3)":"rgba(255,255,255,0.06)"}`,
+                background:symbol.trim()?"linear-gradient(135deg,#3b82f6,#1d4ed8)":"rgba(255,255,255,0.03)",
+                border:`1px solid ${symbol.trim()?"rgba(59,130,246,0.4)":"rgba(100,116,139,0.2)"}`,
                 color:symbol.trim()?"#fff":C.mutedText,
                 cursor:symbol.trim()?"pointer":"not-allowed",
                 fontSize:11,fontWeight:700,letterSpacing:"0.06em",transition:"all .2s",whiteSpace:"nowrap"}}>
@@ -763,7 +759,7 @@ export default function DWViewCharts() {
           ))}
         </div>
 
-        {/* ── DW Selector — shown when at least one panel's toggle is on ── */}
+        {/* ── DW Selector ── */}
         {hasData && dwPanelType && (
           <DWSymbolPanel
             underlying={symbol}

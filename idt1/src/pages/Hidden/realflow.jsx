@@ -244,7 +244,6 @@ const CtrlTooltip = ({ max }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setVisible(false)}
     >
-      {/* ⓘ ไม่มีวงกลม */}
       <span style={{
         color: "#64748b", fontSize: 22,
         cursor: "default", userSelect: "none",
@@ -723,9 +722,9 @@ const FullscreenRankings = ({
 /* ================= SECTION CARD ================= */
 const SectionCard = ({
   category, type, seed: initSeed,
+  onChartFlipClick,
   chartRefs, globalLogical, setGlobalLogical, onZoom,
 }) => {
-  const navigate = useNavigate();
   const [selectedSet,  setSelectedSet]  = useState(new Set());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [timePeriod,   setTimePeriod]   = useState("all");
@@ -751,10 +750,6 @@ const SectionCard = ({
 
   const highlighted     = [...selectedSet].filter(i => i < 5);
   const extraVisibleSet = [...selectedSet].filter(i => i >= 5);
-
-  const handleChartFlipClick = useCallback((symbol) => {
-    navigate("/chartflipid", { state: { symbol, from: "realflow" } });
-  }, [navigate]);
 
   useEffect(() => {
     if (Object.keys(flashMap).length > 0) setLastUpdated(Date.now());
@@ -861,10 +856,7 @@ const SectionCard = ({
 
           {/* ── TIME PERIOD BUTTONS ── */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
-
-            {/* ⓘ inline tooltip */}
             <CtrlTooltip max={MAX_SELECT} />
-            
             {TIME_PERIODS.map(({ key, label, sub }) => {
               const isActive = timePeriod === key;
               return (
@@ -926,7 +918,7 @@ const SectionCard = ({
               highlighted={highlighted}
               extraVisibleSet={extraVisibleSet}
               onRowClick={handleRowClick}
-              onChartFlipClick={handleChartFlipClick}
+              onChartFlipClick={onChartFlipClick}
             />
           </div>
         </div>
@@ -977,7 +969,7 @@ const SectionCard = ({
             highlighted={highlighted}
             extraVisibleSet={extraVisibleSet}
             onRowClick={handleRowClick}
-            onChartFlipClick={handleChartFlipClick}
+            onChartFlipClick={onChartFlipClick}
             compact={false}
             sparklines={sparklines}
           />
@@ -1002,7 +994,7 @@ const SectionCard = ({
             highlighted={highlighted}
             extraVisibleSet={extraVisibleSet}
             onRowClick={handleRowClick}
-            onChartFlipClick={handleChartFlipClick}
+            onChartFlipClick={onChartFlipClick}
             compact={true}
             sparklines={sparklines}
           />
@@ -1020,7 +1012,10 @@ export default function RealFlow() {
   const [globalLogical,  setGlobalLogical]  = useState(null);
   const chartRefs = useRef({});
   const [barWidth, setBarWidth] = useState(80);
-  const bp = useBreakpoint();
+
+  const navigateToChartFlip = useCallback((symbol) => {
+    navigate("/chart-flip-id", { state: { symbol, from: "real-flow" } });
+  }, [navigate]);
 
   const handleZoom = useCallback((deltaY) => {
     setBarWidth(prev => {
@@ -1124,6 +1119,7 @@ export default function RealFlow() {
                 <SectionCard
                   key={`${category}-${type}`}
                   category={category} type={type} seed={seed}
+                  onChartFlipClick={navigateToChartFlip}
                   chartRefs={chartRefs}
                   globalLogical={globalLogical}
                   setGlobalLogical={setGlobalLogical}
@@ -1144,3 +1140,4 @@ export default function RealFlow() {
     </div>
   );
 }
+
