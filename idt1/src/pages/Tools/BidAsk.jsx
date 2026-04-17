@@ -155,31 +155,69 @@ export default function BidAsk() {
         </div>
     );
 
-    const featuresSectionJSX = (
-        <div className="w-full max-w-5xl mb-10 md:mb-12">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-6 md:mb-8 text-left border-l-4 border-cyan-500 pl-4">
-                4 Main Features
-            </h2>
-            <div className="relative group" onMouseEnter={() => isPaused.current = true} onMouseLeave={() => isPaused.current = false}>
-                <button onClick={() => scroll("left")} className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 lg:-translate-x-20 z-20 w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showLeft ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`} aria-label="Scroll Left">
-                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                
-                <div ref={scrollContainerRef} onScroll={checkScroll} className="flex overflow-x-auto gap-4 md:gap-6 py-2 md:py-4 px-1 hide-scrollbar" style={scrollbarHideStyle}>
-                    {features.map((item, index) => (
-                        <div key={index} className="w-[260px] md:w-[350px] lg:w-[400px] flex-shrink-0 snap-center group/card bg-[#0f172a]/60 border border-slate-700/50 p-6 md:p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300">
-                            <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3 group-hover/card:text-cyan-400 transition-colors">{item.title}</h3>
-                            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">{item.desc}</p>
-                        </div>
-                    ))}
-                </div>
+  const featuresSectionJSX = (
+    <div className="w-full max-w-5xl mb-12">
+      <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
+        4 Main Features
+      </h2>
+      <div 
+        className="relative group" 
+        onMouseEnter={() => { isPaused.current = true; }} 
+        onMouseLeave={() => { isPaused.current = false; }}
+      >
+        <button
+          onClick={() => scroll("left")}
+          aria-label="Scroll Left"
+          className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 md:-translate-x-20 z-20
+                      w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white
+                      hover:bg-cyan-500 hover:border-cyan-400 hover:text-white
+                      hover:shadow-[0_0_15px_rgba(6,182,212,0.5)]
+                      flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95
+                      ${showLeft ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-                <button onClick={() => scroll("right")} className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 lg:translate-x-20 z-20 w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95 ${showRight ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`} aria-label="Scroll Right">
-                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                </button>
+        <div 
+          ref={scrollContainerRef} 
+          onScroll={checkScroll} 
+          className="flex overflow-x-auto gap-6 py-4 px-1 hide-scrollbar" 
+          style={scrollbarHideStyle}
+        >
+          {features.map((item, index) => (
+            <div 
+              key={index} 
+              className="w-[350px] md:w-[400px] flex-shrink-0 group/card bg-[#0f172a]/60 border border-slate-700/50 p-8 rounded-xl hover:bg-[#1e293b]/60 hover:border-cyan-500/30 transition duration-300"
+            >
+              <h3 className="text-xl font-bold text-white mb-3 group-hover/card:text-cyan-400 transition-colors">
+                {item.title}
+              </h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                {item.desc}
+              </p>
             </div>
+          ))}
         </div>
-    );
+
+        <button
+          onClick={() => scroll("right")}
+          aria-label="Scroll Right"
+          className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-8 md:translate-x-20 z-20
+                      w-12 h-12 rounded-2xl bg-[#0f172a]/90 border border-slate-600 text-white
+                      hover:bg-cyan-500 hover:border-cyan-400 hover:text-white
+                      hover:shadow-[0_0_15px_rgba(6,182,212,0.5)]
+                      flex items-center justify-center transition-all duration-300 backdrop-blur-sm active:scale-95
+                      ${showRight ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
 
     /* ==========================================================
        CASE 1 : PREVIEW VERSION (Not Member)
