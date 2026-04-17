@@ -1130,10 +1130,6 @@ const DatePicker = memo(({ dates, selected, onChange }) => {
     padding: "2px 4px", borderRadius: 5,
   };
   const body   = { padding: "8px 12px 10px" };
-  const footer = {
-    borderTop: "0.5px solid rgba(255,255,255,0.07)", padding: "6px 14px",
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-  };
   const Chev = ({ d }) => (
     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       {d === "left"  && <polyline points="15 18 9 12 15 6" />}
@@ -1314,14 +1310,6 @@ const DatePicker = memo(({ dates, selected, onChange }) => {
                   );
                 })}
               </div>
-            </div>
-            <div style={footer}>
-              <span style={{ fontSize: 9, color: "#334155", letterSpacing: "0.1em", textTransform: "uppercase" }}>Trading Days</span>
-              <span style={{
-                fontSize: 11, fontWeight: 500, color: "#60a5fa",
-                background: "rgba(59,130,246,0.1)", padding: "1px 8px", borderRadius: 99,
-                border: "0.5px solid rgba(59,130,246,0.2)",
-              }}>{dates.length}</span>
             </div>
           </>)}
         </div>
