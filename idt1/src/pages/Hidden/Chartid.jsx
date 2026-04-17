@@ -895,7 +895,7 @@ export default function ChartFlipId() {
 
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
-          gap: 8, minHeight: 0, padding: "8px",
+          gap: 8, minHeight: 0, padding: "10px",
         }}>
           {panels.map(({ key, title, subtitle, t1, id, smooth }) => {
             const ps = panelStates[key];
