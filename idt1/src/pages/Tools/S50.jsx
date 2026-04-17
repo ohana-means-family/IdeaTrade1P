@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-// 🟢 1. อิมพอร์ต useAuth เข้ามาใช้ตรวจสอบสิทธิ์จากศูนย์กลาง
-import { useAuth } from "@/context/AuthContext"; // ⚠️ เช็ค Path ให้ตรงด้วยนะครับ
+import { useAuth } from "@/context/AuthContext";
 
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ToolHint from "@/components/ToolHint.jsx";
@@ -47,7 +46,7 @@ function ScaledDashboardPreview({ dashboardWidth = 900, dashboardHeight = 560 })
 // CHART CONSTANTS & HELPERS
 // ============================================================
 const CHART_CONFIG = {
-  height: 250,
+  height: 250, // fallback default only
   paddingLeft: 15,
   paddingRight: 60,
   paddingTop: 15,
@@ -106,10 +105,13 @@ const generateMasterData = (seed = 1, totalPoints = 300) => {
   return data;
 };
 
+// ============================================================
+// SKELETON — flex-1 instead of fixed height
+// ============================================================
 function ChartBodySkeleton() {
   return (
-    <div className="relative w-full bg-[#0f172a]" style={{ height: CHART_CONFIG.height }}>
-      <div className="absolute inset-0 px-4 py-4 animate-pulse">
+    <div className="relative flex-1 bg-[#0f172a] min-h-0 animate-pulse">
+      <div className="absolute inset-0 px-4 py-4">
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
@@ -117,7 +119,6 @@ function ChartBodySkeleton() {
             style={{ top: `${30 + i * 45}px` }}
           />
         ))}
-
         <div className="absolute left-4 right-16 top-8 bottom-10 rounded-xl bg-gradient-to-r from-slate-800 via-slate-700/60 to-slate-800 opacity-80" />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 w-[42px] h-[20px] rounded bg-slate-700" />
       </div>
@@ -126,14 +127,14 @@ function ChartBodySkeleton() {
 }
 
 // ============================================================
-// REUSABLE CHART CARD (NEW STYLE)
+// CHART CARD — dynamic height via ResizeObserver
 // ============================================================
-function ChartCard({ 
-  title, 
-  timeframe, 
-  chartId, 
-  globalHoverIndex, 
-  setGlobalHoverIndex, 
+function ChartCard({
+  title,
+  timeframe,
+  chartId,
+  globalHoverIndex,
+  setGlobalHoverIndex,
   chartRefs,
   refreshKey,
   isRefreshing,
@@ -156,14 +157,34 @@ function ChartCard({
   }, [masterData, timeframe]);
 
   const scrollRef = useRef(null);
+  const chartBodyRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragScrollLeft, setDragScrollLeft] = useState(0);
 
-  const yScale = calcYScale(data);
-  const normalizeY = makeNormalizeY(CHART_CONFIG, yScale);
+  // ── Dynamic height via ResizeObserver ──────────────────────
+  const [chartHeight, setChartHeight] = useState(CHART_CONFIG.height);
 
-  const { paddingLeft, paddingRight, paddingTop, paddingBottom, pointGap, height, minWidth } = CHART_CONFIG;
+  useEffect(() => {
+    const el = chartBodyRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height;
+        if (h > 50) setChartHeight(h);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // ── Use dynamic height instead of CHART_CONFIG.height ──────
+  const height = chartHeight;
+  const { paddingLeft, paddingRight, paddingTop, paddingBottom, pointGap, minWidth } = CHART_CONFIG;
+
+  const yScale = calcYScale(data);
+  const normalizeY = makeNormalizeY({ height, paddingTop, paddingBottom }, yScale);
+
   const chartWidth = Math.max(minWidth, paddingLeft + paddingRight + (data.length - 1) * pointGap);
 
   const isUp = data[data.length - 1] >= data[0];
@@ -211,8 +232,9 @@ function ChartCard({
   const isHovering = globalHoverIndex !== null && !isDragging && globalHoverIndex < data.length;
   const hoverX = isHovering ? paddingLeft + globalHoverIndex * pointGap : null;
 
-return (
-    <div className="relative bg-[#111827] border border-slate-700 rounded-xl flex flex-col">
+  return (
+    // ── h-full min-h-0 เพื่อให้ขยายเต็ม grid cell ──────────
+    <div className="relative bg-[#111827] border border-slate-700 rounded-xl flex flex-col h-full min-h-0">
 
       {toolHint && (
         <div className="absolute -top-3 -left-3 z-20 shadow-lg rounded-full">
@@ -220,8 +242,8 @@ return (
         </div>
       )}
 
-      {/* Header */}
-      <div className="px-4 pl-6 py-3 bg-[#0f172a] border-b border-slate-700/50 flex justify-between items-center rounded-t-xl">
+      {/* Header — flex-shrink-0 ให้สูงคงที่ */}
+      <div className="px-4 pl-6 py-3 bg-[#0f172a] border-b border-slate-700/50 flex justify-between items-center rounded-t-xl flex-shrink-0">
         <span className="text-sm font-bold text-slate-300">{title}</span>
         <div className="flex items-center gap-2">
           <button
@@ -235,11 +257,11 @@ return (
         </div>
       </div>
 
-      {/* SVG Interactive Area */}
+      {/* Chart body — flex-1 แทน fixed height */}
       {isRefreshing ? (
         <ChartBodySkeleton />
       ) : (
-        <div className="relative w-full bg-[#0f172a]" style={{ height }}>
+        <div ref={chartBodyRef} className="relative flex-1 bg-[#0f172a] min-h-0">
           <div
             ref={scrollRef}
             className={`w-full h-full relative overflow-x-auto overflow-y-hidden hide-scrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-crosshair"}`}
@@ -330,18 +352,16 @@ return (
         </div>
       )}
     </div>
-
   );
 }
 
 // ============================================================
-// MAIN EXPORT S50 
+// MAIN EXPORT S50
 // ============================================================
 export default function S50() {
   const navigate = useNavigate();
   const scrollContainerRef = useRef(null);
 
-  // 🟢 2. ดึงข้อมูล User จาก AuthContext เพื่อใช้ตรวจสอบสิทธิ์
   const { userData, currentUser, loading } = useAuth();
 
   const [isMember, setIsMember] = useState(false);
@@ -360,27 +380,24 @@ export default function S50() {
   const scrollDirection = useRef(1);
   const isPaused = useRef(false);
 
-
   /* ===============================  MEMBER CHECK  ================================ */
-  // 🟢 3. ตรวจสอบสิทธิ์จาก userData.subscriptions ใน AuthContext
   useEffect(() => {
-    if (loading) return; 
+    if (loading) return;
 
     const toolId = "s50";
 
     if (userData && userData.subscriptions && userData.subscriptions[toolId]) {
       const expireTimestamp = userData.subscriptions[toolId];
       let expireDate;
-      try { 
-        expireDate = typeof expireTimestamp.toDate === "function" 
-          ? expireTimestamp.toDate() 
-          : new Date(expireTimestamp); 
-      } catch (e) { 
-        expireDate = new Date(0); 
+      try {
+        expireDate = typeof expireTimestamp.toDate === "function"
+          ? expireTimestamp.toDate()
+          : new Date(expireTimestamp);
+      } catch (e) {
+        expireDate = new Date(0);
       }
       setIsMember(expireDate.getTime() > new Date().getTime());
-    } else { 
-      // Fallback สำหรับกรณีไม่ได้ล็อคอินหรือข้อมูลยังไม่มา
+    } else {
       const saved = localStorage.getItem("userProfile");
       if (saved) {
         try {
@@ -397,10 +414,8 @@ export default function S50() {
 
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
-
     setIsRefreshing(true);
     setGlobalHoverIndex(null);
-
     setTimeout(() => {
       setRefreshKey((prev) => prev + 1);
       setIsRefreshing(false);
@@ -420,7 +435,6 @@ export default function S50() {
     isPaused.current = true;
     const { current } = scrollContainerRef;
     const scrollAmount = 350;
-
     if (direction === "left") {
       current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
       scrollDirection.current = -1;
@@ -428,7 +442,6 @@ export default function S50() {
       current.scrollBy({ left: scrollAmount, behavior: "smooth" });
       scrollDirection.current = 1;
     }
-
     setTimeout(checkScroll, 300);
     setTimeout(() => { isPaused.current = false; }, 500);
   };
@@ -436,25 +449,20 @@ export default function S50() {
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-
     const speed = 1;
     const intervalTime = 15;
-
     const autoScrollInterval = setInterval(() => {
       if (isPaused.current || !container) return;
       const { scrollLeft, scrollWidth, clientWidth } = container;
       const maxScroll = scrollWidth - clientWidth;
-
       if (scrollDirection.current === 1 && Math.ceil(scrollLeft) >= maxScroll - 2) {
         scrollDirection.current = -1;
       } else if (scrollDirection.current === -1 && scrollLeft <= 2) {
         scrollDirection.current = 1;
       }
-
       container.scrollLeft += (scrollDirection.current * speed);
       checkScroll();
     }, intervalTime);
-
     return () => clearInterval(autoScrollInterval);
   }, [isMember, enteredTool]);
 
@@ -479,7 +487,6 @@ export default function S50() {
       <h2 className="text-2xl md:text-3xl font-bold mb-8 text-left border-l-4 border-cyan-500 pl-4">
         4 Main Features
       </h2>
-
       <div
         className="relative group"
         onMouseEnter={() => (isPaused.current = true)}
@@ -548,7 +555,6 @@ export default function S50() {
   const dashboardPreviewJSX = (
     <div className="relative group w-full max-w-6xl mb-16">
       <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
-
       <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
         <div className="bg-[#0f172a] px-4 py-3 flex items-center border-b border-slate-700/50">
           <div className="flex gap-2">
@@ -569,12 +575,8 @@ export default function S50() {
     return (
       <div className="relative w-full min-h-screen text-white overflow-x-hidden animate-fade-in pb-20">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-
         <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-
-          {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
@@ -585,18 +587,10 @@ export default function S50() {
               Master the S50 Index Futures with absolute conviction
             </p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Buttons */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              
-              {/* ตรวจสอบว่าถ้า "ไม่มี" user ค่อยแสดงปุ่ม Sign In */}
               {!currentUser && (
                 <button
                   onClick={() => navigate("/login")}
@@ -605,8 +599,6 @@ export default function S50() {
                   Sign In
                 </button>
               )}
-
-              {/* ปุ่ม Join Membership แสดงตลอดสำหรับคนที่ไม่ใช่ Member */}
               <button
                 onClick={() => navigate("/member-register")}
                 className="w-full md:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:brightness-110 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
@@ -615,7 +607,6 @@ export default function S50() {
               </button>
             </div>
           </div>
-
         </div>
       </div>
     );
@@ -628,12 +619,8 @@ export default function S50() {
     return (
       <div className="relative w-full min-h-screen text-white overflow-x-hidden animate-fade-in pb-20">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-
         <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
-
-          {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent drop-shadow-lg">
@@ -644,14 +631,8 @@ export default function S50() {
               Master the S50 Index Futures with absolute conviction
             </p>
           </div>
-
-          {/* Dashboard Preview */}
           {dashboardPreviewJSX}
-
-          {/* Features */}
           {featuresSectionJSX}
-
-          {/* CTA Button */}
           <div className="text-center w-full max-w-md mx-auto mt-4">
             <button
               onClick={() => setEnteredTool(true)}
@@ -663,24 +644,27 @@ export default function S50() {
               </svg>
             </button>
           </div>
-
         </div>
       </div>
     );
   }
 
-/* ==========================================================
+  /* ==========================================================
     CASE 3 : FULL DASHBOARD (Member + Entered)
+    — เปลี่ยนเป็น h-[100dvh] + gridAutoRows เหมือน Petroleum
   ========================================================== */
   return (
-    <div className="w-full min-h-screen bg-[#0b111a] text-white p-3 sm:p-6 flex flex-col pb-24">
-      
-      <div className="max-w-[1600px] w-full mx-auto flex-1">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <ChartCard 
-            title="1. Last (SET50 Daily)" 
-            timeframe={timeframe} 
+    <div className="w-full h-[100dvh] overflow-y-auto bg-[#0b111a] text-white px-3 sm:px-6 py-4 sm:py-6 flex flex-col">
+      <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+
+      <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col min-h-0">
+        <div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 flex-1 min-h-0"
+          style={{ gridAutoRows: "minmax(280px, 1fr)" }}
+        >
+          <ChartCard
+            title="1. Last (SET50 Daily)"
+            timeframe={timeframe}
             chartId="chart1"
             globalHoverIndex={globalHoverIndex}
             setGlobalHoverIndex={setGlobalHoverIndex}
@@ -689,13 +673,14 @@ export default function S50() {
             isRefreshing={isRefreshing}
             onRefresh={handleRefresh}
             toolHint={
-                  <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
-                      Monitor SET50 Index in multiple timeframes, analyze trend with flow analysis, confirm bullish/bearish momentum, and sync charts for comparative analysis
-                  </ToolHint> }
+              <ToolHint onViewDetails={() => { setEnteredTool(false); window.scrollTo({ top: 0 }); }}>
+                Monitor SET50 Index in multiple timeframes, analyze trend with flow analysis, confirm bullish/bearish momentum, and sync charts for comparative analysis
+              </ToolHint>
+            }
           />
-          <ChartCard 
-            title="2. Confirm Up/Down S50" 
-            timeframe={timeframe} 
+          <ChartCard
+            title="2. Confirm Up/Down S50"
+            timeframe={timeframe}
             chartId="chart2"
             globalHoverIndex={globalHoverIndex}
             setGlobalHoverIndex={setGlobalHoverIndex}
@@ -704,9 +689,9 @@ export default function S50() {
             isRefreshing={isRefreshing}
             onRefresh={handleRefresh}
           />
-          <ChartCard 
-            title="3. Trend (Volume Flow)" 
-            timeframe={timeframe} 
+          <ChartCard
+            title="3. Trend (Volume Flow)"
+            timeframe={timeframe}
             chartId="chart3"
             globalHoverIndex={globalHoverIndex}
             setGlobalHoverIndex={setGlobalHoverIndex}
@@ -715,9 +700,9 @@ export default function S50() {
             isRefreshing={isRefreshing}
             onRefresh={handleRefresh}
           />
-          <ChartCard 
-            title="4. Mid-Trend (SET Context)" 
-            timeframe={timeframe} 
+          <ChartCard
+            title="4. Mid-Trend (SET Context)"
+            timeframe={timeframe}
             chartId="chart4"
             globalHoverIndex={globalHoverIndex}
             setGlobalHoverIndex={setGlobalHoverIndex}
@@ -727,7 +712,6 @@ export default function S50() {
             onRefresh={handleRefresh}
           />
         </div>
-
       </div>
     </div>
   );
