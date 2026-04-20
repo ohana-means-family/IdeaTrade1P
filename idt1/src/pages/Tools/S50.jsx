@@ -553,17 +553,24 @@ export default function S50() {
   );
 
   const dashboardPreviewJSX = (
-    <div className="relative group w-full max-w-6xl mb-16">
+    <div className="relative group w-full max-w-5xl mb-16"> {/* 1. เปลี่ยนจาก max-w-6xl เป็น max-w-5xl */}
       <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-700"></div>
       <div className="relative bg-[#0B1221] border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="bg-[#0f172a] px-4 py-3 flex items-center border-b border-slate-700/50">
+        <div className="bg-[#0f172a] px-4 py-3 flex items-center justify-between border-b border-slate-700/50">
           <div className="flex gap-2">
             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
           </div>
         </div>
-        <ScaledDashboardPreview dashboardWidth={1200} dashboardHeight={700} />
+        
+        {/* 2. เพิ่ม Effect ซูมและสว่างขึ้นตอนนำเมาส์ไปชี้ ให้เหมือนฝั่ง Gold */}
+        <div className="w-full bg-[#0B1221] relative overflow-hidden group">
+          <div className="opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition duration-500 ease-out origin-center">
+            <ScaledDashboardPreview dashboardWidth={1200} dashboardHeight={625} />
+          </div>
+        </div>
+
       </div>
     </div>
   );
