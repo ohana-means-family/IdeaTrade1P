@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { createChart, CrosshairMode, LineStyle, LineSeries } from "lightweight-charts";
-import { useNavigate } from "react-router-dom";
 
 // ─── DATA (SET & MAI) ────────────────────────────────────────────────────────
 const SET_SECTORS = [
@@ -60,11 +59,11 @@ const SET_SUMMARY = {
 const MAI_SUMMARY = {
   id: "MAI_ALL", label: "MAI", market: "MAI",
   stocks: [
-    { sym: "SPA", chg: +1.80, hasFlow: true },
-    { sym: "XO", chg: +2.50, hasFlow: true },
+    { sym: "SPA",    chg: +1.80, hasFlow: true },
+    { sym: "XO",     chg: +2.50, hasFlow: true },
     { sym: "MASTER", chg: +2.10, hasFlow: true },
-    { sym: "SUN", chg: +1.20, hasFlow: true },
-    { sym: "CHAYO", chg: +1.50, hasFlow: true },
+    { sym: "SUN",    chg: +1.20, hasFlow: true },
+    { sym: "CHAYO",  chg: +1.50, hasFlow: true },
   ],
 };
 
@@ -153,12 +152,8 @@ function buildChartOptions(isUp, isExpanded) {
       vertLine: { color: "rgba(100,130,170,0.35)", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#111d30" },
       horzLine: { color: "rgba(100,130,170,0.35)", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#111d30" },
     },
-    rightPriceScale: {
-      visible: false,
-    },
-    leftPriceScale: {
-      visible: false,
-    },
+    rightPriceScale: { visible: false },
+    leftPriceScale:  { visible: false },
     timeScale: {
       borderColor: C.border,
       timeVisible: true,
@@ -330,8 +325,8 @@ function SectorMultiSelect({ options, selected, onChange, max=10 }) {
 }
 
 // ─── LIGHTWEIGHT CHART HOOK ───────────────────────────────────────────────────
-// ✅ เพิ่ม resetTick เป็น parameter เพื่อรับสัญญาณการบังคับ reset
-function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, resetTick }) {
+// scrollTarget: { goto: "first" | "last" | "date", tick: number }
+function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget }) {
   const containerRef = useRef(null);
   const chartRef     = useRef(null);
   const seriesRef    = useRef(null);
@@ -344,7 +339,6 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, resetTick })
     const series = chart.addSeries(LineSeries, buildSeriesOptions(isUp));
     series.setData(seriesData);
 
-    // zoom เข้าให้เห็นแค่ 40 bars ล่าสุด
     if (!isExpanded && seriesData.length > 0) {
       const last = seriesData[seriesData.length - 1].time;
       const from = seriesData[Math.max(0, seriesData.length - 40)].time;
@@ -355,12 +349,11 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, resetTick })
     chartRef.current  = chart;
     seriesRef.current = series;
 
-    // Hide TradingView attribution logo via DOM after render
     const hideAttr = () => {
       const attr = el.querySelector('a[href*="tradingview"]') || el.querySelector('.tv-lightweight-charts a');
-      if (attr) { attr.style.display = "none"; }
+      if (attr) attr.style.display = "none";
       const logo = el.querySelector('[class*="attribution"]');
-      if (logo) { logo.style.display = "none"; }
+      if (logo) logo.style.display = "none";
     };
     const timer = setTimeout(hideAttr, 100);
 
@@ -373,42 +366,57 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, resetTick })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectorId, isUp, isExpanded]);
 
-  // ✅ เพิ่ม resetTick ใน dependency array เพื่อบังคับให้ useEffect ทำงานเมื่อกดปุ่ม
+  // ── scroll effect reacts to scrollTarget changes ──
   useEffect(() => {
-    if (!chartRef.current || !dateVal) return;
+    if (!chartRef.current || !scrollTarget) return;
+    const ts = chartRef.current.timeScale();
     try {
-      // 1. ถ้ากราฟยังไปไม่ถึงไหน หรือกด reset ให้เลื่อนไปขวาสุดเป็นค่าพื้นฐานก่อน
-      chartRef.current.timeScale().scrollToRealTime();
-      
-      // 2. ถ้ามีการเจาะจงวันที่ ก็คำนวณและเลื่อนไปจุดนั้น
-      const p = parseKey(dateVal);
-      const ts = Math.floor(new Date(p.year, p.month-1, p.day).getTime() / 1000);
-      const coordinate = chartRef.current.timeScale().timeToCoordinate(ts);
-      
-      if (coordinate !== null) {
-          const logical = chartRef.current.timeScale().coordinateToLogical(coordinate);
-          if (logical !== null) {
-              chartRef.current.timeScale().scrollToPosition(logical, false);
+      if (scrollTarget.goto === "last") {
+        // เลื่อนไปขวาสุด (ข้อมูลล่าสุด)
+        ts.scrollToRealTime();
+      } else if (scrollTarget.goto === "first") {
+        // เลื่อนไปซ้ายสุด (ข้อมูลเก่าสุด) ด้วย scrollToPosition ที่ติดลบมากพอ
+        ts.scrollToRealTime(); // reset ก่อน แล้ว scroll ไปซ้าย
+        // คำนวณจาก logical index ของ bar แรก
+        if (seriesData.length > 0) {
+          const firstTs = seriesData[0].time;
+          const coord = ts.timeToCoordinate(firstTs);
+          if (coord !== null) {
+            const logical = ts.coordinateToLogical(coord);
+            if (logical !== null) {
+              ts.scrollToPosition(logical - 5, false);
+            }
+          } else {
+            // fallback: ถ้า coordinate เป็น null ให้ scroll ไปตำแหน่งติดลบมากพอ
+            ts.scrollToPosition(-seriesData.length, false);
           }
+        }
+      } else if (scrollTarget.goto === "date") {
+        // เลื่อนไปวันที่ที่เลือก
+        ts.scrollToRealTime();
+        const p = parseKey(dateVal);
+        const targetTs = Math.floor(new Date(p.year, p.month - 1, p.day).getTime() / 1000);
+        const coord = ts.timeToCoordinate(targetTs);
+        if (coord !== null) {
+          const logical = ts.coordinateToLogical(coord);
+          if (logical !== null) ts.scrollToPosition(logical, false);
+        }
       }
     } catch (_) {}
-  }, [dateVal, resetTick]);
+  }, [scrollTarget, seriesData]);
 
   return { containerRef, chartRef, seriesRef };
 }
 
 // ─── MINI CHART ───────────────────────────────────────────────────────────────
-// ✅ เพิ่มการส่งต่อ resetTick
-function SectorMiniChart({ sectorId, isUp, isEmpty, isExpanded, dateVal, resetTick }) {
-  const { containerRef } = useLightweightChart({ sectorId, isUp, isExpanded, dateVal, resetTick });
+function SectorMiniChart({ sectorId, isUp, isEmpty, isExpanded, dateVal, scrollTarget }) {
+  const { containerRef } = useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget });
   if (isEmpty) return null;
-  return (
-    <div ref={containerRef} style={{ width:"100%", height:"100%" }}/>
-  );
+  return <div ref={containerRef} style={{ width:"100%", height:"100%" }}/>;
 }
 
 // ─── EXPANDED CHART ───────────────────────────────────────────────────────────
-function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast, onSectorChange }) {
+function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast, onSectorChange, scrollTarget }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm,   setSearchTerm  ] = useState("");
 
@@ -424,7 +432,13 @@ function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast
     return d.length > 0 ? d[d.length-1].value >= d[0].value : true;
   }, [sector.id]);
 
-  const { containerRef, chartRef } = useLightweightChart({ sectorId: sector.id, isUp, isExpanded: true, dateVal });
+  const { containerRef, chartRef } = useLightweightChart({
+    sectorId: sector.id,
+    isUp,
+    isExpanded: true,
+    dateVal,
+    scrollTarget,
+  });
 
   const handleFirst = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onFirst?.(); };
   const handleLast  = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onLast?.(); };
@@ -533,8 +547,7 @@ function StockDetailCard() {
 }
 
 // ─── SECTOR CARD ──────────────────────────────────────────────────────────────
-// ✅ รับ resetTick เข้ามา
-function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, resetTick, onReset }) {
+function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, scrollTarget, onReset }) {
   const isEmpty = sector.stocks.length === 0;
   const top  = getTopBadge(sector.stocks);
   const isUp = top ? top.isUp : true;
@@ -564,7 +577,6 @@ function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, resetTi
           ):(
             <button onClick={onExpand} style={{background:"transparent",border:"none",color:C.textMuted,cursor:"pointer",padding:2}}><IconSearchZoom/></button>
           )}
-          {/* ปุ่มนี้คือจุดที่จะยิง event onReset (ที่ถูกส่งมาจากด้านนอก) */}
           <button onClick={onReset} style={{background:"transparent",border:"none",color:C.textMuted,cursor:"pointer",padding:2}}><IconRefresh/></button>
         </div>
       </div>
@@ -576,8 +588,14 @@ function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, resetTi
       ) : (
         <div style={{display:"flex",height:220}}>
           <div style={{flex:1,minWidth:0,height:220}}>
-            {/* ✅ ส่ง resetTick ลงไปให้ MiniChart */}
-            <SectorMiniChart sectorId={sector.id} isUp={isUp} isEmpty={isEmpty} isExpanded={isExpanded} dateVal={dateVal} resetTick={resetTick}/>
+            <SectorMiniChart
+              sectorId={sector.id}
+              isUp={isUp}
+              isEmpty={isEmpty}
+              isExpanded={isExpanded}
+              dateVal={dateVal}
+              scrollTarget={scrollTarget}
+            />
           </div>
           <div style={{
             width:60,
@@ -622,8 +640,9 @@ function SectorRotation() {
   const defaultLastData = tradingDates[tradingDates.length-1];
   const [dateVal,setDateVal] = useState(defaultLastData);
 
-  // ✅ State สำหรับนับจังหวะการกดปุ่มบังคับ Reset กราฟ
-  const [resetTick, setResetTick] = useState(0);
+  // ── scrollTarget แทน resetTick ──────────────────────────────────────────────
+  // goto: "first" | "last" | "date"   tick: เปลี่ยนทุกครั้งเพื่อ trigger useEffect
+  const [scrollTarget, setScrollTarget] = useState(null);
 
   useEffect(()=>{
     function h(e){ if(marketDropdownRef.current&&!marketDropdownRef.current.contains(e.target)) setMarketDropdownOpen(false); }
@@ -631,11 +650,16 @@ function SectorRotation() {
     return()=>document.removeEventListener("mousedown",h);
   },[]);
 
-  // ✅ ฟังก์ชันรวมการเซ็ตวันที่กลับเป็นค่าล่าสุด และขยับตัวนับเพื่อสั่งกราฟให้เลื่อนขวาเสมอ
-  const handleResetToLatest = () => {
+  // ── handlers ─────────────────────────────────────────────────────────────────
+  const handleGoToFirst = useCallback(() => {
+    setDateVal(tradingDates[0]);
+    setScrollTarget({ goto: "first", tick: Date.now() });
+  }, [tradingDates]);
+
+  const handleGoToLast = useCallback(() => {
     setDateVal(defaultLastData);
-    setResetTick(prev => prev + 1);
-  };
+    setScrollTarget({ goto: "last", tick: Date.now() });
+  }, [defaultLastData]);
 
   const handleMarketChange=(opt)=>{
     setMarketFilter(opt); setMarketDropdownOpen(false); setSelectedSectors([]); setSubMarketFilter("");
@@ -688,7 +712,6 @@ function SectorRotation() {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #1e3050; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #253a60; }
-        /* Hide TradingView attribution logo */
         .tv-lightweight-charts a,
         a[href*="tradingview"],
         [class*="watermark"],
@@ -727,37 +750,37 @@ function SectorRotation() {
 
         <div style={{display:"flex",flexDirection:"column",gap:12,alignItems:"flex-end"}}>
           <div style={{display:"flex",gap:8}}>
-            {dataBtn("FIRST DATA",()=>setDateVal(tradingDates[0]))}
-            {/* ✅ เรียกใช้ handleResetToLatest แทนการ setDateVal อย่างเดียว */}
-            {dataBtn("LAST DATA", handleResetToLatest)}
+            {dataBtn("FIRST DATA", handleGoToFirst)}
+            {dataBtn("LAST DATA",  handleGoToLast)}
           </div>
-          <DatePicker dates={tradingDates} selected={dateVal} onChange={setDateVal}/>
+          <DatePicker dates={tradingDates} selected={dateVal} onChange={(key) => {
+            setDateVal(key);
+            setScrollTarget({ goto: "date", tick: Date.now() });
+          }}/>
         </div>
       </div>
 
-     {/* Grid */}
+      {/* Grid */}
       <div style={{display:"grid",gridTemplateColumns:gridTemplate,gap:20,transition:"all 0.3s ease"}}>
         {marketFilter==="SET&MAI"?(
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             {(subMarketFilter==="SET"||subMarketFilter==="SET&MAI")&&(
-              <SectorCard key={SET_SUMMARY.id} sector={SET_SUMMARY} dateVal={dateVal} resetTick={resetTick}
+              <SectorCard key={SET_SUMMARY.id} sector={SET_SUMMARY} dateVal={dateVal} scrollTarget={scrollTarget}
                 onExpand={()=>setExpandedSectorId(SET_SUMMARY.id)}
-                onReset={handleResetToLatest}/>
+                onReset={handleGoToLast}/>
             )}
             {(subMarketFilter==="MAI"||subMarketFilter==="SET&MAI")&&(
-              <SectorCard key={MAI_SUMMARY.id} sector={MAI_SUMMARY} dateVal={dateVal} resetTick={resetTick}
+              <SectorCard key={MAI_SUMMARY.id} sector={MAI_SUMMARY} dateVal={dateVal} scrollTarget={scrollTarget}
                 onExpand={()=>setExpandedSectorId(MAI_SUMMARY.id)}
-                onReset={handleResetToLatest}/>
+                onReset={handleGoToLast}/>
             )}
-            
             <StockDetailCard/>
-            
           </div>
         ):(
           visibleData.map(sec=>(
-            <SectorCard key={sec.id} sector={sec} dateVal={dateVal} resetTick={resetTick}
+            <SectorCard key={sec.id} sector={sec} dateVal={dateVal} scrollTarget={scrollTarget}
               onExpand={()=>setExpandedSectorId(sec.id)}
-              onReset={handleResetToLatest}/>
+              onReset={handleGoToLast}/>
           ))
         )}
         {marketFilter!=="SET&MAI"&&visibleData.length===0&&(
@@ -772,11 +795,16 @@ function SectorRotation() {
         const sec=[...SET_SECTORS,...MAI_SECTORS,SET_SUMMARY,MAI_SUMMARY].find(s=>s.id===expandedSectorId);
         if(!sec) return null;
         return(
-          <ExpandedChart sector={sec} dateVal={dateVal} tradingDates={tradingDates}
+          <ExpandedChart
+            sector={sec}
+            dateVal={dateVal}
+            tradingDates={tradingDates}
+            scrollTarget={scrollTarget}
             onClose={()=>setExpandedSectorId(null)}
-            onFirst={()=>setDateVal(tradingDates[0])}
-            onLast={handleResetToLatest}
-            onSectorChange={setExpandedSectorId}/>
+            onFirst={handleGoToFirst}
+            onLast={handleGoToLast}
+            onSectorChange={setExpandedSectorId}
+          />
         );
       })()}
     </div>
