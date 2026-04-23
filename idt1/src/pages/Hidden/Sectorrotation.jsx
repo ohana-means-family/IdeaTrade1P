@@ -248,11 +248,11 @@ const DatePicker = memo(({ dates, selected, onChange }) => {
   const canNext=useCallback(()=>{ if(!dates[dates.length-1])return false; const p=parseKey(dates[dates.length-1]); return viewYear<p.year||(viewYear===p.year&&viewMonth<p.month); },[dates,viewYear,viewMonth]);
   const calDays=useMemo(()=>{ const firstDow=new Date(viewYear,viewMonth-1,1).getDay(); const total=new Date(viewYear,viewMonth,0).getDate(); const cells=[]; for(let i=0;i<firstDow;i++)cells.push(null); for(let d=1;d<=total;d++)cells.push(d); while(cells.length%7!==0)cells.push(null); return cells; },[viewMonth,viewYear]);
 
-  const popup     = { position:"fixed",top:popupPos.top,left:popupPos.left,zIndex:9999,width:252,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 16px 40px rgba(0,0,0,0.7)",fontFamily:"monospace",overflow:"hidden",maxHeight:`calc(100vh - ${popupPos.top}px - 8px)`,overflowY:"auto" };
-  const dpHeader  = { display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px 8px",borderBottom:`1px solid ${C.border}` };
-  const navBtn    = (active)=>({ width:26,height:26,borderRadius:5,border:"none",background:"transparent",color:active?"#7a9cc4":"#162035",cursor:active?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"background .1s" });
-  const titleBtn  = { background:"transparent",border:"none",cursor:"pointer",color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace",letterSpacing:"0.03em",display:"flex",alignItems:"center",gap:3,padding:"4px 8px",borderRadius:5 };
-  const body      = { padding:"8px 12px 10px" };
+  const popup    = { position:"fixed",top:popupPos.top,left:popupPos.left,zIndex:9999,width:252,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 16px 40px rgba(0,0,0,0.7)",fontFamily:"monospace",overflow:"hidden",maxHeight:`calc(100vh - ${popupPos.top}px - 8px)`,overflowY:"auto" };
+  const dpHeader = { display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px 8px",borderBottom:`1px solid ${C.border}` };
+  const navBtn   = (active)=>({ width:26,height:26,borderRadius:5,border:"none",background:"transparent",color:active?"#7a9cc4":"#162035",cursor:active?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"background .1s" });
+  const titleBtn = { background:"transparent",border:"none",cursor:"pointer",color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace",letterSpacing:"0.03em",display:"flex",alignItems:"center",gap:3,padding:"4px 8px",borderRadius:5 };
+  const body     = { padding:"8px 12px 10px" };
   const Chev=({d})=>(<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{d==="left"&&<polyline points="15 18 9 12 15 6"/>}{d==="right"&&<polyline points="9 18 15 12 9 6"/>}{d==="down"&&<polyline points="6 9 12 15 18 9"/>}</svg>);
 
   return (
@@ -325,7 +325,6 @@ function SectorMultiSelect({ options, selected, onChange, max=10 }) {
 }
 
 // ─── LIGHTWEIGHT CHART HOOK ───────────────────────────────────────────────────
-// scrollTarget: { goto: "first" | "last" | "date", tick: number }
 function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget }) {
   const containerRef = useRef(null);
   const chartRef     = useRef(null);
@@ -338,7 +337,6 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget
     const chart = createChart(el, { autoSize: true, ...buildChartOptions(isUp, isExpanded) });
     const series = chart.addSeries(LineSeries, buildSeriesOptions(isUp));
     series.setData(seriesData);
-
     if (!isExpanded && seriesData.length > 0) {
       const last = seriesData[seriesData.length - 1].time;
       const from = seriesData[Math.max(0, seriesData.length - 40)].time;
@@ -348,7 +346,6 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget
     }
     chartRef.current  = chart;
     seriesRef.current = series;
-
     const hideAttr = () => {
       const attr = el.querySelector('a[href*="tradingview"]') || el.querySelector('.tv-lightweight-charts a');
       if (attr) attr.style.display = "none";
@@ -356,51 +353,30 @@ function useLightweightChart({ sectorId, isUp, isExpanded, dateVal, scrollTarget
       if (logo) logo.style.display = "none";
     };
     const timer = setTimeout(hideAttr, 100);
-
-    return () => {
-      clearTimeout(timer);
-      chart.remove();
-      chartRef.current  = null;
-      seriesRef.current = null;
-    };
+    return () => { clearTimeout(timer); chart.remove(); chartRef.current = null; seriesRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectorId, isUp, isExpanded]);
 
-  // ── scroll effect reacts to scrollTarget changes ──
   useEffect(() => {
     if (!chartRef.current || !scrollTarget) return;
     const ts = chartRef.current.timeScale();
     try {
       if (scrollTarget.goto === "last") {
-        // เลื่อนไปขวาสุด (ข้อมูลล่าสุด)
         ts.scrollToRealTime();
       } else if (scrollTarget.goto === "first") {
-        // เลื่อนไปซ้ายสุด (ข้อมูลเก่าสุด) ด้วย scrollToPosition ที่ติดลบมากพอ
-        ts.scrollToRealTime(); // reset ก่อน แล้ว scroll ไปซ้าย
-        // คำนวณจาก logical index ของ bar แรก
+        ts.scrollToRealTime();
         if (seriesData.length > 0) {
           const firstTs = seriesData[0].time;
           const coord = ts.timeToCoordinate(firstTs);
-          if (coord !== null) {
-            const logical = ts.coordinateToLogical(coord);
-            if (logical !== null) {
-              ts.scrollToPosition(logical - 5, false);
-            }
-          } else {
-            // fallback: ถ้า coordinate เป็น null ให้ scroll ไปตำแหน่งติดลบมากพอ
-            ts.scrollToPosition(-seriesData.length, false);
-          }
+          if (coord !== null) { const logical = ts.coordinateToLogical(coord); if (logical !== null) ts.scrollToPosition(logical - 5, false); }
+          else ts.scrollToPosition(-seriesData.length, false);
         }
       } else if (scrollTarget.goto === "date") {
-        // เลื่อนไปวันที่ที่เลือก
         ts.scrollToRealTime();
         const p = parseKey(dateVal);
         const targetTs = Math.floor(new Date(p.year, p.month - 1, p.day).getTime() / 1000);
         const coord = ts.timeToCoordinate(targetTs);
-        if (coord !== null) {
-          const logical = ts.coordinateToLogical(coord);
-          if (logical !== null) ts.scrollToPosition(logical, false);
-        }
+        if (coord !== null) { const logical = ts.coordinateToLogical(coord); if (logical !== null) ts.scrollToPosition(logical, false); }
       }
     } catch (_) {}
   }, [scrollTarget, seriesData]);
@@ -419,103 +395,59 @@ function SectorMiniChart({ sectorId, isUp, isEmpty, isExpanded, dateVal, scrollT
 function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast, onSectorChange, scrollTarget }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm,   setSearchTerm  ] = useState("");
-
   const allSectors = useMemo(() => [...SET_SECTORS, ...MAI_SECTORS].map(s => s.id), []);
   const topFlowStock = useMemo(() => {
     const fs = sector.stocks.filter(s => s.hasFlow);
     if (!fs.length) return null;
     return fs.sort((a,b) => Math.abs(b.chg)-Math.abs(a.chg))[0];
   }, [sector]);
-
   const isUp = useMemo(() => {
     const d = genSeriesData(sector.id, 160);
     return d.length > 0 ? d[d.length-1].value >= d[0].value : true;
   }, [sector.id]);
-
-  const { containerRef, chartRef } = useLightweightChart({
-    sectorId: sector.id,
-    isUp,
-    isExpanded: true,
-    dateVal,
-    scrollTarget,
-  });
-
+  const { containerRef, chartRef } = useLightweightChart({ sectorId: sector.id, isUp, isExpanded: true, dateVal, scrollTarget });
   const handleFirst = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onFirst?.(); };
   const handleLast  = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onLast?.(); };
-
   const btnBase = { background:"transparent", border:`1px solid ${C.accentBorder}`, borderRadius:6, padding:"0 14px", height:30, fontSize:11, fontWeight:600, cursor:"pointer", color:C.accent, letterSpacing:".04em", transition:"all .15s", fontFamily:"inherit" };
-
   return (
     <div style={{position:"fixed",inset:0,zIndex:9999,background:C.pageBg,display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",height:52,background:C.toolbarBg,borderBottom:`1px solid ${C.border}`,flexShrink:0,zIndex:20,gap:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 12px",height:32,color:"#7a9cc4",cursor:"pointer",fontSize:13,fontFamily:"inherit",transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color="#7a9cc4";}}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8l5 5"/></svg>
-            back
+          <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 12px",height:32,color:"#7a9cc4",cursor:"pointer",fontSize:13,fontFamily:"inherit",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color="#7a9cc4";}}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8l5 5"/></svg>back
           </button>
-
           <div style={{position:"relative"}}>
             <div onClick={()=>setShowDropdown(true)} style={{display:"flex",alignItems:"center",gap:8,background:C.inputBg,padding:"0 12px",height:32,borderRadius:6,minWidth:160,cursor:"text",border:`1px solid ${C.borderHover}`}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-              {showDropdown?(
-                <input autoFocus type="text" placeholder="Search sector..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} onBlur={()=>setTimeout(()=>setShowDropdown(false),200)} style={{background:"transparent",border:"none",color:"#fff",outline:"none",width:"100%",fontSize:13}}/>
-              ):(
-                <span style={{color:"#fff",fontWeight:"bold",fontSize:13,flex:1}}>{sector.id}</span>
-              )}
+              {showDropdown?(<input autoFocus type="text" placeholder="Search sector..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} onBlur={()=>setTimeout(()=>setShowDropdown(false),200)} style={{background:"transparent",border:"none",color:"#fff",outline:"none",width:"100%",fontSize:13}}/>):(<span style={{color:"#fff",fontWeight:"bold",fontSize:13,flex:1}}>{sector.id}</span>)}
               <div style={{display:"flex",alignItems:"center",gap:4}}>
                 {showDropdown&&searchTerm&&(<div onMouseDown={e=>{e.preventDefault();e.stopPropagation();setSearchTerm("");}} style={{cursor:"pointer",color:"#7a9cc4",display:"flex"}}><IconX/></div>)}
                 <div style={{transform:showDropdown?"rotate(180deg)":"none",transition:"transform .2s",display:"flex"}}><IconCaret/></div>
               </div>
             </div>
-            {showDropdown&&(
-              <div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",zIndex:150,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",maxHeight:260,overflowY:"auto"}}>
-                {allSectors.filter(id=>id.toLowerCase().includes(searchTerm.toLowerCase())).map(id=>(
-                  <div key={id} onMouseDown={e=>{e.preventDefault();onSectorChange?.(id);setShowDropdown(false);setSearchTerm("");}}
-                    style={{padding:"8px 14px",cursor:"pointer",fontSize:13,color:sector.id===id?C.accent:"#9ab",fontWeight:sector.id===id?"bold":"normal",background:sector.id===id?C.accentBg:"transparent"}}
-                    onMouseEnter={e=>{if(sector.id!==id)e.currentTarget.style.background="rgba(26,39,68,0.8)";}}
-                    onMouseLeave={e=>{if(sector.id!==id)e.currentTarget.style.background="transparent";}}>
-                    {id}
-                  </div>
-                ))}
-                {!allSectors.filter(id=>id.toLowerCase().includes(searchTerm.toLowerCase())).length&&(
-                  <div style={{padding:"10px 14px",color:C.textMuted,fontSize:13,textAlign:"center"}}>No sectors found</div>
-                )}
-              </div>
-            )}
+            {showDropdown&&(<div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",zIndex:150,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",maxHeight:260,overflowY:"auto"}}>
+              {allSectors.filter(id=>id.toLowerCase().includes(searchTerm.toLowerCase())).map(id=>(<div key={id} onMouseDown={e=>{e.preventDefault();onSectorChange?.(id);setShowDropdown(false);setSearchTerm("");}} style={{padding:"8px 14px",cursor:"pointer",fontSize:13,color:sector.id===id?C.accent:"#9ab",fontWeight:sector.id===id?"bold":"normal",background:sector.id===id?C.accentBg:"transparent"}} onMouseEnter={e=>{if(sector.id!==id)e.currentTarget.style.background="rgba(26,39,68,0.8)";}} onMouseLeave={e=>{if(sector.id!==id)e.currentTarget.style.background="transparent";}}>{id}</div>))}
+              {!allSectors.filter(id=>id.toLowerCase().includes(searchTerm.toLowerCase())).length&&(<div style={{padding:"10px 14px",color:C.textMuted,fontSize:13,textAlign:"center"}}>No sectors found</div>)}
+            </div>)}
           </div>
         </div>
-
         <div style={{fontSize:15,fontWeight:"bold",color:"#fff",letterSpacing:"1px",flexShrink:0}}>{sector.id}</div>
-
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"flex-end"}}>
-          {topFlowStock&&(
-            <span style={{display:"inline-flex",alignItems:"center",gap:5,background:topFlowStock.chg>=0?C.greenBg:C.yellowBg,border:`1px solid ${topFlowStock.chg>=0?C.greenBorder:C.yellowBorder}`,color:topFlowStock.chg>=0?"#4ade80":"#fbbf24",fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:99}}>
-              {topFlowStock.sym}<span style={{fontSize:10}}>{topFlowStock.chg>=0?"▲":"▼"}</span>
-            </span>
-          )}
+          {topFlowStock&&(<span style={{display:"inline-flex",alignItems:"center",gap:5,background:topFlowStock.chg>=0?C.greenBg:C.yellowBg,border:`1px solid ${topFlowStock.chg>=0?C.greenBorder:C.yellowBorder}`,color:topFlowStock.chg>=0?"#4ade80":"#fbbf24",fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{topFlowStock.sym}<span style={{fontSize:10}}>{topFlowStock.chg>=0?"▲":"▼"}</span></span>)}
           <button onClick={handleFirst} style={btnBase} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>FIRST DATA</button>
           <button onClick={handleLast}  style={btnBase} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>LAST DATA</button>
-          <button onClick={handleLast} style={{width:30,height:30,borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}>
-            <IconRefresh/>
-          </button>
+          <button onClick={handleLast} style={{width:30,height:30,borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}><IconRefresh/></button>
         </div>
       </div>
-
       <div style={{flex:1,display:"flex",overflow:"hidden",padding:16,gap:16}}>
         <div ref={containerRef} style={{flex:1,background:C.panelBg,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden",minHeight:300}}/>
         <div style={{width:140,display:"flex",flexDirection:"column",gap:8,flexShrink:0}}>
           <div style={{color:C.yellow,fontSize:12,fontWeight:700,textAlign:"center",letterSpacing:"0.5px",paddingBottom:4,borderBottom:`1px solid ${C.border}`}}>Symbol In Sector</div>
           <div className="custom-scrollbar" style={{display:"flex",flexDirection:"column",gap:4,overflowY:"auto",flex:1,paddingRight:2}}>
-            {sector.stocks.map(st=>(
-              <div key={st.sym} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(22,32,53,0.7)",border:`1px solid ${C.border}`,borderRadius:7,padding:"8px 10px",gap:6}}>
-                {st.hasFlow?(<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,background:st.chg>=0?C.green:"#f59e0b",color:"#fff",lineHeight:1,flexShrink:0}}>Flow</span>):(<span style={{width:28,flexShrink:0}}/>)}
-                <span style={{fontSize:12,fontWeight:600,color:st.hasFlow?C.textPrimary:"#7a9cc4",textAlign:"right",flex:1}}>{st.sym}</span>
-              </div>
-            ))}
+            {sector.stocks.map(st=>(<div key={st.sym} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(22,32,53,0.7)",border:`1px solid ${C.border}`,borderRadius:7,padding:"8px 10px",gap:6}}>
+              {st.hasFlow?(<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,background:st.chg>=0?C.green:"#f59e0b",color:"#fff",lineHeight:1,flexShrink:0}}>Flow</span>):(<span style={{width:28,flexShrink:0}}/>)}
+              <span style={{fontSize:12,fontWeight:600,color:st.hasFlow?C.textPrimary:"#7a9cc4",textAlign:"right",flex:1}}>{st.sym}</span>
+            </div>))}
           </div>
         </div>
       </div>
@@ -523,104 +455,240 @@ function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast
   );
 }
 
-// ─── EMPTY STOCK DETAIL CARD ──────────────────────────────────────────────────
-function StockDetailCard() {
+// ─── STOCK DETAIL CARD ────────────────────────────────────────────────────────
+function StockDetailCard({ dateVal, scrollTarget, onReset, selectedSym, onSymChange }) {
+  const setSelectedSym = onSymChange;
+  const [open,setOpen] = useState(false);
+  const [search,setSearch] = useState("");
+  const ref = useRef(null);
+
+  const allStocks = useMemo(() => {
+    const all = [];
+    [...SET_SECTORS, ...MAI_SECTORS].forEach(sec => {
+      sec.stocks.forEach(st => all.push({ ...st, sector: sec.label, market: sec.market }));
+    });
+    return all;
+  }, []);
+
+  const filtered = useMemo(() => allStocks.filter(s => s.sym.includes(search.toUpperCase())), [allStocks, search]);
+  const selectedStock = useMemo(() => allStocks.find(s => s.sym === selectedSym), [allStocks, selectedSym]);
+  const isUp = useMemo(() => {
+    if (!selectedSym) return true;
+    const d = genSeriesData(selectedSym, 160);
+    return d.length > 0 ? d[d.length-1].value >= d[0].value : true;
+  }, [selectedSym]);
+
+  useEffect(() => {
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  const { containerRef } = useLightweightChart({ sectorId: selectedSym, isUp, isExpanded: false, dateVal, scrollTarget });
+
   return (
-    <div style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, display:"flex", flexDirection:"column", minHeight:280 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}` }}>
-        <span style={{ color:C.textMuted, fontSize:13, fontWeight:500 }}>Symbol...</span>
-        <div style={{ display:"flex", gap:8 }}>
-          <button style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }}><IconSearchZoom/></button>
-          <button style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }}><IconRefresh/></button>
+    <div style={{ background:C.cardBg, border:`1px solid ${C.border}`, borderRadius:8, display:"flex", flexDirection:"column", minHeight:280 }}>
+      <div ref={ref} style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}` }}>
+        <div onClick={() => setOpen(o => !o)} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flex:1, minWidth:0 }}>
+          <IconSearch/>
+          {open ? (
+            <input autoFocus type="text" placeholder="Search symbol..." value={search} onChange={e => setSearch(e.target.value)} onClick={e => e.stopPropagation()} style={{ background:"transparent", border:"none", color:"#fff", outline:"none", fontSize:13, width:"100%", fontFamily:"inherit" }}/>
+          ) : (
+            <span style={{ color: selectedSym ? C.textPrimary : C.textMuted, fontSize:13, fontWeight: selectedSym ? 600 : 400 }}>{selectedSym || "Symbol..."}</span>
+          )}
+          {selectedStock?.hasFlow && (<span style={{ fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:3, flexShrink:0, background: selectedStock.chg >= 0 ? C.green : "#f59e0b", color:"#000" }}>Flow</span>)}
+          <div style={{ transform: open ? "rotate(180deg)" : "none", transition:"transform .2s", display:"flex", alignItems:"center", marginLeft:"auto", flexShrink:0 }}><IconCaret/></div>
         </div>
+        <div style={{ display:"flex", gap:8, marginLeft:8, flexShrink:0 }}>
+          <button style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }} onClick={() => setOpen(o => !o)}><IconSearchZoom/></button>
+          <button style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }} onClick={onReset}><IconRefresh/></button>
+        </div>
+        {open && (
+          <div className="custom-scrollbar" style={{ position:"absolute", top:"100%", left:0, marginTop:4, background:C.dropdownBg, border:`1px solid ${C.border}`, borderRadius:8, width:"100%", zIndex:200, boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)", maxHeight:280, overflowY:"auto" }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding:"12px", color:C.textMuted, fontSize:12, textAlign:"center" }}>No match found</div>
+            ) : filtered.map(st => (
+              <div key={st.sym} onMouseDown={e => { e.preventDefault(); setSelectedSym(st.sym); setOpen(false); setSearch(""); }}
+                style={{ padding:"8px 14px", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"space-between", color: st.sym === selectedSym ? C.accent : C.textPrimary, background: st.sym === selectedSym ? C.accentBg : "transparent" }}
+                onMouseEnter={e => { if (st.sym !== selectedSym) e.currentTarget.style.background = "rgba(26,39,68,0.8)"; }}
+                onMouseLeave={e => { if (st.sym !== selectedSym) e.currentTarget.style.background = "transparent"; }}>
+                <span style={{ fontWeight: st.sym === selectedSym ? 700 : 400 }}>{st.sym}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  {st.hasFlow && (<span style={{ fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:3, background: st.chg >= 0 ? C.green : "#f59e0b", color:"#000" }}>Flow</span>)}
+                  <span style={{ fontSize:11, color:C.textMuted }}>{st.sector}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16 }}>
-        <svg width="40" height="32" viewBox="0 0 24 24" fill="#172236">
-          <rect x="2" y="4" width="20" height="4" rx="1"/>
-          <rect x="2" y="12" width="20" height="4" rx="1"/>
-          <rect x="2" y="20" width="14" height="4" rx="1"/>
-        </svg>
-        <span style={{ color:"#253a60", fontSize:16, fontWeight:500 }}>Please select a stock.</span>
-      </div>
+      {selectedSym ? (
+        <div style={{ flex:1, minHeight:220 }}>
+          <div ref={containerRef} style={{ width:"100%", height:"100%", minHeight:220 }}/>
+        </div>
+      ) : (
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16 }}>
+          <svg width="40" height="32" viewBox="0 0 24 24" fill="#172236"><rect x="2" y="4" width="20" height="4" rx="1"/><rect x="2" y="12" width="20" height="4" rx="1"/><rect x="2" y="20" width="14" height="4" rx="1"/></svg>
+          <span style={{ color:"#253a60", fontSize:16, fontWeight:500 }}>Please select a stock.</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── SECTOR CARD ──────────────────────────────────────────────────────────────
-function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, scrollTarget, onReset }) {
+// ─── RESIZE HANDLE HOOK ───────────────────────────────────────────────────────
+function useResizable({ defaultHeight, minHeight = 120, maxHeight = 1200 }) {
+  const [height, setHeight] = useState(defaultHeight);
+  useEffect(() => { setHeight(defaultHeight); }, [defaultHeight]);
+
+  const onMouseDown = useCallback((e) => {
+    e.preventDefault();
+    dragState.current = { startY: e.clientY, startH: height };
+
+    const onMove = (ev) => {
+      if (!dragState.current) return;
+      const delta = ev.clientY - dragState.current.startY;
+      const next = Math.max(minHeight, Math.min(maxHeight, dragState.current.startH + delta));
+      setHeight(next);
+    };
+    const onUp = () => {
+      dragState.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [height, minHeight, maxHeight]);
+
+  return { height, setHeight, onMouseDown };
+}
+
+// ─── RESIZE HANDLE UI ─────────────────────────────────────────────────────────
+function ResizeHandle({ onMouseDown, height }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        height: 14,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "ns-resize",
+        flexShrink: 0,
+        borderTop: `1px solid ${hovered ? C.accentBorder : C.border}`,
+        background: hovered ? "rgba(6,182,212,0.04)" : "transparent",
+        transition: "all .15s",
+        gap: 4,
+        position: "relative",
+      }}
+      title={`Drag to resize · ${Math.round(height)}px`}
+    >
+      {/* dots grip */}
+      {[0,1,2].map(i => (
+        <span key={i} style={{
+          width: 3, height: 3, borderRadius: "50%",
+          background: hovered ? C.accent : "#253a60",
+          transition: "background .15s",
+          flexShrink: 0,
+        }}/>
+      ))}
+      {hovered && (
+        <span style={{
+          position: "absolute", right: 10,
+          fontSize: 10, color: C.accent, opacity: 0.7,
+          fontFamily: "monospace", letterSpacing: "0.03em",
+          pointerEvents: "none",
+        }}>
+          {Math.round(height)}px
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── SECTOR CARD (resizable) ──────────────────────────────────────────────────
+function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, scrollTarget, onReset, defaultChartHeight = 220 }) {
   const isEmpty = sector.stocks.length === 0;
   const top  = getTopBadge(sector.stocks);
   const isUp = top ? top.isUp : true;
 
+  const { height: chartHeight, onMouseDown: handleResizeDown } = useResizable({
+    defaultHeight: defaultChartHeight,
+    minHeight: 80,
+    maxHeight: 900,
+  });
+
   return (
     <div
       style={{
-        background:C.cardBg, border:isExpanded?"none":`1px solid ${C.border}`, borderRadius:8,
-        display:"flex", flexDirection:"column",
-        position:isExpanded?"absolute":"relative",
-        inset:isExpanded?0:"auto",
-        height:isExpanded?"100%":"auto",
-        minHeight:isExpanded?"100%":280,
-        transition:"border-color .2s",
-      }}
-      onMouseEnter={e=>{if(!isExpanded)e.currentTarget.style.borderColor=C.borderHover;}}
-      onMouseLeave={e=>{if(!isExpanded)e.currentTarget.style.borderColor=C.border;}}
+  background: C.cardBg,
+  border: isExpanded ? "none" : `1px solid ${C.border}`,
+  borderRadius: 8,
+  display: "flex",
+  flexDirection: "column",
+  position: isExpanded ? "absolute" : "relative",
+  inset: isExpanded ? 0 : "auto",
+  height: isExpanded ? "100%" : "auto",
+  minHeight: isExpanded ? "auto" : (defaultChartHeight + 60),
+  transition: "border-color .2s",
+}}
+      onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.borderColor = C.borderHover; }}
+      onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.borderColor = C.border; }}
     >
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`1px solid ${C.border}`,marginBottom:0,zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",overflow:"hidden"}}>
-          <span style={{fontSize:isExpanded?24:14,fontWeight:600,color:C.textMuted,letterSpacing:".05em",whiteSpace:"nowrap"}}>{sector.label}</span>
-          {top&&(<span style={{fontSize:isExpanded?14:10,fontWeight:700,padding:isExpanded?"2px 12px":"1px 8px",borderRadius:12,border:`1px solid ${top.color}`,color:top.color,display:"flex",alignItems:"center",gap:4}}>{top.sym} <span style={{fontSize:isExpanded?12:9}}>{top.arrow}</span></span>)}
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          {isExpanded?(
-            <button onClick={onCollapse} style={{background:"transparent",border:"none",color:C.textMuted,cursor:"pointer",padding:4}}><IconX/></button>
-          ):(
-            <button onClick={onExpand} style={{background:"transparent",border:"none",color:C.textMuted,cursor:"pointer",padding:2}}><IconSearchZoom/></button>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}`, zIndex:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", overflow:"hidden" }}>
+          <span style={{ fontSize: isExpanded?24:14, fontWeight:600, color:C.textMuted, letterSpacing:".05em", whiteSpace:"nowrap" }}>{sector.label}</span>
+          {top && (
+            <span style={{ fontSize: isExpanded?14:10, fontWeight:700, padding: isExpanded?"2px 12px":"1px 8px", borderRadius:12, border:`1px solid ${top.color}`, color:top.color, display:"flex", alignItems:"center", gap:4 }}>
+              {top.sym} <span style={{ fontSize: isExpanded?12:9 }}>{top.arrow}</span>
+            </span>
           )}
-          <button onClick={onReset} style={{background:"transparent",border:"none",color:C.textMuted,cursor:"pointer",padding:2}}><IconRefresh/></button>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {isExpanded
+            ? <button onClick={onCollapse} style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:4 }}><IconX/></button>
+            : <button onClick={onExpand}   style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }}><IconSearchZoom/></button>
+          }
+          <button onClick={onReset} style={{ background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", padding:2 }}><IconRefresh/></button>
         </div>
       </div>
 
+      {/* Body */}
       {isEmpty ? (
-        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <span style={{fontSize:14,color:"rgba(74,96,128,0.6)",marginBottom:20}}>{sector.label}: ไม่มีข้อมูล</span>
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <span style={{ fontSize:14, color:"rgba(74,96,128,0.6)", marginBottom:20 }}>{sector.label}: ไม่มีข้อมูล</span>
         </div>
       ) : (
-        <div style={{display:"flex",height:220}}>
-          <div style={{flex:1,minWidth:0,height:220}}>
-            <SectorMiniChart
-              sectorId={sector.id}
-              isUp={isUp}
-              isEmpty={isEmpty}
-              isExpanded={isExpanded}
-              dateVal={dateVal}
-              scrollTarget={scrollTarget}
-            />
+        <>
+          <div style={{ display:"flex", height: chartHeight, transition: "height 0s" }}>
+            <div style={{ flex:1, minWidth:0, height: chartHeight }}>
+              <SectorMiniChart sectorId={sector.id} isUp={isUp} isEmpty={isEmpty} isExpanded={isExpanded} dateVal={dateVal} scrollTarget={scrollTarget}/>
+            </div>
+            <div style={{ width:60, flexShrink:0, display:"flex", flexDirection:"column", justifyContent:"space-around", padding:"6px 4px 20px 2px", pointerEvents:"none" }}>
+              {sector.stocks.map(st => (
+                <div key={st.sym} style={{ display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:3 }}>
+                  {st.hasFlow && (
+                    <span style={{ fontSize:9, fontWeight:700, padding:"1px 5px", borderRadius:3, background: st.chg>=0?C.green:"#f59e0b", color:"#000", lineHeight:"14px", flexShrink:0 }}>Flow</span>
+                  )}
+                  <span style={{ fontSize:11, fontWeight:600, color: st.hasFlow?C.textPrimary:C.textMuted, textAlign:"right", whiteSpace:"nowrap", textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>{st.sym}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{
-            width:60,
-            flexShrink:0,
-            display:"flex",flexDirection:"column",justifyContent:"space-around",
-            padding:"6px 4px 20px 2px",
-            pointerEvents:"none",
-          }}>
-            {sector.stocks.map(st=>(
-              <div key={st.sym} style={{display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"flex-end",gap:3}}>
-                {st.hasFlow&&(
-                  <span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:3,background:st.chg>=0?C.green:"#f59e0b",color:"#000",lineHeight:"14px",flexShrink:0}}>Flow</span>
-                )}
-                <span style={{
-                  fontSize:11,
-                  fontWeight:600,
-                  color:st.hasFlow?C.textPrimary:C.textMuted,
-                  textAlign:"right",
-                  whiteSpace:"nowrap",
-                  textShadow:"0 1px 4px rgba(0,0,0,0.9)",
-                }}>{st.sym}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+
+          {/* ── Resize handle ── */}
+          {!isExpanded && (
+            <ResizeHandle onMouseDown={handleResizeDown} height={chartHeight} />
+          )}
+        </>
       )}
     </div>
   );
@@ -632,93 +700,38 @@ function SectorRotation() {
   const [expandedSectorId,  setExpandedSectorId ] = useState(null);
   const [marketFilter,      setMarketFilter     ] = useState("SET");
   const [marketDropdownOpen,setMarketDropdownOpen] = useState(false);
-  const [subMarketFilter, setSubMarketFilter] = useState("SET&MAI");
+  const [subMarketFilter,   setSubMarketFilter  ] = useState("");
   const [layoutMode,        setLayoutMode       ] = useState(29);
   const marketDropdownRef = useRef(null);
-
   const tradingDates    = useMemo(()=>getTradingDates(),[]);
   const defaultLastData = tradingDates[tradingDates.length-1];
   const [dateVal,setDateVal] = useState(defaultLastData);
-
-  // ── scrollTarget แทน resetTick ──────────────────────────────────────────────
-  // goto: "first" | "last" | "date"   tick: เปลี่ยนทุกครั้งเพื่อ trigger useEffect
   const [scrollTarget, setScrollTarget] = useState(null);
+  const [selectedSym,  setSelectedSym ] = useState(null);
 
-  useEffect(()=>{
-    function h(e){ if(marketDropdownRef.current&&!marketDropdownRef.current.contains(e.target)) setMarketDropdownOpen(false); }
-    document.addEventListener("mousedown",h);
-    return()=>document.removeEventListener("mousedown",h);
-  },[]);
+  useEffect(()=>{ function h(e){ if(marketDropdownRef.current&&!marketDropdownRef.current.contains(e.target)) setMarketDropdownOpen(false); } document.addEventListener("mousedown",h); return()=>document.removeEventListener("mousedown",h); },[]);
 
-  // ── handlers ─────────────────────────────────────────────────────────────────
-  const handleGoToFirst = useCallback(() => {
-    setDateVal(tradingDates[0]);
-    setScrollTarget({ goto: "first", tick: Date.now() });
-  }, [tradingDates]);
+  const handleGoToFirst = useCallback(() => { setDateVal(tradingDates[0]); setScrollTarget({ goto: "first", tick: Date.now() }); }, [tradingDates]);
+  const handleGoToLast  = useCallback(() => { setDateVal(defaultLastData); setScrollTarget({ goto: "last", tick: Date.now() }); }, [defaultLastData]);
 
-  const handleGoToLast = useCallback(() => {
-    setDateVal(defaultLastData);
-    setScrollTarget({ goto: "last", tick: Date.now() });
-  }, [defaultLastData]);
+  const handleMarketChange=(opt)=>{ setMarketFilter(opt); setMarketDropdownOpen(false); setSelectedSectors([]); setSubMarketFilter(""); if(opt==="SET") setLayoutMode(29); if(opt==="MAI") setLayoutMode(8); if(opt==="SET&MAI") setLayoutMode(2); };
+  const handleLayoutChange=(mode)=>{ setLayoutMode(mode); setSelectedSectors([]); if(mode===29) setMarketFilter("SET"); if(mode===8) setMarketFilter("MAI"); if(mode===2) setMarketFilter("SET&MAI"); };
 
-  const handleMarketChange=(opt)=>{
-    setMarketFilter(opt); setMarketDropdownOpen(false); setSelectedSectors([]); setSubMarketFilter("SET&MAI");
-    if(opt==="SET")     setLayoutMode(29);
-    if(opt==="MAI")     setLayoutMode(8);
-    if(opt==="SET&MAI") setLayoutMode(2);
-  };
+  const availableSectors = useMemo(()=>{ if(marketFilter==="SET") return SET_SECTORS.map(s=>s.label); if(marketFilter==="MAI") return MAI_SECTORS.map(s=>s.label); return []; },[marketFilter]);
+  const visibleData = useMemo(()=>{ let data=[]; if(marketFilter==="SET") data=SET_SECTORS; else if(marketFilter==="MAI") data=MAI_SECTORS; if(selectedSectors.length>0) data=data.filter(sec=>selectedSectors.includes(sec.label)); return data; },[marketFilter,selectedSectors]);
+  const gridTemplate = useMemo(()=>{ if(layoutMode===29) return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))"; if(layoutMode===8) return "repeat(auto-fit, minmax(max(45%, 450px), 1fr))"; if(layoutMode===2) return "repeat(1, 1fr)"; return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))"; },[layoutMode]);
 
-  const handleLayoutChange=(mode)=>{
-    setLayoutMode(mode); setSelectedSectors([]);
-    if(mode===29) setMarketFilter("SET");
-    if(mode===8)  setMarketFilter("MAI");
-    if(mode===2)  setMarketFilter("SET&MAI");
-  };
-
-  const availableSectors = useMemo(()=>{
-    if(marketFilter==="SET") return SET_SECTORS.map(s=>s.label);
-    if(marketFilter==="MAI") return MAI_SECTORS.map(s=>s.label);
-    return [];
-  },[marketFilter]);
-
-  const visibleData = useMemo(()=>{
-    let data=[];
-    if(marketFilter==="SET") data=SET_SECTORS;
-    else if(marketFilter==="MAI") data=MAI_SECTORS;
-    if(selectedSectors.length>0) data=data.filter(sec=>selectedSectors.includes(sec.label));
-    return data;
-  },[marketFilter,selectedSectors]);
-
-  const gridTemplate = useMemo(()=>{
-    if(layoutMode===29) return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))";
-    if(layoutMode===8)  return "repeat(auto-fit, minmax(max(45%, 450px), 1fr))";
-    if(layoutMode===2)  return "repeat(1, 1fr)";
-    return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))";
-  },[layoutMode]);
+  // Default chart height per market
+  const defaultChartHeight = layoutMode === 29 ? 220 : layoutMode === 8 ? 320 : 500;
 
   const boxStyle = { display:"flex",alignItems:"center",gap:8,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:6,padding:"0 12px",height:36,position:"relative",cursor:"pointer" };
   const btnStyle = (active)=>({ background:active?"rgba(37,54,96,0.8)":"transparent",border:`1px solid ${C.border}`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",height:34,width:34,cursor:"pointer",color:active?C.textPrimary:C.textMuted,transition:"all .15s" });
-  const dataBtn  = (label,onClick)=>(
-    <button key={label} onClick={onClick}
-      style={{background:"transparent",border:`1px solid ${C.accentBorder}`,borderRadius:4,padding:"0 14px",height:34,fontSize:11,fontWeight:600,cursor:"pointer",color:C.accent,letterSpacing:".04em",transition:"all .15s"}}
-      onMouseEnter={e=>e.currentTarget.style.background=C.accentBg}
-      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{label}</button>
-  );
+  const dataBtn  = (label,onClick)=>(<button key={label} onClick={onClick} style={{background:"transparent",border:`1px solid ${C.accentBorder}`,borderRadius:4,padding:"0 14px",height:34,fontSize:11,fontWeight:600,cursor:"pointer",color:C.accent,letterSpacing:".04em",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{label}</button>);
 
   return (
     <div style={{background:"transparent",color:C.textPrimary,fontFamily:"ui-sans-serif,system-ui,sans-serif",minHeight:"100%",padding:"20px"}}>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #1e3050; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #253a60; }
-        .tv-lightweight-charts a,
-        a[href*="tradingview"],
-        [class*="watermark"],
-        [class*="attribution"] { display: none !important; }
-      `}</style>
+      <style>{`.custom-scrollbar::-webkit-scrollbar{width:6px}.custom-scrollbar::-webkit-scrollbar-track{background:transparent}.custom-scrollbar::-webkit-scrollbar-thumb{background-color:#1e3050;border-radius:10px}.custom-scrollbar::-webkit-scrollbar-thumb:hover{background-color:#253a60}.tv-lightweight-charts a,a[href*="tradingview"],[class*="watermark"],[class*="attribution"]{display:none!important}`}</style>
 
-      {/* Toolbar */}
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:16}}>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -729,83 +742,56 @@ function SectorRotation() {
                 {marketFilter!=="SET"&&(<div style={{display:"flex",alignItems:"center",cursor:"pointer",color:"#7a9cc4"}} onClick={e=>{e.stopPropagation();handleMarketChange("SET");}}><IconX/></div>)}
                 <div style={{transform:marketDropdownOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"flex",alignItems:"center"}}><IconCaret/></div>
               </div>
-              {marketDropdownOpen&&(
-                <div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 0",width:"100%",zIndex:200,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)"}}>
-                  {["SET","MAI","SET&MAI"].map(opt=>(<div key={opt} onMouseDown={e=>{e.preventDefault();e.stopPropagation();handleMarketChange(opt);}} style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12,fontSize:13,color:opt===marketFilter?C.textPrimary:"#7a9cc4",fontWeight:opt===marketFilter?"bold":"normal",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,39,68,0.8)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><span style={{width:6,height:6,borderRadius:"50%",background:marketFilter===opt?C.blue:"#253660"}}/>{opt==="SET&MAI"?"SET & MAI":opt}</div>))}
-                </div>
-              )}
+              {marketDropdownOpen&&(<div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 0",width:"100%",zIndex:200,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)"}}>
+                {["SET","MAI","SET&MAI"].map(opt=>(<div key={opt} onMouseDown={e=>{e.preventDefault();e.stopPropagation();handleMarketChange(opt);}} style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12,fontSize:13,color:opt===marketFilter?C.textPrimary:"#7a9cc4",fontWeight:opt===marketFilter?"bold":"normal",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,39,68,0.8)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><span style={{width:6,height:6,borderRadius:"50%",background:marketFilter===opt?C.blue:"#253660"}}/>{opt==="SET&MAI"?"SET & MAI":opt}</div>))}
+              </div>)}
             </div>
             <div style={{display:"flex",gap:4}}>
               {[29,8,2].map(col=>(<button key={col} onClick={()=>handleLayoutChange(col)} style={btnStyle(layoutMode===col)}>{col===29?<IconGrid3x3/>:col===8?<IconGrid2x2/>:<IconList/>}</button>))}
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",marginLeft:40}}>
-            {marketFilter==="SET&MAI"?(
-              <SingleMarketSelect selected={subMarketFilter} onChange={setSubMarketFilter}/>
-            ):(
-              <SectorMultiSelect options={availableSectors} selected={selectedSectors} onChange={setSelectedSectors} max={marketFilter==="MAI"?8:layoutMode}/>
-            )}
+            {marketFilter==="SET&MAI"?(<SingleMarketSelect selected={subMarketFilter} onChange={setSubMarketFilter}/>):(<SectorMultiSelect options={availableSectors} selected={selectedSectors} onChange={setSelectedSectors} max={marketFilter==="MAI"?8:layoutMode}/>)}
           </div>
         </div>
-
         <div style={{display:"flex",flexDirection:"column",gap:12,alignItems:"flex-end"}}>
-          <div style={{display:"flex",gap:8}}>
-            {dataBtn("FIRST DATA", handleGoToFirst)}
-            {dataBtn("LAST DATA",  handleGoToLast)}
-          </div>
-          <DatePicker dates={tradingDates} selected={dateVal} onChange={(key) => {
-            setDateVal(key);
-            setScrollTarget({ goto: "date", tick: Date.now() });
-          }}/>
+          <div style={{display:"flex",gap:8}}>{dataBtn("FIRST DATA", handleGoToFirst)}{dataBtn("LAST DATA", handleGoToLast)}</div>
+          <DatePicker dates={tradingDates} selected={dateVal} onChange={(key) => { setDateVal(key); setScrollTarget({ goto: "date", tick: Date.now() }); }}/>
         </div>
       </div>
 
-      {/* Grid */}
-      <div style={{display:"grid",gridTemplateColumns:gridTemplate,gap:20,transition:"all 0.3s ease"}}>
+      <div style={{display:"grid",gridTemplateColumns:gridTemplate,gap:20,transition:"all 0.3s ease",alignItems:"start"}}>
         {marketFilter==="SET&MAI"?(
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             {(subMarketFilter==="SET"||subMarketFilter==="SET&MAI")&&(
               <SectorCard key={SET_SUMMARY.id} sector={SET_SUMMARY} dateVal={dateVal} scrollTarget={scrollTarget}
-                onExpand={()=>setExpandedSectorId(SET_SUMMARY.id)}
-                onReset={handleGoToLast}/>
+                onExpand={()=>setExpandedSectorId(SET_SUMMARY.id)} onReset={handleGoToLast}
+                defaultChartHeight={subMarketFilter==="SET&MAI" ? 220 : 500}/>
             )}
-            {subMarketFilter !== "SET&MAI" && <StockDetailCard/>}
             {(subMarketFilter==="MAI"||subMarketFilter==="SET&MAI")&&(
               <SectorCard key={MAI_SUMMARY.id} sector={MAI_SUMMARY} dateVal={dateVal} scrollTarget={scrollTarget}
-                onExpand={()=>setExpandedSectorId(MAI_SUMMARY.id)}
-                onReset={handleGoToLast}/>
+                onExpand={()=>setExpandedSectorId(MAI_SUMMARY.id)} onReset={handleGoToLast}
+                defaultChartHeight={subMarketFilter==="SET&MAI" ? 220 : 500}/>
+            )}
+            {subMarketFilter===""&&(
+              <StockDetailCard dateVal={dateVal} scrollTarget={scrollTarget} onReset={handleGoToLast}
+                selectedSym={selectedSym} onSymChange={setSelectedSym}/>
             )}
           </div>
         ):(
           visibleData.map(sec=>(
             <SectorCard key={sec.id} sector={sec} dateVal={dateVal} scrollTarget={scrollTarget}
-              onExpand={()=>setExpandedSectorId(sec.id)}
-              onReset={handleGoToLast}/>
+              onExpand={()=>setExpandedSectorId(sec.id)} onReset={handleGoToLast}
+              defaultChartHeight={defaultChartHeight}/>
           ))
         )}
-        {marketFilter!=="SET&MAI"&&visibleData.length===0&&(
-          <div style={{gridColumn:"1 / -1",textAlign:"center",padding:"60px 0",color:C.textMuted}}>
-            <span style={{fontSize:32,display:"block",marginBottom:10}}>🔍</span>ไม่พบข้อมูล
-          </div>
-        )}
+        {marketFilter!=="SET&MAI"&&visibleData.length===0&&(<div style={{gridColumn:"1 / -1",textAlign:"center",padding:"60px 0",color:C.textMuted}}><span style={{fontSize:32,display:"block",marginBottom:10}}>🔍</span>ไม่พบข้อมูล</div>)}
       </div>
 
-      {/* Expanded Modal */}
       {expandedSectorId&&(()=>{
         const sec=[...SET_SECTORS,...MAI_SECTORS,SET_SUMMARY,MAI_SUMMARY].find(s=>s.id===expandedSectorId);
         if(!sec) return null;
-        return(
-          <ExpandedChart
-            sector={sec}
-            dateVal={dateVal}
-            tradingDates={tradingDates}
-            scrollTarget={scrollTarget}
-            onClose={()=>setExpandedSectorId(null)}
-            onFirst={handleGoToFirst}
-            onLast={handleGoToLast}
-            onSectorChange={setExpandedSectorId}
-          />
-        );
+        return(<ExpandedChart sector={sec} dateVal={dateVal} tradingDates={tradingDates} scrollTarget={scrollTarget} onClose={()=>setExpandedSectorId(null)} onFirst={handleGoToFirst} onLast={handleGoToLast} onSectorChange={setExpandedSectorId}/>);
       })()}
     </div>
   );
