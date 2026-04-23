@@ -632,7 +632,7 @@ function SectorRotation() {
   const [expandedSectorId,  setExpandedSectorId ] = useState(null);
   const [marketFilter,      setMarketFilter     ] = useState("SET");
   const [marketDropdownOpen,setMarketDropdownOpen] = useState(false);
-  const [subMarketFilter,   setSubMarketFilter  ] = useState("");
+  const [subMarketFilter, setSubMarketFilter] = useState("SET&MAI");
   const [layoutMode,        setLayoutMode       ] = useState(29);
   const marketDropdownRef = useRef(null);
 
@@ -662,7 +662,7 @@ function SectorRotation() {
   }, [defaultLastData]);
 
   const handleMarketChange=(opt)=>{
-    setMarketFilter(opt); setMarketDropdownOpen(false); setSelectedSectors([]); setSubMarketFilter("");
+    setMarketFilter(opt); setMarketDropdownOpen(false); setSelectedSectors([]); setSubMarketFilter("SET&MAI");
     if(opt==="SET")     setLayoutMode(29);
     if(opt==="MAI")     setLayoutMode(8);
     if(opt==="SET&MAI") setLayoutMode(2);
@@ -769,12 +769,12 @@ function SectorRotation() {
                 onExpand={()=>setExpandedSectorId(SET_SUMMARY.id)}
                 onReset={handleGoToLast}/>
             )}
+            {subMarketFilter !== "SET&MAI" && <StockDetailCard/>}
             {(subMarketFilter==="MAI"||subMarketFilter==="SET&MAI")&&(
               <SectorCard key={MAI_SUMMARY.id} sector={MAI_SUMMARY} dateVal={dateVal} scrollTarget={scrollTarget}
                 onExpand={()=>setExpandedSectorId(MAI_SUMMARY.id)}
                 onReset={handleGoToLast}/>
             )}
-            <StockDetailCard/>
           </div>
         ):(
           visibleData.map(sec=>(
