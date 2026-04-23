@@ -361,7 +361,7 @@ function ReplayPanel({ toolHint }) {
             `}</style>
             
             {/* 🟢 แก้ไข 3: ปรับ z-index ให้อยู่ระดับ 10 เพื่อไม่ให้ทะลุ Sidebar (ซึ่งปกติอยู่ > 40) */}
-            {toolHint && <div className="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 z-10">{toolHint}</div>}
+            {toolHint && <div className="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 z-40">{toolHint}</div>}
             
             <div className="p-2 sm:p-3 md:p-4 border-b border-slate-700 bg-[#0f172a] shrink-0 relative">
                 <div className="flex flex-wrap gap-2 sm:gap-3 mb-2 sm:mb-3">
