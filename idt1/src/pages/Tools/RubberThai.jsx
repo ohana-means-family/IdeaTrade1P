@@ -900,36 +900,16 @@ export default function RubberThai() {
   }
 
   /* ==========================================================
-     CASE 3 : FULL DASHBOARD — responsive layout
-     - Mobile (xs/sm) & small height Desktop: scrollable page
-     - Tablet/Desktop (md+): h-screen overflow-hidden, dynamic height split
+     CASE 3 : FULL DASHBOARD — responsive layout (Unified)
+     - คำนวณความสูงกราฟให้เต็มจออัตโนมัติทั้ง Mobile และ Desktop
   ========================================================== */
-  const windowInnerHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-  // Use scroll layout if screen is narrow OR if height is too short for split view
-  const isMobileLayout = bp === "xs" || bp === "sm" || windowInnerHeight < 650;
-  const mobileChartHeight = bp === "xs" ? 250 : 320;
-
   return (
-    <div
-      className={`w-full text-white bg-[#0b111a] ${
-        isMobileLayout
-          ? "min-h-screen overflow-y-auto overflow-x-hidden pb-8"
-          : "h-screen overflow-hidden flex flex-col"
-      }`}
-    >
+    <div className="w-full h-[calc(100dvh-64px)] text-white bg-[#0b111a] overflow-hidden flex flex-col">
       <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
 
-      <div
-        className={`w-full max-w-[1600px] mx-auto px-2 xs:px-3 sm:px-6 ${
-          isMobileLayout ? "py-4" : "py-4 lg:py-6 flex-1 flex flex-col min-h-0"
-        }`}
-      >
-{/* TOP SEARCH BAR */}
-        <div
-          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 ${
-            isMobileLayout ? "" : "shrink-0"
-          }`}
-        >
+      <div className="w-full max-w-[1600px] mx-auto px-2 xs:px-3 sm:px-6 py-3 lg:py-6 flex-1 flex flex-col min-h-0">
+        {/* TOP SEARCH BAR */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-6 shrink-0">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <ToolHint
               onViewDetails={() => {
@@ -988,7 +968,7 @@ export default function RubberThai() {
               </div>
 
               {showSymbolDropdown && (
-                <div className="absolute top-full mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-60 sm:max-h-72 overflow-y-auto z-50">
+                <div className="absolute top-full mt-2 w-full bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-60 sm:max-h-72 overflow-y-auto z-50 custom-scrollbar">
                   {filteredSymbols.length > 0 ? (
                     filteredSymbols.map((item, index) => (
                       <div
@@ -1022,92 +1002,27 @@ export default function RubberThai() {
           </div>
         </div>
         
-        {/* DYNAMIC CHARTS */}
-        {isMobileLayout ? (
-          <div className="flex flex-col gap-4 sm:gap-6">
-            {refreshing ? (
-              <>
-                <ChartSkeleton title={`CLOSE (${symbolQuery || symbol})`} height={mobileChartHeight} />
-                <ChartSkeleton title="Rubber Thai Price" height={mobileChartHeight} />
-              </>
-            ) : (
-              <>
-                {symbol ? (
-                  <DynamicChart
-                    chartId="chart-close"
-                    key={`top-${symbol}`}
-                    title={`CLOSE (${symbol})`}
-                    height={mobileChartHeight}
-                    color="#22c55e"
-                    gradientId="greenArea"
-                    seed={chartSeed + 1}
-                    points={300}
-                    globalHoverIndex={globalHoverIndex}
-                    setGlobalHoverIndex={setGlobalHoverIndex}
-                    chartRefs={chartRefs}
-                    pointGap={pointGap}
-                    handleZoom={handleZoom}
-                  />
-                ) : (
-                  <EmptyChartCard title="CLOSE" height={mobileChartHeight} message="Please select symbol" />
-                )}
+        {/* DYNAMIC CHARTS (Unified for both Mobile & Desktop) */}
+        <div
+          className="flex-1 grid grid-cols-1 grid-rows-2 gap-3 sm:gap-4 lg:gap-6 min-h-0 pb-2"
+          ref={chartContainerRef}
+        >
+          {refreshing ? (
+            <>
+              <ChartSkeleton title={`CLOSE (${symbolQuery || symbol})`} height={chartHeight} />
+              <ChartSkeleton title="Rubber Thai Price" height={chartHeight} />
+            </>
+          ) : (
+            <>
+              {symbol ? (
                 <DynamicChart
-                  chartId="chart-rubber"
-                  key={`bot-${symbol}`}
-                  title="Rubber Thai Price"
-                  height={mobileChartHeight}
-                  color="#facc15"
-                  gradientId="yellowArea"
-                  seed={chartSeed + 97}
-                  points={300}
-                  globalHoverIndex={globalHoverIndex}
-                  setGlobalHoverIndex={setGlobalHoverIndex}
-                  chartRefs={chartRefs}
-                  pointGap={pointGap}
-                  handleZoom={handleZoom}
-                />
-              </>
-            )}
-          </div>
-        ) : (
-          <div
-            className="flex-1 grid grid-cols-1 grid-rows-2 gap-4 lg:gap-6 min-h-0"
-            ref={chartContainerRef}
-          >
-            {refreshing ? (
-              <>
-                <ChartSkeleton title={`CLOSE (${symbolQuery || symbol})`} height={chartHeight} />
-                <ChartSkeleton title="Rubber Thai Price" height={chartHeight} />
-              </>
-            ) : (
-              <>
-                {symbol ? (
-                  <DynamicChart
-                    chartId="chart-close"
-                    key={`top-${symbol}`}
-                    title={`CLOSE (${symbol})`}
-                    height={chartHeight}
-                    color="#22c55e"
-                    gradientId="greenArea"
-                    seed={chartSeed + 1}
-                    points={300}
-                    globalHoverIndex={globalHoverIndex}
-                    setGlobalHoverIndex={setGlobalHoverIndex}
-                    chartRefs={chartRefs}
-                    pointGap={pointGap}
-                    handleZoom={handleZoom}
-                  />
-                ) : (
-                  <EmptyChartCard title="CLOSE" height={chartHeight} message="Please select symbol" />
-                )}
-                <DynamicChart
-                  chartId="chart-rubber"
-                  key={`bot-${symbol}`}
-                  title="Rubber Thai Price"
+                  chartId="chart-close"
+                  key={`top-${symbol}`}
+                  title={`CLOSE (${symbol})`}
                   height={chartHeight}
-                  color="#facc15"
-                  gradientId="yellowArea"
-                  seed={chartSeed + 97}
+                  color="#22c55e"
+                  gradientId="greenArea"
+                  seed={chartSeed + 1}
                   points={300}
                   globalHoverIndex={globalHoverIndex}
                   setGlobalHoverIndex={setGlobalHoverIndex}
@@ -1115,10 +1030,27 @@ export default function RubberThai() {
                   pointGap={pointGap}
                   handleZoom={handleZoom}
                 />
-              </>
-            )}
-          </div>
-        )}
+              ) : (
+                <EmptyChartCard title="CLOSE" height={chartHeight} message="Please select symbol" />
+              )}
+              <DynamicChart
+                chartId="chart-rubber"
+                key={`bot-${symbol}`}
+                title="Rubber Thai Price"
+                height={chartHeight}
+                color="#facc15"
+                gradientId="yellowArea"
+                seed={chartSeed + 97}
+                points={300}
+                globalHoverIndex={globalHoverIndex}
+                setGlobalHoverIndex={setGlobalHoverIndex}
+                chartRefs={chartRefs}
+                pointGap={pointGap}
+                handleZoom={handleZoom}
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
