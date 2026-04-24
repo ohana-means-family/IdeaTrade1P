@@ -79,6 +79,7 @@ export default function AppRoutes() {
       <Route path="/real-flow" element={<Dashboard initialPage="real-flow" />} />
       <Route path="/ideatradepoint" element={<Dashboard initialPage="ideatradepoint" />} />
       <Route path="/hisideatradepoint" element={<Dashboard initialPage="hisideatradepoint" />} />
+      <Route path="/stock-data-table" element={<Dashboard initialPage="stock-data-table" />} />
       
       {/* === Fallback (กันหลง) === */}
       <Route path="*" element={<Navigate to="/" replace />} />
