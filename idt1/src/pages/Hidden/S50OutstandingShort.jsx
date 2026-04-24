@@ -8,7 +8,6 @@ const SYMBOL_COLORS = [
   "#fdba74","#67e8f9","#fde68a","#d9f99d","#fca5a5",
 ];
 
-/* ================= MOCK DATA ================= */
 const MOCK_TABLE = [
   { symbol: "KCE",   outshort: 3.90 },
   { symbol: "HANA",  outshort: 2.88 },
@@ -26,8 +25,43 @@ const MOCK_TABLE = [
   { symbol: "LH",    outshort: 1.36 },
 ];
 
+const ALL_SYMBOLS = [
+  { symbol: "KCE",    outshort: 3.90 }, { symbol: "HANA",   outshort: 2.88 },
+  { symbol: "BH",     outshort: 2.38 }, { symbol: "MTC",    outshort: 2.15 },
+  { symbol: "MINIT",  outshort: 2.14 }, { symbol: "BTS",    outshort: 1.99 },
+  { symbol: "BANPU",  outshort: 1.95 }, { symbol: "AMATA",  outshort: 1.91 },
+  { symbol: "SCC",    outshort: 1.88 }, { symbol: "SPRC",   outshort: 1.64 },
+  { symbol: "IRPC",   outshort: 1.41 }, { symbol: "BDMS",   outshort: 1.38 },
+  { symbol: "CBG",    outshort: 1.36 }, { symbol: "LH",     outshort: 1.36 },
+  { symbol: "DOHOME", outshort: 1.02 }, { symbol: "COM7",   outshort: 1.02 },
+  { symbol: "GLOBAL", outshort: 1.00 }, { symbol: "TIDLOR", outshort: 0.99 },
+  { symbol: "SIRI",   outshort: 0.99 }, { symbol: "BGRIM",  outshort: 0.98 },
+  { symbol: "TISCO",  outshort: 0.96 }, { symbol: "BBL",    outshort: 0.93 },
+  { symbol: "JMT",    outshort: 0.91 }, { symbol: "BCP",    outshort: 0.90 },
+  { symbol: "JAS",    outshort: 0.90 }, { symbol: "AWC",    outshort: 0.88 },
+  { symbol: "CHG",    outshort: 0.84 }, { symbol: "BEM",    outshort: 0.82 },
+  { symbol: "BAM",    outshort: 0.82 }, { symbol: "PTTGC",  outshort: 0.81 },
+  { symbol: "SPALI",  outshort: 0.80 }, { symbol: "RCL",    outshort: 0.78 },
+  { symbol: "IVL",    outshort: 0.75 }, { symbol: "EGCO",   outshort: 0.75 },
+  { symbol: "CK",     outshort: 0.69 }, { symbol: "SCB",    outshort: 0.67 },
+  { symbol: "CPN",    outshort: 0.62 }, { symbol: "BJC",    outshort: 0.62 },
+  { symbol: "TTB",    outshort: 0.61 }, { symbol: "CENTEL", outshort: 0.58 },
+  { symbol: "JMART",  outshort: 0.57 }, { symbol: "BCPG",   outshort: 0.57 },
+  { symbol: "AP",     outshort: 0.56 }, { symbol: "GPSC",   outshort: 0.55 },
+  { symbol: "CCET",   outshort: 0.54 }, { symbol: "RATCH",  outshort: 0.53 },
+  { symbol: "PRM",    outshort: 0.52 }, { symbol: "TASCO",  outshort: 0.50 },
+  { symbol: "SCGP",   outshort: 0.49 }, { symbol: "M",      outshort: 0.48 },
+];
+
 const RANGE_DAYS = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "YTD": 100, "MAX": 730 };
 const RANGES = ["1M", "3M", "6M", "1Y", "YTD", "MAX"];
+
+const BAR_COLORS = [
+  "#ef4444","#f97316","#eab308","#22c55e","#14b8a6",
+  "#3b82f6","#8b5cf6","#ec4899","#f43f5e","#10b981",
+  "#f59e0b","#6366f1","#84cc16","#06b6d4","#a855f7",
+  "#fb923c","#4ade80","#38bdf8","#c084fc","#fbbf24",
+];
 
 const generateSeriesData = (days = 90, seed = 1, base = 20, amplitude = 4) => {
   const data = [];
@@ -90,21 +124,71 @@ const ChevronUpIcon = ({ open }) => (
   </svg>
 );
 
+/* ================= STACKED LABEL CHART ================= */
+function StackedLabelChart() {
+  const containerRef = useRef(null);
+  const [rowH, setRowH] = useState(15);
+  const sorted = [...ALL_SYMBOLS].sort((a, b) => a.outshort - b.outshort);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const h = entry.contentRect.height;
+      setRowH(Math.floor(h / sorted.length));
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [sorted.length]);
+
+  return (
+    <div ref={containerRef} className="absolute top-0 bottom-0 right-0 flex items-center">
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        {sorted.map((item, i) => {
+          const color = BAR_COLORS[i % BAR_COLORS.length];
+          return (
+            <div key={item.symbol} style={{ display: "flex", height: rowH, flexShrink: 0 }}>
+              {/* Label ซ้าย */}
+              <div style={{
+                width: 64, height: "100%",
+                background: "#0d1117",
+                display: "flex", alignItems: "center",
+                justifyContent: "flex-end",
+                paddingRight: 6,
+                borderRight: `2px solid ${color}`,
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: "0.03em" }}>
+                  {item.symbol}
+                </span>
+              </div>
+              {/* Color block ขวา */}
+              <div style={{
+                width: 44, height: "100%",
+                background: color,
+                display: "flex", alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#000" }}>
+                  {item.outshort.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ================= MAIN COMPONENT ================= */
 export default function S50OutstandingShort() {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
-  const seriesMapRef = useRef({});
   const outshortSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const [range, setRange] = useState("3M");
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().slice(0, 10);
-  });
-  const [endDate, setEndDate] = useState(today);
+  const [range, setRange] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [spinning, setSpinning] = useState(false);
@@ -113,7 +197,6 @@ export default function S50OutstandingShort() {
   const [allSeriesData, setAllSeriesData] = useState({});
   const [allPriceData, setAllPriceData] = useState({});
 
-  /* ── Load data ── */
   const loadData = useCallback(() => {
     setSpinning(true);
     setTimeout(() => {
@@ -132,17 +215,15 @@ export default function S50OutstandingShort() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  /* ── Build chart ── */
   useEffect(() => {
     if (!chartContainerRef.current) return;
-
     if (chartRef.current) {
       chartRef.current.remove();
       chartRef.current = null;
-      seriesMapRef.current = {};
       outshortSeriesRef.current = null;
       priceSeriesRef.current = null;
     }
+    if (!selectedSymbol) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: { background: { color: "transparent" }, textColor: "#6b7280", fontFamily: "inherit", fontSize: 11 },
@@ -153,74 +234,43 @@ export default function S50OutstandingShort() {
         horzLine: { color: "rgba(255,255,255,0.15)", style: LineStyle.Dashed, labelBackgroundColor: "#1e2330" },
       },
       rightPriceScale: { borderColor: "rgba(255,255,255,0.06)", textColor: "#6b7280", scaleMargins: { top: 0.08, bottom: 0.08 } },
-      leftPriceScale: { visible: !!selectedSymbol, borderColor: "rgba(255,255,255,0.06)", textColor: "#6b7280", scaleMargins: { top: 0.08, bottom: 0.08 } },
+      leftPriceScale: { visible: true, borderColor: "rgba(255,255,255,0.06)", textColor: "#6b7280", scaleMargins: { top: 0.08, bottom: 0.08 } },
       timeScale: { borderColor: "rgba(255,255,255,0.06)", timeVisible: false, fixLeftEdge: true, fixRightEdge: true },
-      handleScroll: true,
-      handleScale: true,
+      handleScroll: true, handleScale: true,
     });
-
     chartRef.current = chart;
 
-    if (!selectedSymbol) {
-      MOCK_TABLE.forEach((row, i) => {
-        const s = chart.addSeries(LineSeries, {
-          color: SYMBOL_COLORS[i % SYMBOL_COLORS.length],
-          lineWidth: 1.5,
-          priceScaleId: "right",
-          crosshairMarkerVisible: false,
-          lastValueVisible: true,
-          priceLineVisible: false,
-          title: row.symbol,
-        });
-        seriesMapRef.current[row.symbol] = s;
-      });
-    } else {
-      const symIdx = MOCK_TABLE.findIndex(r => r.symbol === selectedSymbol);
-      const symColor = SYMBOL_COLORS[symIdx % SYMBOL_COLORS.length];
+    const symIdx = MOCK_TABLE.findIndex(r => r.symbol === selectedSymbol);
+    const symColor = SYMBOL_COLORS[symIdx % SYMBOL_COLORS.length];
 
-      const os = chart.addSeries(LineSeries, {
-        color: symColor, lineWidth: 2, priceScaleId: "right",
-        crosshairMarkerVisible: true, crosshairMarkerRadius: 4,
-        crosshairMarkerBackgroundColor: symColor,
-        lastValueVisible: true, priceLineVisible: false,
-      });
-      outshortSeriesRef.current = os;
+    outshortSeriesRef.current = chart.addSeries(LineSeries, {
+      color: symColor, lineWidth: 2, priceScaleId: "right",
+      crosshairMarkerVisible: true, crosshairMarkerRadius: 4,
+      crosshairMarkerBackgroundColor: symColor,
+      lastValueVisible: true, priceLineVisible: false,
+    });
 
-      const ps = chart.addSeries(LineSeries, {
-        color: "#60a5fa", lineWidth: 2, priceScaleId: "left",
-        crosshairMarkerVisible: true, crosshairMarkerRadius: 4,
-        crosshairMarkerBackgroundColor: "#60a5fa",
-        lastValueVisible: true, priceLineVisible: false,
-      });
-      priceSeriesRef.current = ps;
-    }
+    priceSeriesRef.current = chart.addSeries(LineSeries, {
+      color: "#60a5fa", lineWidth: 2, priceScaleId: "left",
+      crosshairMarkerVisible: true, crosshairMarkerRadius: 4,
+      crosshairMarkerBackgroundColor: "#60a5fa",
+      lastValueVisible: true, priceLineVisible: false,
+    });
 
     const ro = new ResizeObserver(() => {
       if (chartContainerRef.current)
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
     });
     ro.observe(chartContainerRef.current);
-
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSymbol]);
 
-  /* ── Feed data ── */
   useEffect(() => {
-    if (!chartRef.current || Object.keys(allSeriesData).length === 0) return;
-
-    if (!selectedSymbol) {
-      MOCK_TABLE.forEach(row => {
-        const s = seriesMapRef.current[row.symbol];
-        if (s && allSeriesData[row.symbol]) s.setData(allSeriesData[row.symbol]);
-      });
-    } else {
-      if (outshortSeriesRef.current && allSeriesData[selectedSymbol])
-        outshortSeriesRef.current.setData(allSeriesData[selectedSymbol]);
-      if (priceSeriesRef.current && allPriceData[selectedSymbol])
-        priceSeriesRef.current.setData(allPriceData[selectedSymbol]);
-    }
-
+    if (!chartRef.current || !selectedSymbol || Object.keys(allSeriesData).length === 0) return;
+    if (outshortSeriesRef.current && allSeriesData[selectedSymbol])
+      outshortSeriesRef.current.setData(allSeriesData[selectedSymbol]);
+    if (priceSeriesRef.current && allPriceData[selectedSymbol])
+      priceSeriesRef.current.setData(allPriceData[selectedSymbol]);
     chartRef.current?.timeScale().fitContent();
   }, [allSeriesData, allPriceData, selectedSymbol]);
 
@@ -257,7 +307,7 @@ export default function S50OutstandingShort() {
             </div>
             <div className="space-y-2.5 text-[13px] text-gray-400 leading-relaxed">
               <p>แสดงข้อมูล <span className="text-white font-medium">Outstanding Short Position</span> ของหุ้นใน SET50</p>
-              <p>• กราฟเริ่มต้นแสดง <span className="text-white">ทุก Symbol</span> พร้อมกัน</p>
+              <p>• กราฟเริ่มต้นแสดงเป็น <span className="text-white">Snapshot ล่าสุด</span> ทุก Symbol</p>
               <p>• กดเลือก Symbol ในตารางขวาเพื่อดู Outshort + Price เฉพาะตัว</p>
               <p>• กด Show All หรือกด Symbol เดิมอีกครั้งเพื่อกลับมาดูทั้งหมด</p>
               <p>• ปรับช่วงเวลาด้วยปุ่ม 1M / 3M / 6M / 1Y / YTD / MAX</p>
@@ -268,19 +318,15 @@ export default function S50OutstandingShort() {
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center gap-3 px-5 py-3 border-b border-white/5 shrink-0">
-        {/* ? Hint */}
         <button onClick={() => setShowHint(true)}
           className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-gray-400 hover:text-white transition-all shrink-0"
           style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
           ?
         </button>
 
-        {/* Date pickers */}
         <div className="flex items-center gap-2">
           <div className="relative">
-            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">
-              Start Date
-            </label>
+            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">Start Date</label>
             <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
               <CalendarIcon />
               <input type="date" value={startDate}
@@ -291,9 +337,7 @@ export default function S50OutstandingShort() {
           </div>
           <span className="text-gray-600 text-sm">-</span>
           <div className="relative">
-            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">
-              End Date
-            </label>
+            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">End Date</label>
             <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
               <CalendarIcon />
               <input type="date" value={endDate}
@@ -304,7 +348,6 @@ export default function S50OutstandingShort() {
           </div>
         </div>
 
-        {/* SHOW ALL — ขวาบนเสมอ */}
         <div className="ml-auto">
           <button onClick={() => setSelectedSymbol(null)}
             className="h-8 px-4 text-[12px] font-semibold tracking-wider uppercase rounded-lg transition-all"
@@ -350,15 +393,21 @@ export default function S50OutstandingShort() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 px-2 pb-3">
-            <div ref={chartContainerRef} className="w-full h-full"/>
+          {/* ── CHART MOUNT ── */}
+          <div className="flex-1 min-h-0 px-2 pb-3 relative">
+            <div ref={chartContainerRef} className="w-full h-full"
+              style={{ visibility: selectedSymbol ? "visible" : "hidden" }}/>
+            {/* Stacked label chart — overlay ใน chart area, absolute right-0 */}
+            {!selectedSymbol && (
+              <div className="absolute inset-0 pointer-events-none">
+                <StackedLabelChart />
+              </div>
+            )}
           </div>
         </div>
 
         {/* ── TABLE PANEL ── */}
         <div className="w-[290px] shrink-0 flex flex-col border-l border-white/5" style={{ background: "#0b0e14" }}>
-
-          {/* Search + controls */}
           <div className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-2 shrink-0">
             <div className="flex-1 flex items-center gap-2 rounded-lg px-3 h-9"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -368,13 +417,11 @@ export default function S50OutstandingShort() {
                 onChange={e => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent text-[13px] text-gray-300 placeholder-gray-600 outline-none"/>
             </div>
-
             <button onClick={() => setTableOpen(o => !o)}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <ChevronUpIcon open={tableOpen}/>
             </button>
-
             <button onClick={loadData}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -382,7 +429,6 @@ export default function S50OutstandingShort() {
             </button>
           </div>
 
-          {/* Column header */}
           {tableOpen && (
             <div className="flex items-center px-4 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
               <span className="flex-1 text-[11px] font-semibold text-gray-500 tracking-wider uppercase">Symbol</span>
@@ -390,7 +436,6 @@ export default function S50OutstandingShort() {
             </div>
           )}
 
-          {/* Rows */}
           {tableOpen && (
             <div className="flex-1 overflow-y-auto no-scrollbar">
               {filteredTable.map((row, i) => {
@@ -398,11 +443,12 @@ export default function S50OutstandingShort() {
                 const realIdx = MOCK_TABLE.findIndex(r => r.symbol === row.symbol);
                 const dotColor = SYMBOL_COLORS[realIdx % SYMBOL_COLORS.length];
                 return (
-                  <button key={i} onClick={() => setSelectedSymbol(prev => prev === row.symbol ? null : row.symbol)}
+                  <button key={i}
+                    onClick={() => setSelectedSymbol(prev => prev === row.symbol ? null : row.symbol)}
                     className="w-full flex items-center px-2 py-1 transition-all cursor-pointer">
                     <span className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full transition-all"
                       style={{ background: isSelected ? "rgba(59,130,246,0.2)" : "transparent" }}>
-                      <span className="shrink-0 w-2 h-2 rounded-full"
+                      <span className="shrink-0 w-3 h-3 rounded-full"
                         style={{ background: isSelected ? "#60a5fa" : dotColor }}/>
                       <span className="flex-1 text-left text-[13px] font-semibold"
                         style={{ color: isSelected ? "#ffffff" : "#9ca3af" }}>
