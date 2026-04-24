@@ -33,6 +33,7 @@ import IdeaTradePoint from "@/pages/Hidden/ideatradepoint";
 import HisIdeaTradePoint from "@/pages/Hidden/hisideatradepoint";
 import SectorRotation from "@/pages/Hidden/Sectorrotation";
 import S50OutstandingShort from "@/pages/Hidden/S50OutstandingShort";
+import StockDataTable from "@/pages/Hidden/StockDataTable";
 
 /* ================= CONSTANTS ================= */
 const CHART_IMAGE_URL = "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1964&auto=format&fit=crop";
@@ -83,6 +84,7 @@ const TOOL_CONFIG = {
   "sectorrotation":         { component: SectorRotation,   id: "sectorrotation",             name: "Sector Rotation",             isPremium: false },
   "s50outstandingshort": { component: S50OutstandingShort, id: "s50outstandingshort", name: "S50 Outstanding Short", isPremium: false },
 
+  "stock-data-table": { component: StockDataTable, id: "stock-data-table", name: "Stock Data Table", isPremium: false },
 };
 
 const FULL_WIDTH_PAGES = []; 
@@ -171,6 +173,7 @@ export default function Dashboard({ initialPage }) {
       else if (path === "hisideatradepoint") setActivePage("hisideatradepoint");
       else if (path === "sectorrotation") setActivePage("sectorrotation");
       else if (path === "s50outstandingshort") setActivePage("s50outstandingshort");
+      else if (path === "stock-data-table") setActivePage("stock-data-table");
 
       else setActivePage("preview-projects"); 
     }
