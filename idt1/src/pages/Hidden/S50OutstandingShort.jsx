@@ -12,11 +12,11 @@ const MOCK_TABLE = [
   { symbol: "KCE",   outshort: 3.90 },
   { symbol: "HANA",  outshort: 2.88 },
   { symbol: "BH",    outshort: 2.38 },
-  { symbol: "MTC",   outshort: 2.15 },
+  { symbol: "MTC",   outshort: 2.15 }, 
   { symbol: "MINIT", outshort: 2.14 },
   { symbol: "BTS",   outshort: 1.99 },
   { symbol: "BANPU", outshort: 1.95 },
-  { symbol: "AMATA", outshort: 1.91 },
+  { symbol: "AMATA", outshort: 1.91 }, 
   { symbol: "SCC",   outshort: 1.88 },
   { symbol: "SPRC",  outshort: 1.64 },
   { symbol: "IRPC",  outshort: 1.41 },
@@ -126,28 +126,15 @@ const ChevronUpIcon = ({ open }) => (
 
 /* ================= STACKED LABEL CHART ================= */
 function StackedLabelChart() {
-  const containerRef = useRef(null);
-  const [rowH, setRowH] = useState(15);
   const sorted = [...ALL_SYMBOLS].sort((a, b) => a.outshort - b.outshort);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const h = entry.contentRect.height;
-      setRowH(Math.floor(h / sorted.length));
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, [sorted.length]);
-
   return (
-    <div ref={containerRef} className="absolute top-0 bottom-0 right-0 flex items-center">
-      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    <div className="absolute top-0 bottom-0 right-0 flex items-stretch">
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", paddingBottom: 24 }}>
         {sorted.map((item, i) => {
           const color = BAR_COLORS[i % BAR_COLORS.length];
           return (
-            <div key={item.symbol} style={{ display: "flex", height: rowH, flexShrink: 0 }}>
-              {/* Label ซ้าย */}
+            <div key={item.symbol} style={{ display: "flex", flex: 1, minHeight: 0 }}>
               <div style={{
                 width: 64, height: "100%",
                 background: "#0d1117",
@@ -160,7 +147,6 @@ function StackedLabelChart() {
                   {item.symbol}
                 </span>
               </div>
-              {/* Color block ขวา */}
               <div style={{
                 width: 44, height: "100%",
                 background: color,
@@ -241,7 +227,7 @@ export default function S50OutstandingShort() {
     chartRef.current = chart;
 
     const symIdx = MOCK_TABLE.findIndex(r => r.symbol === selectedSymbol);
-    const symColor = SYMBOL_COLORS[symIdx % SYMBOL_COLORS.length];
+    const symColor = "#f97316";
 
     outshortSeriesRef.current = chart.addSeries(LineSeries, {
       color: symColor, lineWidth: 2, priceScaleId: "right",
@@ -372,7 +358,7 @@ export default function S50OutstandingShort() {
               {selectedSymbol && selectedColor && (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: selectedColor }}/>
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#f97316" }}/>
                     <span className="text-[12px] text-gray-400">Outshort</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -399,8 +385,8 @@ export default function S50OutstandingShort() {
               style={{ visibility: selectedSymbol ? "visible" : "hidden" }}/>
             {/* Stacked label chart — overlay ใน chart area, absolute right-0 */}
             {!selectedSymbol && (
-              <div className="absolute inset-0 pointer-events-none">
-                <StackedLabelChart />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-[16px] text-gray-600 tracking-wide">Select a symbol to view chart.</span>
               </div>
             )}
           </div>
@@ -444,7 +430,13 @@ export default function S50OutstandingShort() {
                 const dotColor = SYMBOL_COLORS[realIdx % SYMBOL_COLORS.length];
                 return (
                   <button key={i}
-                    onClick={() => setSelectedSymbol(prev => prev === row.symbol ? null : row.symbol)}
+                    onClick={() => {
+                      setSelectedSymbol(prev => {
+                        const next = prev === row.symbol ? null : row.symbol;
+                        if (next) applyRange("MAX");
+                        return next;
+                      });
+                    }}
                     className="w-full flex items-center px-2 py-1 transition-all cursor-pointer">
                     <span className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full transition-all"
                       style={{ background: isSelected ? "rgba(59,130,246,0.2)" : "transparent" }}>
