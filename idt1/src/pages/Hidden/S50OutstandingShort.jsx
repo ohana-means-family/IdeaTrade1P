@@ -177,6 +177,10 @@ export default function S50OutstandingShort() {
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(null);
+  
+  // ✅ ค่าเริ่มต้นเป็น false เพื่อให้เปิดหน้ามายังไม่โชว์กราฟ Stacked จนกว่าจะกด Show All
+  const [isShowAll, setIsShowAll] = useState(false);
+
   const [spinning, setSpinning] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [tableOpen, setTableOpen] = useState(true);
@@ -269,6 +273,17 @@ export default function S50OutstandingShort() {
     setEndDate(d.toISOString().slice(0, 10));
   };
 
+  // ✅ ฟังก์ชันสำหรับปุ่ม Refresh (ทำหน้าที่ Reset ทุกอย่าง)
+  const handleReset = () => {
+    setRange("");
+    setStartDate("");
+    setEndDate(new Date().toISOString().slice(0, 10));
+    setSearchQuery("");
+    setSelectedSymbol(null);
+    setIsShowAll(false); // ซ่อนกราฟ กลับไปหน้าว่าง
+    loadData(); // โหลดข้อมูลใหม่ (ให้ไอคอนหมุน)
+  };
+
   const filteredTable = MOCK_TABLE.filter(r =>
     r.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -335,12 +350,13 @@ export default function S50OutstandingShort() {
         </div>
 
         <div className="ml-auto">
-          <button onClick={() => setSelectedSymbol(null)}
+          {/* ✅ ลบปุ่ม Reset ตัวอักษรออก เหลือแต่ Show All */}
+          <button onClick={() => { setSelectedSymbol(null); setIsShowAll(true); }}
             className="h-8 px-4 text-[12px] font-semibold tracking-wider uppercase rounded-lg transition-all"
             style={{
-              background: !selectedSymbol ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
+              background: (!selectedSymbol && isShowAll) ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.1)",
-              color: !selectedSymbol ? "#ffffff" : "#9ca3af",
+              color: (!selectedSymbol && isShowAll) ? "#ffffff" : "#9ca3af",
             }}>
             Show All
           </button>
@@ -383,10 +399,20 @@ export default function S50OutstandingShort() {
           <div className="flex-1 min-h-0 px-2 pb-3 relative">
             <div ref={chartContainerRef} className="w-full h-full"
               style={{ visibility: selectedSymbol ? "visible" : "hidden" }}/>
-            {/* Stacked label chart — overlay ใน chart area, absolute right-0 */}
-            {!selectedSymbol && (
+            
+            {/* แสดงกราฟ Stacked เฉพาะเมื่อกด Show All (isShowAll เป็น true) */}
+            {!selectedSymbol && isShowAll && (
+              <div className="absolute inset-0 overflow-y-auto no-scrollbar">
+                <StackedLabelChart />
+              </div>
+            )}
+
+            {/* แสดงข้อความตอนเริ่มหน้าเว็บ (ยังไม่ได้เลือกอะไร และยังไม่ได้กด Show All) */}
+            {!selectedSymbol && !isShowAll && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-[16px] text-gray-600 tracking-wide">Select a symbol to view chart.</span>
+                <span className="text-[16px] text-gray-600 tracking-wide">
+                  Select a symbol or click "Show All" to view chart.
+                </span>
               </div>
             )}
           </div>
@@ -408,7 +434,9 @@ export default function S50OutstandingShort() {
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <ChevronUpIcon open={tableOpen}/>
             </button>
-            <button onClick={loadData}
+            
+            {/* ✅ นำ handleReset มาผูกกับปุ่ม Refresh นี้ */}
+            <button onClick={handleReset}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <RefreshIcon spinning={spinning}/>
@@ -431,11 +459,16 @@ export default function S50OutstandingShort() {
                 return (
                   <button key={i}
                     onClick={() => {
-                      setSelectedSymbol(prev => {
-                        const next = prev === row.symbol ? null : row.symbol;
-                        if (next) applyRange("MAX");
-                        return next;
-                      });
+                      if (selectedSymbol === row.symbol) {
+                        // ถ้าคลิกตัวที่เลือกอยู่แล้ว ให้เอาออกและกลับไปโชว์หน้าว่าง (เหมือนกดปุ่ม Reset)
+                        setSelectedSymbol(null);
+                        setIsShowAll(false);
+                      } else {
+                        // ถ้าเลือกหุ้นตัวใหม่ ก็เซ็ตค่าตามปกติ
+                        setSelectedSymbol(row.symbol);
+                        setIsShowAll(false);
+                        applyRange("MAX");
+                      }
                     }}
                     className="w-full flex items-center px-2 py-1 transition-all cursor-pointer">
                     <span className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full transition-all"
