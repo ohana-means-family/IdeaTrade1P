@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { createChart, CrosshairMode, LineStyle, LineSeries } from "lightweight-charts";
+import ToolHint from "@/components/ToolHint.jsx";
 
 // ─── DATA (SET & MAI) ────────────────────────────────────────────────────────
 const SET_SECTORS = [
@@ -735,6 +736,9 @@ function SectorRotation() {
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:16}}>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
+    Sectorrotation
+        </ToolHint>
             <div ref={marketDropdownRef} style={{...boxStyle,minWidth:220}} onClick={()=>setMarketDropdownOpen(!marketDropdownOpen)}>
               <IconSearch/>
               <span style={{color:C.textPrimary,fontSize:13,flex:1,fontWeight:"bold"}}>{marketFilter==="SET&MAI"?"SET & MAI":marketFilter}</span>
