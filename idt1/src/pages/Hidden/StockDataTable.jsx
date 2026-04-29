@@ -404,46 +404,34 @@ export default function Form59Dashboard() {
   const filteredNoSymbol = useMemo(() => {
     let d = [...RAW_RECORDS];
 
-    if (startDate && endDate) {
-      d = d.filter((r) => r.date === endDate);
-    } else if (startDate) {
-      d = d.filter((r) => r.date >= startDate);
-    } else if (endDate) {
-      d = d.filter((r) => r.date === endDate);
-    }
+if (startDate && endDate) {
+  d = d.filter((r) => r.date >= startDate && r.date <= endDate); // ทั้งคู่ → range
+} else if (startDate) {
+  d = d.filter((r) => r.date === startDate);        // start เดียว → แค่วันนั้น
+} else if (endDate) {
+  d = d.filter((r) => r.date === endDate);          // end เดียว → แค่วันนั้น
+}
 
     const processed = processData(d);
     const minV = parseFloat(minValue) || 0;
     return minV > 0 ? processed.filter(r => (r.buy + r.sell) >= minV) : processed;
   }, [startDate, endDate, minValue]);
 
-  // กด Check → dropdown = top symbol ของแต่ละวันใน range
   function handleCheck() {
-    // group by date → หา top symbol ของแต่ละวัน
-    const byDate = {};
-    rangeData.filter(r => (r.buy + r.sell) > 0).forEach(r => {
-      if (!byDate[r.date] || (r.buy + r.sell) > (byDate[r.date].buy + byDate[r.date].sell)) {
-        byDate[r.date] = r;
-      }
-    });
-    // เอา symbol ของแต่ละวัน (unique, sort)
-    const symbols = [...new Set(Object.values(byDate).map(r => r.symbol))].sort();
-    setSumValueSymbols(symbols);
-
-    // auto-select top symbol จากข้อมูล end date
-    const source = filteredNoSymbol.filter(r => (r.buy + r.sell) > 0);
-    if (source.length > 0) {
-      const top = source.reduce((best, r) =>
-        (r.buy + r.sell) > (best.buy + best.sell) ? r : best
-      , source[0]);
-      setSymbolFilter(top.symbol);
-      setIsAllChecked(false);
-    } else {
-      setSymbolFilter("");
-      setIsAllChecked(false);
+  const byDate = {};
+  rangeData.filter(r => (r.buy + r.sell) > 0).forEach(r => {
+    if (!byDate[r.date] || (r.buy + r.sell) > (byDate[r.date].buy + byDate[r.date].sell)) {
+      byDate[r.date] = r;
     }
-    setPage(1);
-  }
+  });
+  const symbols = [...new Set(Object.values(byDate).map(r => r.symbol))].sort();
+  setSumValueSymbols(symbols);
+
+  // ไม่ auto-select → ให้ผู้ใช้เลือกเอง
+  setSymbolFilter("");
+  setIsAllChecked(false);
+  setPage(1);
+}
 
   const filtered = useMemo(() => {
     let result = [...filteredNoSymbol];
