@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
 import { useSubscription } from "@/context/SubscriptionContext"; 
-// 🟢 อิมพอร์ต useAuth เข้ามาเพื่อดึงข้อมูลจาก Firestore
 import { useAuth } from "@/context/AuthContext"; 
 
 import { auth } from "@/firebase"; 
@@ -43,22 +42,24 @@ import chartFlipId from "@/assets/icons/chartfilp.svg";
 import chartFlipIdGray from "@/assets/icons/chartfilpg.svg";
 import ideatradepoint from "@/assets/icons/ideatradepoint.svg";
 import sectorrotation from "@/assets/icons/sector.svg";
+import form59Icon from "@/assets/icons/52.svg";
+import s50outIcon from "@/assets/icons/s50out.svg";
 
 /* ================= ICON MAP ================= */
 const sidebarIcons = {
-  preview:   { default: preview,   active: apreview   },
-  mit:       { default: mit,       active: amit       },
-  fortune:   { default: fortune,   active: afortune   },
-  petroleum: { default: petroleum, active: apetroleum },
-  rubber:    { default: rubber,    active: arubber    },
-  flow:      { default: flow,      active: aflow      },
-  realflow:  { default: realflowGray, active: realflow1 },
-  chartflipid: { default: chartFlipIdGray, active: chartFlipId },
-  s50:       { default: s50,       active: as50       },
-  gold:      { default: gold,      active: agold      },
-  bidask:    { default: bidask,    active: abidask    },
-  tickmatch: { default: tickmatch, active: atickmatch },
-  dr:        { default: dr,        active: adr        },
+  preview:        { default: preview,       active: apreview   },
+  mit:            { default: mit,           active: amit       },
+  fortune:        { default: fortune,       active: afortune   },
+  petroleum:      { default: petroleum,     active: apetroleum },
+  rubber:         { default: rubber,        active: arubber    },
+  flow:           { default: flow,          active: aflow      },
+  realflow:       { default: realflowGray,  active: realflow1  },
+  chartflipid:    { default: chartFlipIdGray, active: chartFlipId },
+  s50:            { default: s50,           active: as50       },
+  gold:           { default: gold,          active: agold      },
+  bidask:         { default: bidask,        active: abidask    },
+  tickmatch:      { default: tickmatch,     active: atickmatch },
+  dr:             { default: dr,            active: adr        },
   ideatradepoint: { default: ideatradepoint, active: ideatradepoint },
   sectorrotation: { default: sectorrotation, active: sectorrotation },
 };
@@ -148,35 +149,12 @@ const ChartFlipIconSVG = ({ active }) => {
   );
 };
 
-const S50ShortIconSVG = ({ active }) => {
-  const color = active ? "#ffffff" : "#9ca3af";
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 6L9 12L13 8L21 16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="17 16 21 16 21 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <line x1="3" y1="20" x2="21" y2="20" stroke={color} strokeWidth="1" strokeOpacity="0.4"/>
-    </svg>
-  );
-};
-
-/* ✅ Icon สำหรับ Stock Data Table */
-const Form59IconSVG = ({ active }) => {
-  const color = active ? "#ffffff" : "#9ca3af";
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth="1.5"/>
-      <path d="M3 9H21" stroke={color} strokeWidth="1.5"/>
-      <path d="M9 21V9" stroke={color} strokeWidth="1.5"/>
-    </svg>
-  );
-};
-
 /* ================= FLOATING TOOLTIP ================= */
 const FloatingTooltip = ({ visible, top, text }) => {
   if (!visible) return null;
   return (
     <div
-      style={{ top: top, left: 85 }} 
+      style={{ top: top, left: 85 }}
       className="fixed z-[10000] -translate-y-1/2 px-3 py-1.5 bg-[#333333] text-white text-[13px] rounded-md border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] pointer-events-none whitespace-nowrap"
     >
       <div className="absolute top-1/2 -left-1.5 -mt-1.5 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-[#333333]"></div>
@@ -192,15 +170,15 @@ const SidebarContent = ({
   activePage,
   setActivePage,
   openProject,
-  onMobileClose, 
+  onMobileClose,
   isMobile = false,
 }) => {
   const navigate = useNavigate();
-  
+
   const { accessData } = useSubscription();
   const { userData } = useAuth();
-  
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -209,10 +187,10 @@ const SidebarContent = ({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
-      
+
       const hasOldPackages = Object.keys(accessData || {}).length > 0;
       const hasNewPackages = Object.keys(userData?.subscriptions || {}).length > 0;
-      
+
       if (hasOldPackages || hasNewPackages) {
         setIsMember(true);
       } else {
@@ -226,17 +204,17 @@ const SidebarContent = ({
   const isToolUnlocked = (id) => {
     const expireTimestamp = userData?.subscriptions?.[id.toLowerCase()] || accessData?.[id.toLowerCase()];
     if (!expireTimestamp) return false;
-    
+
     let expireDate;
     try {
-      expireDate = typeof expireTimestamp.toDate === 'function' 
-        ? expireTimestamp.toDate() 
+      expireDate = typeof expireTimestamp.toDate === "function"
+        ? expireTimestamp.toDate()
         : new Date(expireTimestamp);
     } catch (error) {
-      expireDate = new Date(0); 
+      expireDate = new Date(0);
     }
-    
-    return expireDate > new Date(); 
+
+    return expireDate > new Date();
   };
 
   /* ================= AUTH ACTIONS ================= */
@@ -246,9 +224,9 @@ const SidebarContent = ({
 
   const confirmSignOut = async () => {
     try {
-      await signOut(auth); 
-      localStorage.removeItem("userProfile"); 
-      setIsLoggedIn(false); 
+      await signOut(auth);
+      localStorage.removeItem("userProfile");
+      setIsLoggedIn(false);
       setIsMember(false);
       setShowLogoutModal(false);
       onMobileClose?.();
@@ -258,10 +236,9 @@ const SidebarContent = ({
     }
   };
 
-  /* ✅ ใช้ตัวนี้เป็นตัวจัดการการนำทางทั้งหมด เพื่อป้องกัน Navigation ซ้ำซ้อนที่ทำให้ Sidebar รีเซ็ตความสูง */
   const handleNavigation = (id, projectItem = null) => {
     let targetId = id;
-    
+
     if (PROJECT_PREVIEWS[id] && !isToolUnlocked(id)) {
       targetId = PROJECT_PREVIEWS[id];
     }
@@ -271,14 +248,14 @@ const SidebarContent = ({
     } else {
       setActivePage(targetId);
     }
-    
-    onMobileClose?.(); 
+
+    onMobileClose?.();
   };
 
   const handleMouseEnter = (e, text) => {
-    if (!collapsed || isMobile) return; 
+    if (!collapsed || isMobile) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipState({ visible: true, top: rect.top + (rect.height / 2), text });
+    setTooltipState({ visible: true, top: rect.top + rect.height / 2, text });
   };
 
   const handleMouseLeave = () => setTooltipState({ ...tooltipState, visible: false });
@@ -316,7 +293,7 @@ const SidebarContent = ({
             </div>
           </div>
         </div>,
-        document.body 
+        document.body
       )}
 
       {/* HEADER & LOGO */}
@@ -362,21 +339,20 @@ const SidebarContent = ({
       </div>
 
       {/* MENU ITEMS */}
-      <nav 
+      <nav
         className={`flex-1 no-scrollbar w-full ${
-          isCollapsed 
-            ? "px-2 flex flex-col items-center gap-2 overflow-y-auto" 
+          isCollapsed
+            ? "px-2 flex flex-col items-center gap-2 overflow-y-auto"
             : "px-3 mt-4 overflow-y-auto"
         }`}
       >
-        
         {/* SEARCH BAR */}
         <div className={`transition-all duration-300 mb-2 ${isCollapsed ? "w-10" : "w-full"}`}>
-          <div 
+          <div
             onClick={() => isCollapsed && setCollapsed(false)}
             onMouseEnter={(e) => handleMouseEnter(e, "Search")}
             onMouseLeave={handleMouseLeave}
-            className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all 
+            className={`relative group flex items-center bg-[#1A1D23] border border-white/5 rounded-lg transition-all
             ${isCollapsed ? "w-10 h-10 justify-center cursor-pointer hover:bg-white/10" : "w-full h-10 px-4"}`}
           >
             <svg className={`w-4 h-4 text-gray-500 shrink-0 ${!isCollapsed && "mr-4"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,7 +372,7 @@ const SidebarContent = ({
 
         {/* Preview Button */}
         <button
-          onClick={() => handleNavigation("preview-projects")} 
+          onClick={() => handleNavigation("preview-projects")}
           onMouseEnter={(e) => handleMouseEnter(e, "Preview Projects")}
           onMouseLeave={handleMouseLeave}
           className={`rounded-lg flex items-center shrink-0 transition-all cursor-pointer relative group
@@ -418,11 +394,14 @@ const SidebarContent = ({
         </button>
 
         {/* Beta Label */}
-        {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Beta Tools</div>}
+        {isCollapsed
+          ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" />
+          : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Beta Tools</div>
+        }
 
         {/* MIT Button */}
         <button
-          onClick={() => handleNavigation("mit")} 
+          onClick={() => handleNavigation("mit")}
           onMouseEnter={(e) => handleMouseEnter(e, "MIT")}
           onMouseLeave={handleMouseLeave}
           className={`rounded-lg flex items-center shrink-0 transition-all relative group cursor-pointer
@@ -441,7 +420,10 @@ const SidebarContent = ({
         </button>
 
         {/* Member Label */}
-        {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Membership Tools</div>}
+        {isCollapsed
+          ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" />
+          : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Membership Tools</div>
+        }
 
         {/* Project List */}
         {filteredProjects.length > 0 ? (
@@ -460,25 +442,25 @@ const SidebarContent = ({
                 ${isCollapsed ? "w-10 h-10 justify-center" : "w-full h-11 px-4 justify-between"}`}
               >
                 <div className={`flex items-center gap-3 font-medium transition-colors pointer-events-none
-                  ${active 
-                    ? (unlocked ? "text-[#ffcc00]" : "text-white") 
+                  ${active
+                    ? (unlocked ? "text-[#ffcc00]" : "text-white")
                     : (unlocked ? "text-[#977100]" : "text-gray-400")
                   }
                   ${isCollapsed ? "justify-center w-full" : ""}`}
                 >
-                  <img 
-                    src={getIcon(p.iconKey, active)} 
-                    className="w-5" 
+                  <img
+                    src={getIcon(p.iconKey, active)}
+                    className="w-5"
                     alt={p.name}
                     style={
-                      active 
-                        ? (unlocked 
+                      active
+                        ? (unlocked
                           ? { filter: "brightness(0) saturate(100%) invert(87%) sepia(26%) saturate(6838%) hue-rotate(359deg) brightness(101%) contrast(103%)" }
-                          : { filter: "brightness(0) invert(1)" } 
+                          : { filter: "brightness(0) invert(1)" }
                         )
-                        : (unlocked 
-                          ? { filter: "brightness(0) saturate(100%) invert(43%) sepia(70%) saturate(2264%) hue-rotate(24deg) brightness(92%) contrast(101%)" } 
-                          : {} 
+                        : (unlocked
+                          ? { filter: "brightness(0) saturate(100%) invert(43%) sepia(70%) saturate(2264%) hue-rotate(24deg) brightness(92%) contrast(101%)" }
+                          : {}
                         )
                     }
                   />
@@ -517,8 +499,8 @@ const SidebarContent = ({
               alt="Real Flow"
               style={
                 activePage === "real-flow"
-                ? { filter: "brightness(0) invert(1)" }
-                : { filter: "brightness(0) invert(1) opacity(0.4)" }
+                  ? { filter: "brightness(0) invert(1)" }
+                  : { filter: "brightness(0) invert(1) opacity(0.4)" }
               }
             />
             {!isCollapsed && <span>Real Flow</span>}
@@ -530,7 +512,7 @@ const SidebarContent = ({
           )}
         </button>
 
-        {/* ── Chart Flip ID Button ── */}
+        {/* Chart Flip ID Button */}
         <button
           onClick={() => handleNavigation("chart-flip-id")}
           onMouseEnter={(e) => handleMouseEnter(e, "Chart Flip ID")}
@@ -548,7 +530,7 @@ const SidebarContent = ({
           </div>
         </button>
 
-        {/* ── DW Button ── */}
+        {/* DW Button */}
         <button
           onClick={() => handleNavigation("dw")}
           onMouseEnter={(e) => handleMouseEnter(e, "DW View")}
@@ -566,7 +548,7 @@ const SidebarContent = ({
           </div>
         </button>
 
-        {/* ── Idea Trade Point Button ── */}
+        {/* Idea Trade Point Button */}
         <button
           onClick={() => handleNavigation("ideatradepoint")}
           onMouseEnter={(e) => handleMouseEnter(e, "Idea Trade Point")}
@@ -593,7 +575,7 @@ const SidebarContent = ({
           </div>
         </button>
 
-        {/* ── Sector Rotation Button ── */}
+        {/* Sector Rotation Button */}
         <button
           onClick={() => handleNavigation("sector-rotation")}
           onMouseEnter={(e) => handleMouseEnter(e, "Sector Rotation")}
@@ -620,7 +602,7 @@ const SidebarContent = ({
           </div>
         </button>
 
-        {/* ── S50 Outstanding Short Button ── */}
+        {/* S50 Outstanding Short Button */}
         <button
           onClick={() => handleNavigation("s50outstandingshort")}
           onMouseEnter={(e) => handleMouseEnter(e, "S50 Outstanding Short")}
@@ -633,12 +615,21 @@ const SidebarContent = ({
             ${activePage === "s50outstandingshort" ? "text-white" : "text-gray-400"}
             ${isCollapsed ? "justify-center w-full" : ""}`}
           >
-            <S50ShortIconSVG active={activePage === "s50outstandingshort"} />
+            <img
+              src={s50outIcon}
+              className="w-5"
+              alt="S50 Outstanding Short"
+              style={
+                activePage === "s50outstandingshort"
+                  ? { filter: "brightness(0) invert(1)" }
+                  : { filter: "brightness(0) invert(1) opacity(0.4)" }
+              }
+            />
             {!isCollapsed && <span>S50 Outstanding Short</span>}
           </div>
         </button>
 
-        {/* ✅ ── Stock Data Table Button ── */}
+        {/* Stock Data Table Button */}
         <button
           onClick={() => handleNavigation("stock-data-table")}
           onMouseEnter={(e) => handleMouseEnter(e, "Stock Data Table")}
@@ -651,13 +642,25 @@ const SidebarContent = ({
             ${activePage === "stock-data-table" ? "text-white" : "text-gray-400"}
             ${isCollapsed ? "justify-center w-full" : ""}`}
           >
-            <Form59IconSVG active={activePage === "stock-data-table"} />
+            <img
+              src={form59Icon}
+              className="w-5"
+              alt="Stock Data Table"
+              style={
+                activePage === "stock-data-table"
+                  ? { filter: "brightness(0) invert(1)" }
+                  : { filter: "brightness(0) invert(1) opacity(0.4)" }
+              }
+            />
             {!isCollapsed && <span>Stock Data Table</span>}
           </div>
         </button>
 
         {/* ACCOUNT SECTION */}
-        {isCollapsed ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" /> : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>}
+        {isCollapsed
+          ? <div className="w-8 h-[1px] bg-white/10 my-1 shrink-0" />
+          : <div className="mt-6 mb-2 px-2 text-[11px] uppercase text-gray-500 shrink-0">Account</div>
+        }
 
         <button
           onClick={() => handleNavigation("profile")}
@@ -734,8 +737,8 @@ const SidebarContent = ({
           onMouseEnter={(e) => handleMouseEnter(e, "Join Membership")}
           onMouseLeave={handleMouseLeave}
           className={`flex items-center justify-center transition-all shadow-lg overflow-hidden shrink-0 cursor-pointer relative group
-          ${isCollapsed 
-            ? "w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400" 
+          ${isCollapsed
+            ? "w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400"
             : "w-full h-11 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-semibold gap-2"}`}
         >
           <CrownIcon color="#000" />
@@ -752,8 +755,8 @@ export default function Sidebar({
   activePage,
   setActivePage,
   openProject,
-  mobileOpen,        
-  onMobileClose,     
+  mobileOpen,
+  onMobileClose,
 }) {
   const sharedProps = { collapsed, setCollapsed, activePage, setActivePage, openProject };
 
