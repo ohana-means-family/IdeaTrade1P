@@ -97,9 +97,9 @@ const generatePriceData = (days = 90, seed = 1) => {
 };
 
 /* ================= ICONS ================= */
-const SearchIcon = () => (
+const ChevronDownIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
 
@@ -130,12 +130,12 @@ function StackedLabelChart() {
   const sorted = [...ALL_SYMBOLS].sort((a, b) => a.outshort - b.outshort);
 
   return (
-    <div className="absolute top-0 bottom-0 right-0 flex items-stretch">
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", paddingBottom: 24 }}>
+    <div className="absolute top-0 bottom-0 right-0 left-0 md:left-auto flex items-stretch overflow-y-auto no-scrollbar md:overflow-visible">
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", paddingBottom: 24, minWidth: "100%", alignItems: "flex-end" }}>
         {sorted.map((item, i) => {
           const color = BAR_COLORS[i % BAR_COLORS.length];
           return (
-            <div key={item.symbol} style={{ display: "flex", flex: 1, minHeight: 0 }}>
+            <div key={item.symbol} style={{ display: "flex", flex: 1, minHeight: "24px" }}>
               <div style={{
                 width: 64, height: "100%",
                 background: "#0d1117",
@@ -176,14 +176,11 @@ export default function S50OutstandingShort() {
   const [range, setRange] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   
-  // ✅ ค่าเริ่มต้นเป็น false เพื่อให้เปิดหน้ามายังไม่โชว์กราฟ Stacked จนกว่าจะกด Show All
   const [isShowAll, setIsShowAll] = useState(false);
 
   const [spinning, setSpinning] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const [tableOpen, setTableOpen] = useState(true);
   const [allSeriesData, setAllSeriesData] = useState({});
   const [allPriceData, setAllPriceData] = useState({});
@@ -249,8 +246,12 @@ export default function S50OutstandingShort() {
     });
 
     const ro = new ResizeObserver(() => {
-      if (chartContainerRef.current)
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      if (chartContainerRef.current) {
+        chart.applyOptions({ 
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight 
+        });
+      }
     });
     ro.observe(chartContainerRef.current);
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
@@ -274,64 +275,64 @@ export default function S50OutstandingShort() {
     setEndDate(d.toISOString().slice(0, 10));
   };
 
-  // ✅ ฟังก์ชันสำหรับปุ่ม Refresh (ทำหน้าที่ Reset ทุกอย่าง)
   const handleReset = () => {
     setRange("");
     setStartDate("");
     setEndDate(new Date().toISOString().slice(0, 10));
-    setSearchQuery("");
     setSelectedSymbol(null);
-    setIsShowAll(false); // ซ่อนกราฟ กลับไปหน้าว่าง
-    loadData(); // โหลดข้อมูลใหม่ (ให้ไอคอนหมุน)
+    setIsShowAll(false); 
+    loadData(); 
   };
-
-  const filteredTable = MOCK_TABLE.filter(r =>
-    r.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const selectedIdx = selectedSymbol ? MOCK_TABLE.findIndex(r => r.symbol === selectedSymbol) : -1;
   const selectedColor = selectedIdx >= 0 ? SYMBOL_COLORS[selectedIdx % SYMBOL_COLORS.length] : null;
 
   return (
-    <div className="flex flex-col text-white font-sans" style={{ height: "100vh", background: "#0d1117" }}>
+    <div className="flex flex-col text-white font-sans" style={{ height: "100dvh", background: "#0d1117" }}>
 
       {/* ── TOP BAR ── */}
-      <div className="flex items-center gap-3 px-5 pt-6 pb-3 border-b border-white/5 shrink-0">
+      <div className="flex flex-col md:flex-row md:items-center gap-2 px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
         
-        {/* นำ ToolHint มาใส่แทนปุ่ม ? เดิม */}
-        <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
-          S50 Outstanding Short
-        </ToolHint>
-
-        <div className="flex items-center gap-2 ml-4">
-          <div className="relative">
-            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">Start Date</label>
-            <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
-              <CalendarIcon />
-              <input type="date" value={startDate}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={e => { setStartDate(e.target.value); setRange(""); }}
-                className="bg-transparent outline-none text-[13px] text-gray-300 cursor-pointer"
-                style={{ colorScheme: "dark" }}/>
-            </div>
+        <div className="flex flex-row items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pt-[10px] pb-1 md:pb-0">
+          
+          <div className="shrink-0 mt-0.5">
+            <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
+              S50 Outstanding Short
+            </ToolHint>
           </div>
-          <span className="text-gray-600 text-sm">-</span>
-          <div className="relative">
-            <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">End Date</label>
-            <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
-              <CalendarIcon />
-              <input type="date" value={endDate} 
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={e => { setEndDate(e.target.value); setRange(""); }}
-                className="bg-transparent outline-none text-[13px] text-gray-300 cursor-pointer"
-                style={{ colorScheme: "dark" }}/>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative shrink-0">
+              <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">Start Date</label>
+              <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
+                <CalendarIcon />
+                <input type="date" value={startDate}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => { setStartDate(e.target.value); setRange(""); }}
+                  className="bg-transparent outline-none text-[13px] text-gray-300 cursor-pointer"
+                  style={{ colorScheme: "dark" }}/>
+              </div>
+            </div>
+            
+            <span className="text-gray-600 text-sm shrink-0">-</span>
+            
+            <div className="relative shrink-0">
+              <label className="absolute -top-[9px] left-3 text-[10px] text-gray-500 bg-[#0d1117] px-1 leading-none pointer-events-none">End Date</label>
+              <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-1.5 bg-white/5 text-[13px] text-gray-300">
+                <CalendarIcon />
+                <input type="date" value={endDate} 
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => { setEndDate(e.target.value); setRange(""); }}
+                  className="bg-transparent outline-none text-[13px] text-gray-300 cursor-pointer"
+                  style={{ colorScheme: "dark" }}/>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="ml-auto">
+        <div className="md:ml-auto w-full md:w-auto flex mt-1 md:mt-0 shrink-0">
           <button onClick={() => { setSelectedSymbol(null); setIsShowAll(true); }}
-            className="h-8 px-4 text-[12px] font-semibold tracking-wider uppercase rounded-lg transition-all"
+            className="w-full md:w-auto h-9 md:h-8 px-4 text-[12px] font-semibold tracking-wider uppercase rounded-lg transition-all"
             style={{
               background: (!selectedSymbol && isShowAll) ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -343,11 +344,11 @@ export default function S50OutstandingShort() {
       </div>
 
       {/* ── MAIN BODY ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
 
         {/* ── CHART AREA ── */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between px-5 pt-4 pb-2 shrink-0 gap-3 md:gap-0">
             <div className="flex items-center gap-4">
               <span className="text-[14px] font-semibold text-white/90 tracking-tight">S50 Outstanding Short</span>
               {selectedSymbol && selectedColor && (
@@ -363,10 +364,10 @@ export default function S50OutstandingShort() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar w-full md:w-auto pb-1 md:pb-0">
               {RANGES.map(r => (
                 <button key={r} onClick={() => applyRange(r)}
-                  className={`px-3 py-1 text-[12px] rounded-md transition-all font-medium
+                  className={`px-3 py-1 text-[12px] rounded-md transition-all font-medium shrink-0
                     ${range === r ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
                   {r}
                 </button>
@@ -379,16 +380,14 @@ export default function S50OutstandingShort() {
             <div ref={chartContainerRef} className="w-full h-full"
               style={{ visibility: selectedSymbol ? "visible" : "hidden" }}/>
             
-            {/* แสดงกราฟ Stacked เฉพาะเมื่อกด Show All (isShowAll เป็น true) */}
             {!selectedSymbol && isShowAll && (
               <div className="absolute inset-0 overflow-y-auto no-scrollbar">
                 <StackedLabelChart />
               </div>
             )}
 
-            {/* แสดงข้อความตอนเริ่มหน้าเว็บ (ยังไม่ได้เลือกอะไร และยังไม่ได้กด Show All) */}
             {!selectedSymbol && !isShowAll && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4 text-center">
                 <span className="text-[16px] text-gray-600 tracking-wide">
                   Select a symbol or click "Show All" to view chart.
                 </span>
@@ -397,41 +396,66 @@ export default function S50OutstandingShort() {
           </div>
         </div>
 
-        {/* ── TABLE PANEL ── */}
-        <div className="w-[290px] shrink-0 flex flex-col border-l border-white/5" style={{ background: "#0b0e14" }}>
-          <div className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-2 shrink-0">
-            <div className="flex-1 flex items-center gap-2 rounded-lg px-3 h-9"
+        {/* ── TABLE PANEL (อัปเดตสำหรับ Mobile: ซ่อน List ทิ้งให้เหลือแค่ Dropdown) ── */}
+        <div className="w-full md:w-[290px] md:h-full shrink-0 flex flex-col border-b md:border-b-0 md:border-l border-white/5" style={{ background: "#0b0e14" }}>
+          
+          <div className="flex items-center gap-1.5 px-4 md:px-2.5 pt-3 md:pt-2.5 pb-3 md:pb-2 shrink-0">
+            {/* ── Dropdown (Select) ── */}
+            <div className="flex-1 flex items-center gap-2 rounded-lg px-3 h-10 md:h-9 relative"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <span className="text-gray-500"><SearchIcon /></span>
-              <input type="text" placeholder="Type a Symbol..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] text-gray-300 placeholder-gray-600 outline-none"/>
+              <select
+                value={selectedSymbol || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setSelectedSymbol(null);
+                    setIsShowAll(true);
+                  } else {
+                    setSelectedSymbol(val);
+                    setIsShowAll(false);
+                    applyRange("MAX");
+                  }
+                }}
+                className="w-full bg-transparent text-[14px] md:text-[13px] text-gray-300 outline-none appearance-none cursor-pointer z-10 h-full"
+              >
+                <option value="" className="bg-[#0b0e14] text-gray-400">Select a Symbol...</option>
+                {MOCK_TABLE.map(row => (
+                  <option key={row.symbol} value={row.symbol} className="bg-[#0b0e14] text-white">
+                    {/* เอาข้อมูล % มาใส่ใน Dropdown ด้วย เพื่อให้ดูในมือถือได้ครบถ้วน */}
+                    {row.symbol} &nbsp;—&nbsp; {row.outshort.toFixed(2)}%
+                  </option>
+                ))}
+              </select>
+              
+              <div className="absolute right-3 pointer-events-none text-gray-500">
+                <ChevronDownIcon />
+              </div>
             </div>
+
             <button onClick={() => setTableOpen(o => !o)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
+              className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <ChevronUpIcon open={tableOpen}/>
             </button>
-            
-            {/* ✅ นำ handleReset มาผูกกับปุ่ม Refresh นี้ */}
             <button onClick={handleReset}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
+              className="w-10 h-10 md:w-9 md:h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <RefreshIcon spinning={spinning}/>
             </button>
           </div>
 
+          {/* ซ่อนส่วน Header ตารางบน Mobile (ใช้ hidden md:flex) */}
           {tableOpen && (
-            <div className="flex items-center px-4 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="hidden md:flex items-center px-4 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
               <span className="flex-1 text-[11px] font-semibold text-gray-500 tracking-wider uppercase">Symbol</span>
               <span className="text-[11px] font-semibold text-[#60a5fa] tracking-wider uppercase">Outshort %</span>
             </div>
           )}
 
+          {/* ซ่อนส่วน List ทั้งหมดบน Mobile (ใช้ hidden md:block) */}
           {tableOpen && (
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-              {filteredTable.map((row, i) => {
+            <div className="hidden md:block flex-1 overflow-y-auto no-scrollbar pb-2 md:pb-0">
+              {MOCK_TABLE.map((row, i) => {
                 const isSelected = selectedSymbol === row.symbol;
                 const realIdx = MOCK_TABLE.findIndex(r => r.symbol === row.symbol);
                 const dotColor = SYMBOL_COLORS[realIdx % SYMBOL_COLORS.length];
@@ -439,11 +463,9 @@ export default function S50OutstandingShort() {
                   <button key={i}
                     onClick={() => {
                       if (selectedSymbol === row.symbol) {
-                        // ถ้าคลิกตัวที่เลือกอยู่แล้ว ให้เอาออกและกลับไปโชว์หน้าว่าง (เหมือนกดปุ่ม Reset)
                         setSelectedSymbol(null);
                         setIsShowAll(false);
                       } else {
-                        // ถ้าเลือกหุ้นตัวใหม่ ก็เซ็ตค่าตามปกติ
                         setSelectedSymbol(row.symbol);
                         setIsShowAll(false);
                         applyRange("MAX");
