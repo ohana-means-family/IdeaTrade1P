@@ -418,47 +418,39 @@ if (startDate && endDate) {
   }, [startDate, endDate, minValue]);
 
   function handleCheck() {
-  const byDate = {};
-  rangeData.filter(r => (r.buy + r.sell) > 0).forEach(r => {
-    if (!byDate[r.date] || (r.buy + r.sell) > (byDate[r.date].buy + byDate[r.date].sell)) {
-      byDate[r.date] = r;
-    }
-  });
-  const symbols = [...new Set(Object.values(byDate).map(r => r.symbol))].sort();
-  setSumValueSymbols(symbols);
-
-  // ไม่ auto-select → ให้ผู้ใช้เลือกเอง
+  const allSyms = [...new Set(
+    rangeData.filter(r => (r.buy + r.sell) > 0).map(r => r.symbol)
+  )].sort();
+  setSumValueSymbols(allSyms);
   setSymbolFilter("");
   setIsAllChecked(false);
   setPage(1);
 }
 
-  const filtered = useMemo(() => {
-    let result = [...filteredNoSymbol];
+  // filtered → isAllChecked = top symbol ของแต่ละวัน, symbolFilter = ทุก record ของ symbol นั้น
+const filtered = useMemo(() => {
+  let result = [...filteredNoSymbol];
 
-    if (isAllChecked) {
-      // All → แสดงทั้งหมด
-    } else if (symbolFilter) {
-      // เลือก symbol เฉพาะ → filter เฉพาะตัวนั้น
-      result = result.filter(r => r.symbol === symbolFilter);
-    } else if (sumValueSymbols.length > 0) {
-      // หลังกด Check แต่ยังไม่ได้ติ๊ก All → แสดงเฉพาะ sumValueSymbols
-      result = result.filter(r => sumValueSymbols.includes(r.symbol));
-    }
-
-    return result.sort((a, b) => {
-      let va, vb;
-      if (sortCol === "totalValue") {
-        va = a.buy + a.sell;
-        vb = b.buy + b.sell;
-      } else {
-        va = a[sortCol] ?? 0;
-        vb = b[sortCol] ?? 0;
+  if (isAllChecked) {
+    const byDate = {};
+    result.forEach(r => {
+      if (!byDate[r.date] || (r.buy + r.sell) > (byDate[r.date].buy + byDate[r.date].sell)) {
+        byDate[r.date] = r;
       }
-      if (typeof va === "string") return va.localeCompare(vb) * sortDir;
-      return (va - vb) * sortDir;
     });
-  }, [filteredNoSymbol, symbolFilter, isAllChecked, sumValueSymbols, sortCol, sortDir]);
+    result = Object.values(byDate);
+  } else if (symbolFilter) {
+    result = result.filter(r => r.symbol === symbolFilter);
+  }
+
+  return result.sort((a, b) => {
+    let va, vb;
+    if (sortCol === "totalValue") { va = a.buy + a.sell; vb = b.buy + b.sell; }
+    else { va = a[sortCol] ?? 0; vb = b[sortCol] ?? 0; }
+    if (typeof va === "string") return va.localeCompare(vb) * sortDir;
+    return (va - vb) * sortDir;
+  });
+}, [filteredNoSymbol, symbolFilter, isAllChecked, sumValueSymbols, sortCol, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
