@@ -37,33 +37,7 @@ const MOCK_TABLE = [
   { symbol: "SCGP",   outshort: 0.49 }, { symbol: "M",      outshort: 0.48 },
 ];
 
-const ALL_SYMBOLS = [
-  { symbol: "KCE",    outshort: 3.90 }, { symbol: "HANA",   outshort: 2.88 },
-  { symbol: "BH",     outshort: 2.38 }, { symbol: "MTC",    outshort: 2.15 },
-  { symbol: "MINIT",  outshort: 2.14 }, { symbol: "BTS",    outshort: 1.99 },
-  { symbol: "BANPU",  outshort: 1.95 }, { symbol: "AMATA",  outshort: 1.91 },
-  { symbol: "SCC",    outshort: 1.88 }, { symbol: "SPRC",   outshort: 1.64 },
-  { symbol: "IRPC",   outshort: 1.41 }, { symbol: "BDMS",   outshort: 1.38 },
-  { symbol: "CBG",    outshort: 1.36 }, { symbol: "LH",     outshort: 1.36 },
-  { symbol: "DOHOME", outshort: 1.02 }, { symbol: "COM7",   outshort: 1.02 },
-  { symbol: "GLOBAL", outshort: 1.00 }, { symbol: "TIDLOR", outshort: 0.99 },
-  { symbol: "SIRI",   outshort: 0.99 }, { symbol: "BGRIM",  outshort: 0.98 },
-  { symbol: "TISCO",  outshort: 0.96 }, { symbol: "BBL",    outshort: 0.93 },
-  { symbol: "JMT",    outshort: 0.91 }, { symbol: "BCP",    outshort: 0.90 },
-  { symbol: "JAS",    outshort: 0.90 }, { symbol: "AWC",    outshort: 0.88 },
-  { symbol: "CHG",    outshort: 0.84 }, { symbol: "BEM",    outshort: 0.82 },
-  { symbol: "BAM",    outshort: 0.82 }, { symbol: "PTTGC",  outshort: 0.81 },
-  { symbol: "SPALI",  outshort: 0.80 }, { symbol: "RCL",    outshort: 0.78 },
-  { symbol: "IVL",    outshort: 0.75 }, { symbol: "EGCO",   outshort: 0.75 },
-  { symbol: "CK",     outshort: 0.69 }, { symbol: "SCB",    outshort: 0.67 },
-  { symbol: "CPN",    outshort: 0.62 }, { symbol: "BJC",    outshort: 0.62 },
-  { symbol: "TTB",    outshort: 0.61 }, { symbol: "CENTEL", outshort: 0.58 },
-  { symbol: "JMART",  outshort: 0.57 }, { symbol: "BCPG",   outshort: 0.57 },
-  { symbol: "AP",     outshort: 0.56 }, { symbol: "GPSC",   outshort: 0.55 },
-  { symbol: "CCET",   outshort: 0.54 }, { symbol: "RATCH",  outshort: 0.53 },
-  { symbol: "PRM",    outshort: 0.52 }, { symbol: "TASCO",  outshort: 0.50 },
-  { symbol: "SCGP",   outshort: 0.49 }, { symbol: "M",      outshort: 0.48 },
-];
+const ALL_SYMBOLS = [...MOCK_TABLE];
 
 const RANGE_DAYS = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "YTD": 100, "MAX": 730 };
 const RANGES = ["1M", "3M", "6M", "1Y", "YTD", "MAX"];
@@ -190,6 +164,9 @@ export default function S50OutstandingShort() {
   const outshortSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
 
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+
   const [range, setRange] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -200,6 +177,7 @@ export default function S50OutstandingShort() {
 
   const [spinning, setSpinning] = useState(false);
   const [tableOpen, setTableOpen] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [allSeriesData, setAllSeriesData] = useState({});
   const [allPriceData, setAllPriceData] = useState({});
 
@@ -220,6 +198,18 @@ export default function S50OutstandingShort() {
   }, [range]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Click Outside to close Dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+        setSearchQuery(selectedSymbol || "");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [selectedSymbol]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -297,13 +287,12 @@ export default function S50OutstandingShort() {
     setRange("");
     setStartDate("");
     setEndDate(new Date().toISOString().slice(0, 10));
-    setSearchQuery(""); // Reset query
+    setSearchQuery("");
     setSelectedSymbol(null);
     setIsShowAll(false); 
     loadData(); 
   };
 
-  // กรองตารางสำหรับใช้บน PC Search
   const filteredTable = MOCK_TABLE.filter(r =>
     r.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -312,10 +301,10 @@ export default function S50OutstandingShort() {
   const selectedColor = selectedIdx >= 0 ? SYMBOL_COLORS[selectedIdx % SYMBOL_COLORS.length] : null;
 
   return (
-    <div className="flex flex-col text-white font-sans" style={{ height: "100dvh", background: "#0d1117" }}>
+    <div className="flex flex-col text-white font-sans relative" style={{ height: "100dvh", background: "#0d1117" }}>
 
       {/* ── TOP BAR ── */}
-      <div className="flex flex-col md:flex-row md:items-center gap-2 px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
+      <div className="flex flex-col md:flex-row md:items-center gap-2 px-4 pt-3 pb-2 border-b border-white/5 shrink-0 z-20">
         
         <div className="flex flex-row items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pt-[10px] pb-1 md:pb-0">
           
@@ -355,7 +344,7 @@ export default function S50OutstandingShort() {
         </div>
 
         <div className="md:ml-auto w-full md:w-auto flex mt-1 md:mt-0 shrink-0">
-          <button onClick={() => { setSelectedSymbol(null); setIsShowAll(true); }}
+          <button onClick={() => { setSelectedSymbol(null); setIsShowAll(true); setSearchQuery(""); }}
             className="w-full md:w-auto h-9 md:h-8 px-4 text-[12px] font-semibold tracking-wider uppercase rounded-lg transition-all"
             style={{
               background: (!selectedSymbol && isShowAll) ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
@@ -368,7 +357,7 @@ export default function S50OutstandingShort() {
       </div>
 
       {/* ── MAIN BODY ── */}
-      <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden relative z-10">
 
         {/* ── CHART AREA ── */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -405,7 +394,7 @@ export default function S50OutstandingShort() {
               style={{ visibility: selectedSymbol ? "visible" : "hidden" }}/>
             
             {!selectedSymbol && isShowAll && (
-              <div className="absolute inset-0 overflow-y-auto no-scrollbar">
+              <div className="absolute inset-0 overflow-y-auto no-scrollbar pr-0">
                 <StackedLabelChart />
               </div>
             )}
@@ -425,62 +414,108 @@ export default function S50OutstandingShort() {
           
           <div className="flex items-center gap-1.5 px-4 md:px-2.5 pt-3 md:pt-2.5 pb-3 md:pb-2 shrink-0">
             
-            {/* ── Dropdown (Mobile เท่านั้น) ── */}
-            <div className="flex md:hidden flex-1 items-center gap-2 rounded-lg px-3 h-10 relative"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <select
-                value={selectedSymbol || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "") {
-                    setSelectedSymbol(null);
-                    setIsShowAll(true);
-                  } else {
-                    setSelectedSymbol(val);
-                    setIsShowAll(false);
-                    applyRange("MAX");
-                  }
-                }}
-                className="w-full bg-transparent text-[14px] text-gray-300 outline-none appearance-none cursor-pointer z-10 h-full"
-              >
-                <option value="" className="bg-[#0b0e14] text-gray-400">Select a Symbol...</option>
-                {MOCK_TABLE.map(row => (
-                  <option key={row.symbol} value={row.symbol} className="bg-[#0b0e14] text-white">
-                    {row.symbol} &nbsp;—&nbsp; {row.outshort.toFixed(2)}%
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3 pointer-events-none text-gray-500">
-                <ChevronDownIcon />
+            {/* ── Search + Dropdown UI (รวมกัน ใช้งานได้ทั้ง PC และ Mobile) ── */}
+            {/* 💡 เปลี่ยนเป็น flex-1 min-w-0 เพื่อให้กล่องหดตัวได้และไม่ดันปุ่ม */}
+            <div className="flex-1 relative min-w-0" ref={dropdownRef}>
+              <div className="relative bg-[#111827] border border-slate-700 rounded-lg px-2.5 flex items-center shadow-inner h-9 transition-colors focus-within:border-blue-500/50 focus-within:bg-[#1e293b]">
+                <SearchIcon className="text-slate-400 pointer-events-none shrink-0" style={{ fontSize: '16px' }} />
+                
+                <input
+                  ref={inputRef}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    setIsDropdownOpen(true);
+                    if (selectedSymbol) setSearchQuery("");
+                  }}
+                  placeholder="Type a Symbol..."
+                  className="flex-1 bg-transparent outline-none text-white text-[13px] placeholder:text-slate-500 min-w-0 pl-1.5 pr-1"
+                />
+                
+                <div className="flex items-center shrink-0">
+                  {/* Clear Button */}
+                  {searchQuery && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSearchQuery("");
+                        inputRef.current?.focus();
+                      }}
+                      className="text-[10px] text-slate-400 hover:text-white mr-1 px-1 flex items-center justify-center h-full"
+                      title="Clear symbol"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  {/* Chevron Button */}
+                  <span
+                    onClick={() => {
+                      setIsDropdownOpen(!isDropdownOpen);
+                      if (!isDropdownOpen) inputRef.current?.focus();
+                    }}
+                    className="text-slate-400 cursor-pointer flex items-center px-1"
+                  >
+                    <div style={{ transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                      <ChevronDownIcon />
+                    </div>
+                  </span>
+                </div>
               </div>
+
+              {/* ── Dropdown Overlay (Both PC and Mobile) ── */}
+              {isDropdownOpen && (
+                // 💡 ตั้งค่า w-full และ min-w-[200px] เพื่อให้กว้างพอแต่ยังยึดกับกล่องเดิม
+                <div className="absolute top-full mt-1.5 left-0 w-full min-w-[200px] bg-[#0f172a] border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-[60] custom-scrollbar">
+                  
+                  {filteredTable.length > 0 ? (
+                    filteredTable.map((item, index) => {
+                      const isSelected = selectedSymbol === item.symbol;
+                      const realIdx = MOCK_TABLE.findIndex(r => r.symbol === item.symbol);
+                      const dotColor = SYMBOL_COLORS[realIdx % SYMBOL_COLORS.length];
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            setSelectedSymbol(item.symbol);
+                            setSearchQuery(item.symbol);
+                            setIsShowAll(false);
+                            applyRange("MAX");
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`px-4 py-3 text-[13px] transition flex items-center gap-3 cursor-pointer
+                            ${isSelected ? "bg-cyan-500/20 text-white" : "text-slate-300 hover:bg-[#1e293b] hover:text-white"}`}
+                        >
+                          {/* สีวงกลม */}
+                          <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
+                          {/* ชื่อหุ้น */}
+                          <span className="flex-1">{item.symbol}</span>
+                          {/* ข้อมูล % */}
+                          <span className={`${isSelected ? "text-cyan-400" : "text-slate-400"}`}>{item.outshort.toFixed(2)}%</span>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="px-4 py-3 text-[13px] text-slate-500 text-center">No results found</div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* ── Search Input (PC เท่านั้น) ── */}
-            <div className="hidden md:flex flex-1 items-center gap-2 rounded-lg px-3 h-9"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <span className="text-gray-500"><SearchIcon /></span>
-              <input type="text" placeholder="Type a Symbol..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] text-gray-300 placeholder-gray-600 outline-none"/>
-            </div>
-
-            {/* ปุ่มเปิดปิดตาราง (PC เท่านั้น) */}
             <button onClick={() => setTableOpen(o => !o)}
-              className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-slate-400 hover:text-white transition-colors shrink-0 bg-[#111827] border border-slate-700">
               <ChevronUpIcon open={tableOpen}/>
             </button>
-
-            {/* ปุ่ม Refresh */}
             <button onClick={handleReset}
-              className="w-10 h-10 md:w-9 md:h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-white transition-colors shrink-0 bg-[#111827] border border-slate-700">
               <RefreshIcon spinning={spinning}/>
             </button>
           </div>
 
-          {/* ซ่อน Header ตารางบน Mobile */}
+          {/* ซ่อน Header ตารางบน Mobile (แสดงเฉพาะบน PC) */}
           {tableOpen && (
             <div className="hidden md:flex items-center px-4 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
               <span className="flex-1 text-[11px] font-semibold text-gray-500 tracking-wider uppercase">Symbol</span>
@@ -488,9 +523,12 @@ export default function S50OutstandingShort() {
             </div>
           )}
 
-          {/* ซ่อน List ทั้งหมดบน Mobile, แสดงและเชื่อมกับระบบ Filter บน PC */}
+          {/* ซ่อน List ทั้งหมดบน Mobile, แต่จะแสดงเป็น List ปกติติดแผงบน PC */}
           {tableOpen && (
             <div className="hidden md:block flex-1 overflow-y-auto no-scrollbar pb-2 md:pb-0">
+              
+              
+
               {filteredTable.map((row, i) => {
                 const isSelected = selectedSymbol === row.symbol;
                 const realIdx = MOCK_TABLE.findIndex(r => r.symbol === row.symbol);
@@ -500,7 +538,7 @@ export default function S50OutstandingShort() {
                     onClick={() => {
                       if (selectedSymbol === row.symbol) {
                         setSelectedSymbol(null);
-                        setIsShowAll(false);
+                        setIsShowAll(true); 
                       } else {
                         setSelectedSymbol(row.symbol);
                         setIsShowAll(false);
@@ -533,6 +571,10 @@ export default function S50OutstandingShort() {
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.4); cursor: pointer; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
       `}</style>
     </div>
   );
