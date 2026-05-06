@@ -119,7 +119,6 @@ function buildBaseSeries(symbol) {
     const vMul = 1 + Math.pow(pct - 0.5, 2) * 5;
     momentum   = momentum * 0.85 + (rng() - 0.5) * 2.5;
 
-    // FIX: noise หลายชั้นให้กราฟไม่ตรงเกินไป
     const spike      = rng() < 0.15 ? (rng() - 0.3) * 20 : 0;
     const microNoise = (rng() - 0.5) * 4;
     const cyclical   = Math.sin(i * 0.18) * 1.5;
@@ -158,7 +157,6 @@ function appendLivePoint(symbol) {
   const lastPrice = s.price.at(-1).value;
   const lastTs    = s.net.at(-1).time;
 
-  // FIX: noise หลายชั้น: trend + cycle + spike + micro-noise
   const trend    = Math.sin(len * 0.08) * 1.5;
   const cycle    = Math.sin(len * 0.3 + rng() * 0.5) * 2;
   const spike    = rng() < 0.12 ? (rng() - 0.4) * 18 : 0;
@@ -210,21 +208,28 @@ function ChartSkeleton() {
 function ToastContainer({ toasts, onDismiss }) {
   return (
     <div className="fixed bottom-4 right-4 z-[3000] flex flex-col gap-2 pointer-events-none">
-      {toasts.map((t) => (
-        <div key={t.id}
-          className="pointer-events-auto flex items-start gap-3 bg-[#0d1526]/95 border border-yellow-500/40 rounded-xl px-4 py-3 shadow-2xl backdrop-blur-sm max-w-xs"
-          style={{ animation: "toastIn 0.3s ease-out" }}>
-          <span className="text-yellow-400 text-lg flex-shrink-0 mt-0.5">⚠</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-bold mb-0.5">{t.symbol} — Alert Triggered!</p>
-            <p className="text-slate-400 text-[10px] leading-snug">
-              Net Flow <span className="text-yellow-300 font-semibold">{Math.round(t.value).toLocaleString()}</span> ชน H-Line <span className="text-violet-300 font-semibold">{Math.round(t.hline).toLocaleString()}</span>
-            </p>
-            <p className="text-slate-600 text-[9px] mt-0.5">{t.time}</p>
+      {toasts.map((t) => {
+        const isUp = t.direction === "up";
+        return (
+          <div key={t.id}
+            className={`pointer-events-auto flex items-start gap-3 bg-[#0d1526]/95 border rounded-xl px-4 py-3 shadow-2xl backdrop-blur-sm max-w-xs ${isUp ? "border-green-500/40" : "border-red-500/40"}`}
+            style={{ animation: "toastIn 0.3s ease-out" }}>
+            <span className={`text-lg flex-shrink-0 mt-0.5 ${isUp ? "text-green-400" : "text-red-400"}`}>
+              {isUp ? "🔔" : "⚠"}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-bold mb-0.5">
+                {t.symbol} — {isUp ? "Congratulations!" : "Warning!"}
+              </p>
+              <p className="text-slate-400 text-[10px] leading-snug">
+                Net Flow <span className={`font-semibold ${isUp ? "text-green-300" : "text-red-300"}`}>{Math.round(t.value).toLocaleString()}</span> ชน H-Line <span className="text-violet-300 font-semibold">{Math.round(t.hline).toLocaleString()}</span>
+              </p>
+              <p className="text-slate-600 text-[9px] mt-0.5">{t.time}</p>
+            </div>
+            <button onClick={() => onDismiss(t.id)} className="text-slate-600 hover:text-white transition flex-shrink-0">✕</button>
           </div>
-          <button onClick={() => onDismiss(t.id)} className="text-slate-600 hover:text-white transition flex-shrink-0">✕</button>
-        </div>
-      ))}
+        );
+      })}
       <style>{`@keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}`}</style>
     </div>
   );
@@ -435,7 +440,7 @@ function LWCChart({
   const sellSeriesRef  = useRef(null);
   const priceSeriesRef = useRef(null);
   const isSyncingRef   = useRef(false);
-  const alertFiredRef  = useRef(null);
+  const alertFiredRef  = useRef(null); // stores "up" | "down" | null per hline
 
   useEffect(() => {
     if (!containerRef.current || !symbol) return;
@@ -503,7 +508,6 @@ function LWCChart({
       if (price != null) onChartClickRef.current(price);
     });
 
-    // FIX: ใช้ requestAnimationFrame ให้ chart render ก่อน fitContent
     requestAnimationFrame(() => {
       chart.timeScale().fitContent();
       chart.timeScale().scrollToRealTime();
@@ -538,14 +542,28 @@ function LWCChart({
 
     chartRef.current.timeScale().scrollToRealTime();
 
+    // ─── BIDIRECTIONAL ALERT CHECK ────────────────────────────────────────
     if (hlineValue != null && onAlertTriggeredRef.current) {
-      const prevNet = getOrInitLiveSeries(symbol).net.at(-2)?.value ?? 0;
+      const series  = getOrInitLiveSeries(symbol);
+      const prevNet = series.net.at(-2)?.value ?? 0;
       const curNet  = newNet.value;
-      const crossed = prevNet < hlineValue && curNet >= hlineValue;
 
-      if (crossed && alertFiredRef.current !== hlineValue) {
-        alertFiredRef.current = hlineValue;
-        onAlertTriggeredRef.current({ value: curNet, time: newNet.time });
+      const crossUp   = prevNet < hlineValue && curNet >= hlineValue;
+      const crossDown = prevNet > hlineValue && curNet <= hlineValue;
+      const direction = crossUp ? "up" : crossDown ? "down" : null;
+
+      if (direction && alertFiredRef.current !== direction) {
+        alertFiredRef.current = direction;
+        onAlertTriggeredRef.current({ value: curNet, time: newNet.time, direction });
+      }
+
+      // reset fired state when price moves away from hline (allows re-trigger)
+      const threshold = Math.abs(hlineValue) * 0.02;
+      const awayUp    = curNet > hlineValue + threshold;
+      const awayDown  = curNet < hlineValue - threshold;
+      if ((alertFiredRef.current === "up" && awayUp) ||
+          (alertFiredRef.current === "down" && awayDown)) {
+        alertFiredRef.current = null;
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -686,37 +704,94 @@ function AlertSettingsTooltip() {
 // ─── ALERT POPUP ──────────────────────────────────────────────────────────────
 function AlertPopup({ data, onClose, onTryAgain, watchlists, chartInstanceRefs, globalTickCount }) {
   if (!data) return null;
-  const { symbol, flowValue, hlineValue, pctChange } = data;
+  const { symbol, flowValue, hlineValue, pctChange, direction } = data;
+  const isUp = direction !== "down"; // default to up for backwards compat
+
+  // theme tokens
+  const clr = isUp ? {
+    bg:      "#0d1f0f",
+    border:  "#1e3d1e",
+    iconBg:  "radial-gradient(circle,#16a34a 0%,#14532d 60%,#052e16 100%)",
+    iconBdr: "#22c55e",
+    iconShadow: "rgba(34,197,94,0.45)",
+    iconFill: "#22c55e",
+    title:   "text-green-400",
+    sub:     "text-green-300/80",
+    valClr:  "text-green-400",
+    valLabel:"text-green-400",
+    btnPrimary: "bg-green-500 hover:bg-green-400 text-black",
+    chartBorder: "#1e3d1e",
+    chartBg: "#061008",
+    chartTag: "bg-[#1e2d1e] text-green-300 border-[#2d4a2d]",
+    badgeBg: "bg-green-900/60 text-green-400",
+  } : {
+    bg:      "#1f0d0d",
+    border:  "#3d1e1e",
+    iconBg:  "radial-gradient(circle,#dc2626 0%,#7f1d1d 60%,#450a0a 100%)",
+    iconBdr: "#ef4444",
+    iconShadow: "rgba(239,68,68,0.45)",
+    iconFill: "#ef4444",
+    title:   "text-red-400",
+    sub:     "text-red-300/80",
+    valClr:  "text-red-400",
+    valLabel:"text-red-400",
+    btnPrimary: "bg-red-500 hover:bg-red-400 text-white",
+    chartBorder: "#3d1e1e",
+    chartBg: "#160808",
+    chartTag: "bg-[#2d1e1e] text-red-300 border-[#4a2d2d]",
+    badgeBg: "bg-red-900/60 text-red-400",
+  };
 
   const allWatchlistSymbols = watchlists.flatMap(w => w.symbols);
   const otherSymbols        = allWatchlistSymbols.filter(s => s !== symbol);
   const displayItems        = [symbol, ...otherSymbols].slice(0, 3);
-
   const mockPct = { [symbol]: pctChange };
   otherSymbols.forEach(s => { const seed = hashSymbol(s); mockPct[s] = ((seed % 100) - 45) / 10; });
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-      <div className="relative bg-[#0d1f0f] border border-[#1e3d1e] rounded-2xl w-full max-w-[700px] overflow-hidden shadow-2xl">
+      <div className="relative rounded-2xl w-full max-w-[700px] overflow-hidden shadow-2xl"
+        style={{ background: clr.bg, border: `1px solid ${clr.border}` }}>
         <button onClick={onClose}
           className="absolute top-3.5 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white text-lg flex items-center justify-center z-10 transition-all">×</button>
+
+        {/* Header */}
         <div className="flex flex-col items-center pt-7 pb-5 px-6">
           <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center mb-4"
-            style={{ background:"radial-gradient(circle,#16a34a 0%,#14532d 60%,#052e16 100%)", border:"2.5px solid #22c55e", boxShadow:"0 0 28px rgba(34,197,94,0.45)" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="#22c55e" stroke="#22c55e" strokeWidth="0.3">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              <circle cx="18" cy="5" r="3" fill="#ef4444" stroke="none"/>
-            </svg>
+            style={{ background: clr.iconBg, border: `2.5px solid ${clr.iconBdr}`, boxShadow: `0 0 28px ${clr.iconShadow}` }}>
+            {isUp ? (
+              // Bell icon for profit
+              <svg width="32" height="32" viewBox="0 0 24 24" fill={clr.iconFill} stroke={clr.iconFill} strokeWidth="0.3">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <circle cx="18" cy="5" r="3" fill="#ef4444" stroke="none"/>
+              </svg>
+            ) : (
+              // Warning triangle icon for drop
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={clr.iconFill} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            )}
           </div>
-          <h2 className="text-2xl font-bold text-green-400 mb-1">Alert Triggered!</h2>
-          <p className="text-sm text-green-300/80">Net Flow ข้าม H-Line ที่ตั้งไว้</p>
+          <h2 className={`text-2xl font-bold mb-1 ${clr.title}`}>
+            {isUp ? "Congratulations!" : "Warning!"}
+          </h2>
+          <p className={`text-sm ${clr.sub}`}>
+            {isUp ? "You've made a profit this round." : "Your stock price has dropped."}
+          </p>
         </div>
+
+        {/* Body */}
         <div className="flex gap-3 px-5 pb-4 flex-wrap">
-          <div className="flex-[1.4] min-w-[220px] bg-[#061008] border border-[#1e3d1e] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[#1e3d1e]">
+          {/* Chart */}
+          <div className="flex-[1.4] min-w-[220px] rounded-xl overflow-hidden"
+            style={{ background: clr.chartBg, border: `1px solid ${clr.chartBorder}` }}>
+            <div className="flex items-center justify-between px-3 py-2"
+              style={{ borderBottom: `1px solid ${clr.chartBorder}` }}>
               <span className="text-sm font-bold text-white tracking-widest">{symbol}</span>
-              <span className="text-[10px] bg-[#1e2d1e] text-green-300 px-2 py-0.5 rounded border border-[#2d4a2d]">Flow ▾</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded border ${clr.chartTag}`}>Flow ▾</span>
             </div>
             <div className="h-[160px]">
               <LWCChart
@@ -730,26 +805,29 @@ function AlertPopup({ data, onClose, onTryAgain, watchlists, chartInstanceRefs, 
               <span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
             </div>
           </div>
+
+          {/* Stats */}
           <div className="flex-1 min-w-[160px] flex flex-col gap-3">
-            <div className="bg-[#061008] border border-[#1e3d1e] rounded-xl px-4 py-3">
-              <p className="text-[11px] text-green-400 font-medium mb-1">Current Value</p>
-              <p className="text-2xl font-bold text-green-400 leading-none mb-1">{Math.round(flowValue).toLocaleString()}</p>
-              <p className="text-[11px] text-green-400">{pctChange >= 0 ? "+" : ""}{pctChange.toFixed(1)}% (H-Line Crossed)</p>
+            <div className="rounded-xl px-4 py-3" style={{ background: clr.chartBg, border: `1px solid ${clr.chartBorder}` }}>
+              <p className={`text-[11px] font-medium mb-1 ${clr.valLabel}`}>Current Value</p>
+              <p className={`text-2xl font-bold leading-none mb-1 ${clr.valClr}`}>{Math.round(flowValue).toLocaleString()}</p>
+              <p className={`text-[11px] ${clr.valClr}`}>{pctChange >= 0 ? "+" : ""}{pctChange.toFixed(1)}% ({isUp ? "H-Line Crossed ↑" : "H-Line Crossed ↓"})</p>
             </div>
-            <div className="bg-[#061008] border border-[#1e3d1e] rounded-xl px-4 py-3 flex-1">
+            <div className="rounded-xl px-4 py-3 flex-1" style={{ background: clr.chartBg, border: `1px solid ${clr.chartBorder}` }}>
               <div className="flex items-center gap-1.5 mb-3">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 <span className="text-xs font-semibold text-white">My watchlists</span>
-                <span className="text-[10px] bg-green-900/60 text-green-400 px-1.5 py-0.5 rounded-full">{displayItems.length}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${clr.badgeBg}`}>{displayItems.length}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 {displayItems.map(sym => {
                   const pct = mockPct[sym] ?? 0, up = pct >= 0, isAlertSym = sym === symbol;
                   return (
-                    <div key={sym} className="flex items-center justify-between bg-[#0a1a0a] rounded-lg px-2.5 py-2">
+                    <div key={sym} className="flex items-center justify-between rounded-lg px-2.5 py-2"
+                      style={{ background: isUp ? "#0a1a0a" : "#1a0a0a" }}>
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${up ? "bg-green-400" : "bg-red-400"}`}/>
-                        <span className={`text-xs font-bold text-white px-2 py-0.5 rounded ${isAlertSym ? "bg-[#0f2e1a]" : up ? "" : "bg-[#2d1a1a]"}`}>{sym}</span>
+                        <span className={`text-xs font-bold text-white px-2 py-0.5 rounded ${isAlertSym ? (isUp ? "bg-[#0f2e1a]" : "bg-[#2e0f0f]") : up ? "" : "bg-[#2d1a1a]"}`}>{sym}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[11px] font-semibold ${up ? "text-green-400" : "text-red-400"}`}>{up?"+":""}{pct.toFixed(2)}%</span>
@@ -767,9 +845,11 @@ function AlertPopup({ data, onClose, onTryAgain, watchlists, chartInstanceRefs, 
             </div>
           </div>
         </div>
+
+        {/* Buttons */}
         <div className="flex gap-3 px-5 pb-4">
           <button onClick={onTryAgain}
-            className="flex-1 py-3 rounded-full bg-green-500 hover:bg-green-400 active:scale-95 text-black font-bold text-sm flex items-center justify-center gap-2 transition-all">
+            className={`flex-1 py-3 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 ${clr.btnPrimary}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/></svg>
             ตั้ง H-Line ใหม่
           </button>
@@ -818,10 +898,10 @@ export default function FlowIntraday() {
   const [alertPopup, setAlertPopup] = useState(null);
 
   const [toasts, setToasts] = useState([]);
-  const addToast = useCallback((symbol, value, hline) => {
+  const addToast = useCallback((symbol, value, hline, direction) => {
     const id   = Date.now();
     const time = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-    setToasts(prev => [...prev.slice(-4), { id, symbol, value, hline, time }]);
+    setToasts(prev => [...prev.slice(-4), { id, symbol, value, hline, time, direction }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 8000);
   }, []);
   const dismissToast = useCallback((id) => setToasts(prev => prev.filter(t => t.id !== id)), []);
@@ -903,13 +983,13 @@ export default function FlowIntraday() {
     }
   }, [currentUser?.uid, symbols]);
 
-  // ─── Alert callback ────────────────────────────────────────────────────────
-  const makeAlertHandler = useCallback((index, sym, hline) => ({ value, time }) => {
-    addToast(sym, value, hline);
+  // ─── Alert callback — now receives direction ───────────────────────────────
+  const makeAlertHandler = useCallback((index, sym, hline) => ({ value, time, direction }) => {
+    addToast(sym, value, hline, direction);
     const series   = getOrInitLiveSeries(sym);
     const startNet = series.net[0]?.value ?? 0;
     const pct      = startNet !== 0 ? ((value - startNet) / Math.abs(startNet)) * 100 : 0;
-    setAlertPopup({ symbol: sym, index, flowValue: value, hlineValue: hline, pctChange: pct });
+    setAlertPopup({ symbol: sym, index, flowValue: value, hlineValue: hline, pctChange: pct, direction });
   }, [addToast]);
 
   // ─── Bell click ───────────────────────────────────────────────────────────
@@ -924,7 +1004,6 @@ export default function FlowIntraday() {
     updateHline(index, price); setDrawingIndex(null);
   }, [updateHline]);
 
-  // FIX: handleFsBell sync กลับ grid ด้วย
   const handleFsBell = useCallback(() => {
     if (fsHline != null) {
       setFsHline(null);
@@ -937,7 +1016,6 @@ export default function FlowIntraday() {
     }
   }, [fsHline, fsDrawing, fullscreenIndex, updateHline]);
 
-  // FIX: handleFsChartClick sync กลับ grid ด้วย
   const handleFsChartClick = useCallback((price) => {
     setFsHline(price);
     setFsDrawing(false);
@@ -1043,9 +1121,7 @@ export default function FlowIntraday() {
 
   const handleLoadWatchlist = useCallback((wl) => {
     const next = Array(boxCount).fill("");
-    wl.symbols.forEach((sym, i) => {
-      if (i < boxCount) next[i] = sym;
-    });
+    wl.symbols.forEach((sym, i) => { if (i < boxCount) next[i] = sym; });
     setSymbols(next);
     setShowWatchPanel(false);
   }, [boxCount]);
@@ -1080,7 +1156,6 @@ export default function FlowIntraday() {
 
   // ─── Grid layout ───────────────────────────────────────────────────────────
   const boxes    = Array.from({ length: boxCount });
-
   const gridCols = useMemo(() => {
     if (isMobile) return 1;
     if (layout === "12") return windowWidth >= 1280 ? 4 : windowWidth >= 1024 ? 3 : 2;
@@ -1254,13 +1329,10 @@ export default function FlowIntraday() {
                               <div className="bg-[#0b1220] px-4 py-2 flex flex-col gap-2">
                                 <div className="flex flex-wrap gap-1.5">
                                   {wl.symbols.map(sym => (
-                                    <span key={sym} className="text-[11px] font-bold text-cyan-400 bg-cyan-900/30 border border-cyan-800/50 px-2 py-0.5 rounded-full">
-                                      {sym}
-                                    </span>
+                                    <span key={sym} className="text-[11px] font-bold text-cyan-400 bg-cyan-900/30 border border-cyan-800/50 px-2 py-0.5 rounded-full">{sym}</span>
                                   ))}
                                 </div>
-                                <button
-                                  onClick={() => handleLoadWatchlist(wl)}
+                                <button onClick={() => handleLoadWatchlist(wl)}
                                   className="w-full py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5">
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                                   Load to Grid
@@ -1343,13 +1415,9 @@ export default function FlowIntraday() {
                             setFsHline(hline);
                             setFsDrawing(false);
                             if (isMobile) setShowRotateModal(true);
-                            // FIX: reset fullscreen chart time scale หลัง mount
                             setTimeout(() => {
                               const chart = chartInstanceRefs.current.get("fullscreen");
-                              if (chart) {
-                                chart.timeScale().fitContent();
-                                chart.timeScale().scrollToRealTime();
-                              }
+                              if (chart) { chart.timeScale().fitContent(); chart.timeScale().scrollToRealTime(); }
                             }, 100);
                           }
                         }}
