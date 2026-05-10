@@ -240,12 +240,14 @@ function processDataAgg(records) {
     const key = r.date + "|" + r.symbol;
     if (!groups[key]) {
       groups[key] = {
-        date: r.date, symbol: r.symbol, name: r.name,
+        date: r.date, symbol: r.symbol,
+        names: new Set(),
         buy: 0, sell: 0,
         closePrice: r.price, price: r.price,
         methods: new Set()
       };
     }
+    groups[key].names.add(r.name);
     if (r.method === BUY) groups[key].buy += r.value;
     else if (r.method === SELL) groups[key].sell += r.value;
     groups[key].methods.add(r.method);
@@ -254,7 +256,11 @@ function processDataAgg(records) {
       groups[key].price = r.price;
     }
   });
-  return Object.values(groups).map(g => ({ ...g, methods: [...g.methods].join("/") }));
+  return Object.values(groups).map(g => ({
+    ...g,
+    name: [...g.names].join(" / "),
+    methods: [...g.methods].join("/"),
+  }));
 }
 
 function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked, hasData }) {
@@ -346,6 +352,88 @@ function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked,
         </div>
       )}
     </div>
+  );
+}
+
+function NameCell({ name }) {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const ref = useRef(null);
+
+  if (!name) return <span style={{ color: "#3a506a" }}>–</span>;
+  const parts = name.split(" / ");
+  const isTruncated = parts.length > 1 || name.length > 22;
+
+  function handleMouseMove(e) {
+    setPos({ x: e.clientX, y: e.clientY });
+  }
+
+  const inner = parts.length === 1 ? (
+    <span style={{
+      display: "block", maxWidth: 170, overflow: "hidden",
+      textOverflow: "ellipsis", whiteSpace: "nowrap",
+    }}>
+      {name}
+    </span>
+  ) : (
+    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      <span style={{
+        maxWidth: 130, overflow: "hidden",
+        textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {parts[0]}
+      </span>
+      <span style={{
+        flexShrink: 0,
+        background: "#1e3a5f", color: "#60a5fa",
+        fontSize: 10, fontWeight: 700,
+        borderRadius: 4, padding: "1px 5px", lineHeight: "16px",
+      }}>
+        +{parts.length - 1}
+      </span>
+    </span>
+  );
+
+  if (!isTruncated) return inner;
+
+  return (
+    <span
+      ref={ref}
+      style={{ cursor: "default", display: "block" }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onMouseMove={handleMouseMove}
+    >
+      {inner}
+      {show && (
+        <div style={{
+          position: "fixed",
+          left: pos.x + 12,
+          top: pos.y + 12,
+          zIndex: 9999,
+          background: "#0f1c2e",
+          border: "1px solid #2563eb",
+          borderRadius: 8,
+          padding: "8px 12px",
+          boxShadow: "0 8px 32px rgba(0,0,0,.7)",
+          pointerEvents: "none",
+          maxWidth: 280,
+        }}>
+          {parts.map((p, i) => (
+            <div key={i} style={{
+              color: "#c9d4e8", fontSize: 12,
+              padding: "2px 0",
+              borderBottom: i < parts.length - 1 ? "1px solid #1e2d45" : "none",
+              paddingBottom: i < parts.length - 1 ? 4 : 0,
+              marginBottom: i < parts.length - 1 ? 4 : 0,
+              whiteSpace: "nowrap",
+            }}>
+              {p}
+            </div>
+          ))}
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -702,7 +790,9 @@ export default function Form59Dashboard() {
                 >
                   <td style={{ ...S.td("center"), color: "#5a7090", fontFamily: "monospace" }}>{r.date}</td>
                   <td style={{ ...S.td("center"), color: "#60a5fa", fontWeight: 700, letterSpacing: "0.05em", fontFamily: "monospace" }}>{r.symbol}</td>
-                  <td style={{ ...S.td("center"), maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</td>
+                  <td style={{ ...S.td("center"), maxWidth: 180 }}>
+                    <NameCell name={r.name} />
+                  </td>
                   <td style={{ ...S.td("center"), color: "#22c55e", fontWeight: 600, fontFamily: "monospace" }}>{r.buy ? fmtVal(r.buy) : "–"}</td>
                   <td style={{ ...S.td("center"), color: "#ef4444", fontWeight: 600, fontFamily: "monospace" }}>{r.sell ? fmtVal(r.sell) : "–"}</td>
                   <td style={{ ...S.td("center"), fontFamily: "monospace" }}>{r.closePrice > 0 ? r.closePrice.toFixed(2) : "–"}</td>
