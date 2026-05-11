@@ -249,7 +249,7 @@ const DatePicker = memo(({ dates, selected, onChange }) => {
   const canNext=useCallback(()=>{ if(!dates[dates.length-1])return false; const p=parseKey(dates[dates.length-1]); return viewYear<p.year||(viewYear===p.year&&viewMonth<p.month); },[dates,viewYear,viewMonth]);
   const calDays=useMemo(()=>{ const firstDow=new Date(viewYear,viewMonth-1,1).getDay(); const total=new Date(viewYear,viewMonth,0).getDate(); const cells=[]; for(let i=0;i<firstDow;i++)cells.push(null); for(let d=1;d<=total;d++)cells.push(d); while(cells.length%7!==0)cells.push(null); return cells; },[viewMonth,viewYear]);
 
-  const popup    = { position:"fixed",top:popupPos.top,left:popupPos.left,zIndex:9999,width:252,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 16px 40px rgba(0,0,0,0.7)",fontFamily:"monospace",overflow:"hidden",maxHeight:`calc(100vh - ${popupPos.top}px - 8px)`,overflowY:"auto" };
+  const popup    = { position:"fixed",top:popupPos.top,left:popupPos.left,zIndex:40,width:252,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 16px 40px rgba(0,0,0,0.7)",fontFamily:"monospace",overflow:"hidden",maxHeight:`calc(100vh - ${popupPos.top}px - 8px)`,overflowY:"auto" };
   const dpHeader = { display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px 8px",borderBottom:`1px solid ${C.border}` };
   const navBtn   = (active)=>({ width:26,height:26,borderRadius:5,border:"none",background:"transparent",color:active?"#7a9cc4":"#162035",cursor:active?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"background .1s" });
   const titleBtn = { background:"transparent",border:"none",cursor:"pointer",color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace",letterSpacing:"0.03em",display:"flex",alignItems:"center",gap:3,padding:"4px 8px",borderRadius:5 };
@@ -257,12 +257,14 @@ const DatePicker = memo(({ dates, selected, onChange }) => {
   const Chev=({d})=>(<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{d==="left"&&<polyline points="15 18 9 12 15 6"/>}{d==="right"&&<polyline points="9 18 15 12 9 6"/>}{d==="down"&&<polyline points="6 9 12 15 18 9"/>}</svg>);
 
   return (
-    <div ref={ref} style={{flexShrink:0}}>
+    <div ref={ref} style={{ width: "100%" }}>
       <button onClick={()=>{ if(!open&&selected&&selected.includes("/")){ const p=parseKey(selected); setViewMonth(p.month); setViewYear(p.year); } if(!open&&ref.current){ const rect=ref.current.getBoundingClientRect(); const POPUP_W=252; const clampedLeft=Math.min(rect.left,window.innerWidth-POPUP_W-8); const clampedTop=Math.min(rect.bottom+8,window.innerHeight-8); setPopupPos({top:clampedTop,left:Math.max(8,clampedLeft)}); } setOpen(o=>!o); setView("day"); }}
-        style={{ display:"flex",alignItems:"center",gap:7,padding:"0 12px",height:36,background:open?"rgba(59,130,246,0.12)":C.inputBg,border:`1px solid ${open?"rgba(59,130,246,0.5)":C.border}`,borderRadius:8,cursor:"pointer",color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace",transition:"all .15s" }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        {formatDisplay(selected)}
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.6,transform:open?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4}}><polyline points="6 9 12 15 18 9"/></svg>
+        style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:7,padding:"0 12px",height:36,width:"100%",background:open?"rgba(59,130,246,0.12)":C.inputBg,border:`1px solid ${open?"rgba(59,130,246,0.5)":C.border}`,borderRadius:8,cursor:"pointer",color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace",transition:"all .15s" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {formatDisplay(selected)}
+        </div>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.6,transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open&&(<div style={popup}>
         {view==="year"&&(<><div style={dpHeader}><button style={navBtn(decadeStart>(availableYears[0]??2025))} onClick={()=>setViewYear(decadeStart-1)} onMouseEnter={e=>{if(decadeStart>(availableYears[0]??2025))e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><Chev d="left"/></button><span style={{color:C.textPrimary,fontSize:13,fontWeight:500,fontFamily:"monospace"}}>{decadeStart} – {decadeStart+9}</span><button style={navBtn(decadeStart+9<(availableYears[availableYears.length-1]??2025))} onClick={()=>setViewYear(decadeStart+10)} onMouseEnter={e=>{if(decadeStart+9<(availableYears[availableYears.length-1]??2025))e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><Chev d="right"/></button></div><div style={{...body,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>{decadeYears.map(yr=>{ const avail=availableYears.includes(yr); const isCur=yr===viewYear; const isOut=yr<decadeStart||yr>decadeStart+9; return(<button key={yr} onClick={()=>{if(avail){setViewYear(yr);setView("month");}}} style={{height:36,borderRadius:6,border:"none",cursor:avail?"pointer":"default",fontFamily:"monospace",fontSize:13,fontWeight:isCur?600:400,background:isCur?C.blue:"transparent",color:isCur?"#fff":avail?(isOut?"#334d6e":"#cbd5e1"):"#162035",transition:"all .1s"}} onMouseEnter={e=>{if(avail&&!isCur)e.currentTarget.style.background="rgba(255,255,255,0.05)";}} onMouseLeave={e=>{if(avail&&!isCur)e.currentTarget.style.background="transparent";}}>{yr}</button>); })}</div></>)}
@@ -280,16 +282,18 @@ function SingleMarketSelect({ selected, onChange }) {
   useEffect(()=>{ const fn=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false);}; document.addEventListener("mousedown",fn); return()=>document.removeEventListener("mousedown",fn); },[]);
   const options = ["SET","MAI","SET&MAI"];
   return (
-    <div ref={ref} style={{position:"relative",zIndex:150}}>
-      <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0 12px",height:36,width:180,cursor:"pointer"}}>
-        <IconLineChart/>
-        <span style={{color:selected?C.textPrimary:C.textMuted,fontSize:13,flex:1,fontWeight:selected?600:400}}>{selected||"Select market..."}</span>
+    <div ref={ref} style={{position:"relative", zIndex:30, width: "100%"}}>
+      <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0 12px",height:36,width:"100%",cursor:"pointer"}}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <IconLineChart/>
+          <span style={{color:selected?C.textPrimary:C.textMuted,fontSize:13,flex:1,fontWeight:selected?600:400}}>{selected||"Select market..."}</span>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           {selected&&selected!=="SET&MAI"&&(<div onMouseDown={e=>{e.preventDefault();e.stopPropagation();onChange("SET&MAI");}} style={{display:"flex",alignItems:"center",color:"#7a9cc4",cursor:"pointer"}}><IconX/></div>)}
           <div style={{transform:open?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"flex",alignItems:"center"}}><IconCaret/></div>
         </div>
       </div>
-      {open&&(<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:180,zIndex:200,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",padding:"6px 0"}}>
+      {open&&(<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",zIndex:40,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",padding:"6px 0"}}>
         {options.map(opt=>(<div key={opt} onMouseDown={e=>{e.preventDefault();onChange(opt);setOpen(false);}} style={{padding:"10px 16px",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",gap:10,color:selected===opt?C.accent:"#9ab",background:selected===opt?C.accentBg:"transparent",transition:"background .1s"}} onMouseEnter={e=>{if(selected!==opt)e.currentTarget.style.background="rgba(26,39,68,0.8)";}} onMouseLeave={e=>{if(selected!==opt)e.currentTarget.style.background="transparent";}}><span style={{width:6,height:6,borderRadius:"50%",flexShrink:0,background:selected===opt?C.accent:"#253660"}}/>{opt}</div>))}
       </div>)}
     </div>
@@ -305,15 +309,15 @@ function SectorMultiSelect({ options, selected, onChange, max=10 }) {
   const toggleOption=(opt)=>{ if(selected.includes(opt))onChange(selected.filter(i=>i!==opt)); else if(selected.length<max)onChange([...selected,opt]); };
   const filtered=options.filter(o=>o.includes(search.toUpperCase()));
   return (
-    <div ref={dropdownRef} style={{position:"relative",zIndex:150}}>
-      <div onClick={()=>setIsOpen(!isOpen)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0 12px",height:36,width:220,cursor:"pointer"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><IconLineChart/><span style={{color:selected.length>0?C.textPrimary:C.textMuted,fontSize:13}}>{selected.length>0?`${selected.length}/${max} Selected`:"Search sub-sector..."}</span></div>
+    <div ref={dropdownRef} style={{position:"relative", zIndex:30, width: "100%"}}>
+      <div onClick={()=>setIsOpen(!isOpen)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0 12px",height:36,width:"100%",cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><IconLineChart/><span style={{color:selected.length>0?C.textPrimary:C.textMuted,fontSize:13,whiteSpace:"nowrap"}}>{selected.length>0?`${selected.length}/${max} Selected`:"Search sub-sector..."}</span></div>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           {selected.length>0&&(<div onClick={e=>{e.stopPropagation();onChange([]);}} style={{display:"flex",alignItems:"center",color:"#7a9cc4",cursor:"pointer"}}><IconX/></div>)}
           <div style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"flex",alignItems:"center"}}><IconCaret/></div>
         </div>
       </div>
-      {isOpen&&(<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:220,zIndex:150,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",display:"flex",flexDirection:"column",maxHeight:280}}>
+      {isOpen&&(<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",zIndex:40,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)",display:"flex",flexDirection:"column",maxHeight:280}}>
         <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:"#9ab",fontSize:13,fontWeight:500}}>{selected.length}/{max} Selected</span><div style={{transform:"rotate(180deg)",cursor:"pointer",color:"#7a9cc4",display:"flex",alignItems:"center"}} onClick={e=>{e.stopPropagation();setIsOpen(false);}}><IconCaret/></div></div>
         <div style={{padding:"8px 14px"}}><input autoFocus type="text" placeholder="Search symbol..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:"100%",background:C.inputBg,border:`1px solid ${C.border}`,color:"#fff",fontSize:12,padding:"6px",borderRadius:4,outline:"none"}}/></div>
         <div className="custom-scrollbar" style={{padding:"6px 0",overflowY:"auto",flex:1}}>
@@ -409,16 +413,16 @@ function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast
   const { containerRef, chartRef } = useLightweightChart({ sectorId: sector.id, isUp, isExpanded: true, dateVal, scrollTarget });
   const handleFirst = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onFirst?.(); };
   const handleLast  = () => { if (chartRef.current) chartRef.current.timeScale().scrollToRealTime(); onLast?.(); };
-  const btnBase = { background:"transparent", border:`1px solid ${C.accentBorder}`, borderRadius:6, padding:"0 14px", height:30, fontSize:11, fontWeight:600, cursor:"pointer", color:C.accent, letterSpacing:".04em", transition:"all .15s", fontFamily:"inherit" };
+  const btnBase = { background:"transparent", border:`1px solid ${C.accentBorder}`, borderRadius:8, padding:"0 14px", height:36, fontSize:11, fontWeight:600, cursor:"pointer", color:C.accent, letterSpacing:".04em", transition:"all .15s", fontFamily:"inherit" };
   return (
     <div style={{position:"fixed",inset:0,zIndex:9999,background:C.pageBg,display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",height:52,background:C.toolbarBg,borderBottom:`1px solid ${C.border}`,flexShrink:0,zIndex:20,gap:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 12px",height:32,color:"#7a9cc4",cursor:"pointer",fontSize:13,fontFamily:"inherit",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color="#7a9cc4";}}>
+          <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 12px",height:36,color:"#7a9cc4",cursor:"pointer",fontSize:13,fontFamily:"inherit",transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color="#7a9cc4";}}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8l5 5"/></svg>back
           </button>
           <div style={{position:"relative"}}>
-            <div onClick={()=>setShowDropdown(true)} style={{display:"flex",alignItems:"center",gap:8,background:C.inputBg,padding:"0 12px",height:32,borderRadius:6,minWidth:160,cursor:"text",border:`1px solid ${C.borderHover}`}}>
+            <div onClick={()=>setShowDropdown(true)} style={{display:"flex",alignItems:"center",gap:8,background:C.inputBg,padding:"0 12px",height:36,borderRadius:8,minWidth:160,cursor:"text",border:`1px solid ${C.borderHover}`}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
               {showDropdown?(<input autoFocus type="text" placeholder="Search sector..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} onBlur={()=>setTimeout(()=>setShowDropdown(false),200)} style={{background:"transparent",border:"none",color:"#fff",outline:"none",width:"100%",fontSize:13}}/>):(<span style={{color:"#fff",fontWeight:"bold",fontSize:13,flex:1}}>{sector.id}</span>)}
               <div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -437,7 +441,7 @@ function ExpandedChart({ sector, dateVal, tradingDates, onClose, onFirst, onLast
           {topFlowStock&&(<span style={{display:"inline-flex",alignItems:"center",gap:5,background:topFlowStock.chg>=0?C.greenBg:C.yellowBg,border:`1px solid ${topFlowStock.chg>=0?C.greenBorder:C.yellowBorder}`,color:topFlowStock.chg>=0?"#4ade80":"#fbbf24",fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{topFlowStock.sym}<span style={{fontSize:10}}>{topFlowStock.chg>=0?"▲":"▼"}</span></span>)}
           <button onClick={handleFirst} style={btnBase} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>FIRST DATA</button>
           <button onClick={handleLast}  style={btnBase} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>LAST DATA</button>
-          <button onClick={handleLast} style={{width:30,height:30,borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}><IconRefresh/></button>
+          <button onClick={handleLast} style={{width:36,height:36,borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,transition:"all .15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="#334d6e";e.currentTarget.style.color=C.textPrimary;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}><IconRefresh/></button>
         </div>
       </div>
       <div style={{flex:1,display:"flex",overflow:"hidden",padding:16,gap:16}}>
@@ -629,22 +633,21 @@ function SectorCard({ sector, isExpanded, onExpand, onCollapse, dateVal, scrollT
   return (
     <div
       style={{
-  background: C.cardBg,
-  border: isExpanded ? "none" : `1px solid ${C.border}`,
-  borderRadius: 8,
-  display: "flex",
-  flexDirection: "column",
-  position: isExpanded ? "absolute" : "relative",
-  inset: isExpanded ? 0 : "auto",
-  height: isExpanded ? "100%" : "auto",
-  minHeight: isExpanded ? "auto" : (defaultChartHeight + 60),
-  transition: "border-color .2s",
-}}
+        background: C.cardBg,
+        border: isExpanded ? "none" : `1px solid ${C.border}`,
+        borderRadius: 8,
+        display: "flex",
+        flexDirection: "column",
+        position: isExpanded ? "absolute" : "relative",
+        inset: isExpanded ? 0 : "auto",
+        height: isExpanded ? "100%" : "auto",
+        minHeight: isExpanded ? "auto" : (defaultChartHeight + 60),
+        transition: "border-color .2s",
+      }}
       onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.borderColor = C.borderHover; }}
       onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.borderColor = C.border; }}
     >
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}`, zIndex:10 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}`, zIndex: 2, position: "relative" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", overflow:"hidden" }}>
           <span style={{ fontSize: isExpanded?24:14, fontWeight:600, color:C.textMuted, letterSpacing:".05em", whiteSpace:"nowrap" }}>{sector.label}</span>
           {top && (
@@ -722,46 +725,61 @@ function SectorRotation() {
   const visibleData = useMemo(()=>{ let data=[]; if(marketFilter==="SET") data=SET_SECTORS; else if(marketFilter==="MAI") data=MAI_SECTORS; if(selectedSectors.length>0) data=data.filter(sec=>selectedSectors.includes(sec.label)); return data; },[marketFilter,selectedSectors]);
   const gridTemplate = useMemo(()=>{ if(layoutMode===29) return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))"; if(layoutMode===8) return "repeat(auto-fit, minmax(max(45%, 450px), 1fr))"; if(layoutMode===2) return "repeat(1, 1fr)"; return "repeat(auto-fit, minmax(max(30%, 300px), 1fr))"; },[layoutMode]);
 
-  // Default chart height per market
   const defaultChartHeight = layoutMode === 29 ? 220 : layoutMode === 8 ? 320 : 500;
 
-  const boxStyle = { display:"flex",alignItems:"center",gap:8,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:6,padding:"0 12px",height:36,position:"relative",cursor:"pointer" };
-  const btnStyle = (active)=>({ background:active?"rgba(37,54,96,0.8)":"transparent",border:`1px solid ${C.border}`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",height:34,width:34,cursor:"pointer",color:active?C.textPrimary:C.textMuted,transition:"all .15s" });
-  const dataBtn  = (label,onClick)=>(<button key={label} onClick={onClick} style={{background:"transparent",border:`1px solid ${C.accentBorder}`,borderRadius:4,padding:"0 14px",height:34,fontSize:11,fontWeight:600,cursor:"pointer",color:C.accent,letterSpacing:".04em",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{label}</button>);
+  // 1. ทำให้กล่องและปุ่มมีความสูง 36px และมุมโค้ง 8px เหมือนกันหมด
+  const boxStyle = { display:"flex",alignItems:"center",gap:8,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0 12px",height:36,position:"relative",cursor:"pointer" };
+  const btnStyle = (active)=>({ background:active?"rgba(37,54,96,0.8)":"transparent",border:`1px solid ${C.border}`,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",height:36,width:36,cursor:"pointer",color:active?C.textPrimary:C.textMuted,transition:"all .15s" });
+  
+  // 2. ตั้งค่าปุ่มข้อมูล (FIRST/LAST DATA) ให้เป็น flex: 1 และดึงให้สูง 36px เท่า DatePicker
+  const dataBtn  = (label,onClick)=>(<button key={label} onClick={onClick} style={{flex: 1, background:"transparent",border:`1px solid ${C.accentBorder}`,borderRadius:8,padding:"0 12px",height:36,fontSize:11,fontWeight:600,cursor:"pointer",color:C.accent,letterSpacing:".04em",transition:"all .15s", whiteSpace:"nowrap", display:"flex", alignItems:"center", justifyContent:"center"}} onMouseEnter={e=>e.currentTarget.style.background=C.accentBg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{label}</button>);
 
   return (
     <div style={{background:"transparent",color:C.textPrimary,fontFamily:"ui-sans-serif,system-ui,sans-serif",minHeight:"100%",padding:"20px"}}>
       <style>{`.custom-scrollbar::-webkit-scrollbar{width:6px}.custom-scrollbar::-webkit-scrollbar-track{background:transparent}.custom-scrollbar::-webkit-scrollbar-thumb{background-color:#1e3050;border-radius:10px}.custom-scrollbar::-webkit-scrollbar-thumb:hover{background-color:#253a60}.tv-lightweight-charts a,a[href*="tradingview"],[class*="watermark"],[class*="attribution"]{display:none!important}`}</style>
 
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:16}}>
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+      {/* ─── โครงสร้าง Header หลัก ─── */}
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, marginBottom: 20, position: "relative", zIndex: 30 }}>
+        
+        {/* ส่วนที่ 1: ตราประทับ, Market Dropdown และ View Toggle */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 300px", minWidth: 260 }}>
           <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
-    Sectorrotation
-        </ToolHint>
-            <div ref={marketDropdownRef} style={{...boxStyle,minWidth:220}} onClick={()=>setMarketDropdownOpen(!marketDropdownOpen)}>
-              <IconSearch/>
-              <span style={{color:C.textPrimary,fontSize:13,flex:1,fontWeight:"bold"}}>{marketFilter==="SET&MAI"?"SET & MAI":marketFilter}</span>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {marketFilter!=="SET"&&(<div style={{display:"flex",alignItems:"center",cursor:"pointer",color:"#7a9cc4"}} onClick={e=>{e.stopPropagation();handleMarketChange("SET");}}><IconX/></div>)}
-                <div style={{transform:marketDropdownOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"flex",alignItems:"center"}}><IconCaret/></div>
-              </div>
-              {marketDropdownOpen&&(<div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 0",width:"100%",zIndex:200,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)"}}>
-                {["SET","MAI","SET&MAI"].map(opt=>(<div key={opt} onMouseDown={e=>{e.preventDefault();e.stopPropagation();handleMarketChange(opt);}} style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12,fontSize:13,color:opt===marketFilter?C.textPrimary:"#7a9cc4",fontWeight:opt===marketFilter?"bold":"normal",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,39,68,0.8)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><span style={{width:6,height:6,borderRadius:"50%",background:marketFilter===opt?C.blue:"#253660"}}/>{opt==="SET&MAI"?"SET & MAI":opt}</div>))}
-              </div>)}
+            Sectorrotation
+          </ToolHint>
+          
+          <div ref={marketDropdownRef} style={{ ...boxStyle, flex: 1, zIndex: 30 }} onClick={() => setMarketDropdownOpen(!marketDropdownOpen)}>
+            <IconSearch/>
+            <span style={{color:C.textPrimary,fontSize:13,flex:1,fontWeight:"bold"}}>{marketFilter==="SET&MAI"?"SET & MAI":marketFilter}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              {marketFilter!=="SET"&&(<div style={{display:"flex",alignItems:"center",cursor:"pointer",color:"#7a9cc4"}} onClick={e=>{e.stopPropagation();handleMarketChange("SET");}}><IconX/></div>)}
+              <div style={{transform:marketDropdownOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"flex",alignItems:"center"}}><IconCaret/></div>
             </div>
-            <div style={{display:"flex",gap:4}}>
-              {[29,8,2].map(col=>(<button key={col} onClick={()=>handleLayoutChange(col)} style={btnStyle(layoutMode===col)}>{col===29?<IconGrid3x3/>:col===8?<IconGrid2x2/>:<IconList/>}</button>))}
-            </div>
+            {marketDropdownOpen&&(<div className="custom-scrollbar" style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.dropdownBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 0",width:"100%",zIndex:40,boxShadow:"0 10px 25px -5px rgba(0,0,0,0.8)"}}>
+              {["SET","MAI","SET&MAI"].map(opt=>(<div key={opt} onMouseDown={e=>{e.preventDefault();e.stopPropagation();handleMarketChange(opt);}} style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12,fontSize:13,color:opt===marketFilter?C.textPrimary:"#7a9cc4",fontWeight:opt===marketFilter?"bold":"normal",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,39,68,0.8)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><span style={{width:6,height:6,borderRadius:"50%",background:marketFilter===opt?C.blue:"#253660"}}/>{opt==="SET&MAI"?"SET & MAI":opt}</div>))}
+            </div>)}
           </div>
-          <div style={{display:"flex",alignItems:"center",marginLeft:40}}>
-            {marketFilter==="SET&MAI"?(<SingleMarketSelect selected={subMarketFilter} onChange={setSubMarketFilter}/>):(<SectorMultiSelect options={availableSectors} selected={selectedSectors} onChange={setSelectedSectors} max={marketFilter==="MAI"?8:layoutMode}/>)}
+          
+          <div style={{display:"flex",gap:4}}>
+            {[29,8,2].map(col=>(<button key={col} onClick={()=>handleLayoutChange(col)} style={btnStyle(layoutMode===col)}>{col===29?<IconGrid3x3/>:col===8?<IconGrid2x2/>:<IconList/>}</button>))}
           </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:12,alignItems:"flex-end"}}>
-          <div style={{display:"flex",gap:8}}>{dataBtn("FIRST DATA", handleGoToFirst)}{dataBtn("LAST DATA", handleGoToLast)}</div>
-          <DatePicker dates={tradingDates} selected={dateVal} onChange={(key) => { setDateVal(key); setScrollTarget({ goto: "date", tick: Date.now() }); }}/>
+
+        {/* ส่วนที่ 2: ค้นหา Sub-sector ยืดเต็มพื้นที่ */}
+        <div style={{ flex: "1 1 300px", minWidth: 260 }}>
+          {marketFilter==="SET&MAI"?(<SingleMarketSelect selected={subMarketFilter} onChange={setSubMarketFilter}/>):(<SectorMultiSelect options={availableSectors} selected={selectedSectors} onChange={setSelectedSectors} max={marketFilter==="MAI"?8:layoutMode}/>)}
         </div>
+
+        {/* ส่วนที่ 3: ปุ่ม DatePicker และ First/Last Data จะอยู่ฝั่งขวาบนจอใหญ่ และแบ่งครึ่งอย่างเป็นระเบียบบนจอมือถือ */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, flex: "1 1 350px", minWidth: 260 }}>
+          <div style={{ flex: "1 1 160px" }}>
+            <DatePicker dates={tradingDates} selected={dateVal} onChange={(key) => { setDateVal(key); setScrollTarget({ goto: "date", tick: Date.now() }); }}/>
+          </div>
+          <div style={{ display: "flex", gap: 8, flex: "2 1 180px" }}>
+            {dataBtn("FIRST DATA", handleGoToFirst)}
+            {dataBtn("LAST DATA", handleGoToLast)}
+          </div>
+        </div>
+        
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:gridTemplate,gap:20,transition:"all 0.3s ease",alignItems:"start"}}>
