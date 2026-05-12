@@ -677,16 +677,20 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
       minHeight: 48,
       background: C.navBg,
       borderBottom: `1px solid ${C.navBorder}`,
-      display: "flex", alignItems: "center",
-      padding: "8px 14px", gap: 8,
-      flexShrink: 0, zIndex: 100, position: "relative",
+      display: "flex", alignItems: "center", justifyContent: "flex-start", // จัดให้อยู่ชิดซ้าย
+      padding: "8px 14px", gap: 12, // เพิ่มระยะห่างระหว่างชุดปุ่มให้ดูไม่อึดอัด
+      flexShrink: 0, zIndex: 10, position: "relative",
+      overflowX: "auto", // ถ้าหน้าจอเล็กมาก สามารถเลื่อนซ้ายขวาได้ ไม่ดันให้พัง
     }}>
-      <div className="nav-actions-left" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      
+      {/* ส่วนปุ่ม Back และไอคอน */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
         <ToolHint onViewDetails={onOpenInfo}>
           ---
         </ToolHint>
 
         <button
+          className="nav-back-btn"
           onClick={onBack}
           style={{
             display: "flex", alignItems: "center", gap: 5,
@@ -695,23 +699,24 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
             background: "transparent",
             color: "#64748b", cursor: "pointer",
             fontSize: 12, fontWeight: 600, fontFamily: "monospace",
-            flexShrink: 0, transition: "all .15s",
+            transition: "all .15s",
           }}
           onMouseEnter={e => { e.currentTarget.style.color = "#e2e8f0"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
           onMouseLeave={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = C.border; }}
         >
-          <IconBack /> back
+          <IconBack /> <span className="nav-back-text">back</span>
         </button>
       </div>
 
-      <div className="nav-actions-right" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <div style={{
+      {/* ส่วนค้นหา Search และปุ่มแท็บใหม่ */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+        <div style={{ position: "relative" }}>
+          <div className="nav-search-box" style={{
             display: "flex", alignItems: "center", gap: 6,
             background: "#0a1320",
             border: `1px solid ${C.border}`,
             borderRadius: 7, padding: "0 10px",
-            height: 30, width: 150, cursor: "text",
+            height: 30, cursor: "text", width: 150,
           }}>
             <IconSearch />
             <input
@@ -733,7 +738,7 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
 
           {dropOpen && (
             <div style={{
-              position: "absolute", top: 34, left: 0, width: 180,
+              position: "absolute", top: 34, left: 0, width: 180, // เด้งชิดซ้ายของกล่อง Search
               background: "#0a1320",
               border: `1px solid rgba(255,255,255,0.10)`,
               borderRadius: 8, overflow: "hidden",
@@ -771,7 +776,7 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
             background: "transparent",
             color: C.mutedText, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, transition: "all .15s",
+            transition: "all .15s",
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = "#e2e8f0";
@@ -786,14 +791,6 @@ function Navbar({ symbol, onBack, onSymbolChange, symbolInput, setSymbolInput, o
         >
           <IconCompare />
         </button>
-      </div>
-
-      <div className="nav-symbol-title" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{
-          fontSize: 15, fontWeight: 800,
-          color: "#e2e8f0", fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.12em",
-        }}>{symbol || "Symbol Name"}</span>
       </div>
     </div>
   );
@@ -879,46 +876,55 @@ export default function ChartFlipId() {
         @keyframes spin-once { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
         ::-webkit-scrollbar { display: none; }
 
+        /* ซ่อน Scrollbar ของ Navbar */
+        .nav-container::-webkit-scrollbar {
+          display: none;
+        }
+
         /* Mobile Responsive Code */
         @media (max-width: 768px) {
           .panels-wrapper {
             overflow-y: auto !important;
             display: block !important;
             -webkit-overflow-scrolling: touch;
+            padding: 8px !important;
           }
           .chart-panel-container {
-            height: 360px !important;
+            height: 380px !important;
             margin-bottom: 16px;
             flex: none !important;
           }
+
+          /* Navbar Fix: บังคับให้อยู่ในแถวเดียวและชิดซ้าย */
           .nav-container {
-            flex-wrap: wrap;
-            justify-content: space-between;
-            padding: 10px 14px !important;
-            gap: 12px !important;
+            padding: 10px 12px !important;
+            gap: 10px !important;
           }
-          .nav-symbol-title {
-            width: 100%;
-            text-align: center;
-            margin-top: 4px;
-            order: 4;
+          
+          .nav-search-box {
+            width: 130px !important; /* หดขนาดลงหน่อยบนมือถือ */
           }
-          .nav-symbol-title span {
-            font-size: 14px !important;
-          }
+
+          /* Controls Header Fix */
           .panel-header {
             flex-wrap: wrap;
-            padding: 10px 14px !important;
-            gap: 10px !important;
+            padding: 10px 12px !important;
+            gap: 8px !important;
           }
           .controls-group {
             width: 100%;
             overflow-x: auto;
             flex-wrap: nowrap !important;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             justify-content: flex-start;
             -webkit-overflow-scrolling: touch;
           }
+        }
+        
+        /* Ultra Small Screens */
+        @media (max-width: 480px) {
+          .nav-back-text { display: none; }
+          .nav-back-btn { padding: 4px 8px !important; }
         }
       `}</style>
 
