@@ -803,13 +803,15 @@ const MobileShell = ({ chart, table, timePeriod, setTimePeriod }) => {
     <button
       onClick={() => setActiveTab(id)}
       style={{
-        flex: 1, padding: "9px 0",
-        background: "transparent", border: "none",
-        borderBottom: `2px solid ${activeTab === id ? "#3b82f6" : "transparent"}`,
-        color: activeTab === id ? "#e2e8f0" : "#475569",
-        fontSize: 12, fontWeight: activeTab === id ? 700 : 400,
+        flex: 1, padding: "6px 0",
+        background: activeTab === id ? "#1e293b" : "transparent",
+        border: "none",
+        borderRadius: 6,
+        color: activeTab === id ? "#e2e8f0" : "#64748b",
+        fontSize: 12, fontWeight: activeTab === id ? 700 : 500,
         cursor: "pointer", fontFamily: "inherit",
-        transition: "all 0.15s",
+        transition: "all 0.2s ease-in-out",
+        boxShadow: activeTab === id ? "0 1px 3px rgba(0,0,0,0.3)" : "none"
       }}
     >
       {label}
@@ -818,17 +820,23 @@ const MobileShell = ({ chart, table, timePeriod, setTimePeriod }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {/* Tab bar */}
-      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 8 }}>
+      {/* Segmented Control Tab bar */}
+      <div style={{ 
+        display: "flex", 
+        background: "#0a1525", 
+        borderRadius: 8, 
+        padding: 4, 
+        marginBottom: 10 
+      }}>
         <TabBtn id="chart" label="Chart" />
         <TabBtn id="table" label="Rankings" />
       </div>
 
       {activeTab === "chart" && (
-  <div style={{ height: TABLE_H }}>
-    {React.cloneElement(chart, { height: TABLE_H })}
-  </div>
-)}
+        <div style={{ height: TABLE_H }}>
+          {React.cloneElement(chart, { height: TABLE_H })}
+        </div>
+      )}
 
       {activeTab === "table" && (
         <div style={{ height: TABLE_H, overflow: "hidden" }}>{table}</div>
@@ -1052,7 +1060,7 @@ const SectionCard = ({ category, type, seed: initSeed, onChartFlipClick, chartRe
     <div style={{ marginBottom: 16 }}>
       <div
         className="bg-[#1e293b] rounded-xl border border-slate-700/60 shadow-lg"
-        style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}
+        style={{ padding: isMobile ? "12px 10px" : "16px 20px", display: "flex", flexDirection: "column" }}
       >
         <div style={{
           display: "flex", alignItems: "flex-start",
@@ -1147,6 +1155,7 @@ function IdeatradePoint({ onChartFlipClick }) {
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .custom-scrollbar-x::-webkit-scrollbar { display: none; }
         @keyframes flash-up   { 0% { background-color: rgba(34,197,94,0.45); } 100% { background-color: transparent; } }
         @keyframes flash-down { 0% { background-color: rgba(239,68,68,0.45); } 100% { background-color: transparent; } }
         .flash-up   { animation: flash-up   3s ease-out forwards; }
@@ -1154,52 +1163,61 @@ function IdeatradePoint({ onChartFlipClick }) {
       `}</style>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 20, flexWrap: "wrap", rowGap: 8 }}>
-          <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
-            Ideatradepoint
-          </ToolHint>
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
-              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+          {/* แถวแรก: โลโก้/Hint, Search และ History */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+              <ToolHint onViewDetails={() => { window.scrollTo({ top: 0 }); }}>
+                Ideatradepoint
+              </ToolHint>
+              <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
+                <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                <input
+                  type="text" placeholder="Search..." value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ background: "#0f1c2e", borderRadius: 8, padding: "8px 26px 8px 32px", fontSize: 13, color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", outline: "none", width: "100%", fontFamily: "inherit" }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}>✕</button>
+                )}
+              </div>
+            </div>
+            
+            <button onClick={() => navigate("/hisideatradepoint")} style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "8px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+              background: "transparent", border: "1px solid rgba(255,255,255,0.25)",
+              color: "#cbd5e1", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-            </span>
-            <input
-              type="text" placeholder="Search..." value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ background: "#0f1c2e", borderRadius: 8, padding: "8px 26px 8px 32px", fontSize: 14, color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", outline: "none", width: 200, fontFamily: "inherit" }}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 11 }}>✕</button>
-            )}
+              History
+            </button>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+
+          {/* แถวที่สอง: หมวดหมู่แบบเลื่อนได้ (Horizontal Scroll) */}
+          <div className="custom-scrollbar-x" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {CATEGORIES.map(cat => {
               const isActive = activeCategory === cat;
               return (
                 <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? null : cat)} style={{
-                  padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
                   background: isActive ? "#1d4ed8" : "transparent",
                   border: isActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.25)",
                   color: isActive ? "#fff" : "#cbd5e1",
                   transition: "all 0.15s", fontFamily: "inherit",
-                  boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.4), 0 2px 8px rgba(59,130,246,0.2)" : "none",
-                  whiteSpace: "nowrap", letterSpacing: "0.02em",
+                  boxShadow: isActive ? "0 0 0 1px rgba(59,130,246,0.4)" : "none",
+                  whiteSpace: "nowrap", letterSpacing: "0.02em", flexShrink: 0
                 }}>{cat}</button>
               );
             })}
           </div>
-          <button onClick={() => navigate("/hisideatradepoint")} style={{
-            marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
-            padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-            background: "transparent", border: "1px solid rgba(255,255,255,0.25)",
-            color: "#cbd5e1", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            History
-          </button>
         </div>
 
         <div>
