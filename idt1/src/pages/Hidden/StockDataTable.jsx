@@ -11,6 +11,20 @@ const MONTHS_TH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.",
 const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_LABEL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
+// ─── hooks ──────────────────────────────────────────────
+function useWindowWidth() {
+  const [width, setWidth] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+  useEffect(() => {
+    const h = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return width;
+}
+
+// ─── helpers ────────────────────────────────────────────
 function parseDate(str) {
   if (!str) return null;
   const [y, m, d] = str.split("-").map(Number);
@@ -21,7 +35,7 @@ function formatDisplay(str) {
   if (!str) return "";
   const d = parseDate(str);
   if (!d) return str;
-  return `${String(d.getDate()).padStart(2,"0")} ${MONTHS_TH[d.getMonth()]} ${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, "0")} ${MONTHS_TH[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function toYMD(date) {
@@ -31,7 +45,52 @@ function toYMD(date) {
   return `${y}-${m}-${d}`;
 }
 
-function DatePicker({ value, onChange, minDate, maxDate }) {
+function fmtVal(n) {
+  if (!n || n === 0) return "–";
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
+  return n.toLocaleString();
+}
+
+function processDataRaw(records) {
+  return records.map(r => ({
+    date: r.date, symbol: r.symbol, name: r.name,
+    buy: r.method === BUY ? r.value : 0,
+    sell: r.method === SELL ? r.value : 0,
+    closePrice: r.price, price: r.price,
+    methods: r.method,
+  })).filter(r => (r.buy + r.sell) > 0 || r.methods === "โอน");
+}
+
+function processDataAgg(records) {
+  const groups = {};
+  records.forEach((r) => {
+    const key = r.date + "|" + r.symbol;
+    if (!groups[key]) {
+      groups[key] = {
+        date: r.date, symbol: r.symbol,
+        names: new Set(),
+        buy: 0, sell: 0,
+        closePrice: r.price, price: r.price,
+        methods: new Set()
+      };
+    }
+    groups[key].names.add(r.name);
+    if (r.method === BUY) groups[key].buy += r.value;
+    else if (r.method === SELL) groups[key].sell += r.value;
+    groups[key].methods.add(r.method);
+    if (r.price > 0) { groups[key].closePrice = r.price; groups[key].price = r.price; }
+  });
+  return Object.values(groups).map(g => ({
+    ...g,
+    name: [...g.names].join(" / "),
+    methods: [...g.methods].join("/"),
+  }));
+}
+
+// ─── DatePicker ─────────────────────────────────────────
+function DatePicker({ value, onChange, minDate, maxDate, isMobile }) {
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(() => {
     const d = parseDate(value); return d ? d.getFullYear() : 2026;
@@ -88,12 +147,42 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
 
   const todayStr = toYMD(new Date());
 
+  // On mobile, popup is fixed centered; on desktop, absolute below trigger
+  const popupStyle = isMobile
+    ? {
+        position: "fixed",
+        top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 1000,
+        background: "#0f1c2e",
+        border: "1px solid #1e2d45",
+        borderRadius: 12,
+        padding: "16px 14px 12px",
+        boxShadow: "0 16px 60px rgba(0,0,0,.85)",
+        width: "min(320px, 92vw)",
+        animation: "dpFade .15s ease",
+      }
+    : {
+        position: "absolute",
+        top: "calc(100% + 6px)",
+        left: 0,
+        zIndex: 999,
+        background: "#0f1c2e",
+        border: "1px solid #1e2d45",
+        borderRadius: 12,
+        padding: "16px 14px 12px",
+        boxShadow: "0 12px 40px rgba(0,0,0,.7)",
+        width: 290,
+        animation: "dpFade .15s ease",
+      };
+
   return (
-    <div style={{ position: "relative", display: "inline-block" }} ref={ref}>
+    <div style={{ position: "relative", display: "inline-block", width: "100%" }} ref={ref}>
       <style>{`
         .dp-cell:hover { background: #1e3a5f !important; }
         .dp-mth:hover { background: #1e2d45 !important; }
         @keyframes dpFade { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        .dp-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999; }
       `}</style>
 
       <div
@@ -101,30 +190,28 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
         style={{
           display: "flex", alignItems: "center", gap: 8,
           background: "#111d30", border: "1px solid #1e2d45",
-          borderRadius: 6, padding: "0 10px", height: 32, minWidth: 160,
+          borderRadius: 6, padding: "0 10px", height: 36, width: "100%",
           cursor: "pointer", color: value ? "#c9d4e8" : "#3a506a",
-          fontSize: 12, userSelect: "none",
+          fontSize: 12, userSelect: "none", boxSizing: "border-box",
         }}
       >
-        <span style={{ color: "#2563eb", fontSize: 14 }}>◈</span>
-        <span style={{ flex: 1 }}>{value ? formatDisplay(value) : "เลือกวันที่"}</span>
-        <span style={{ color: "#3a506a", fontSize: 10 }}>{open ? "▲" : "▼"}</span>
+        <span style={{ color: "#2563eb", fontSize: 14, flexShrink: 0 }}>◈</span>
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {value ? formatDisplay(value) : "เลือกวันที่"}
+        </span>
+        <span style={{ color: "#3a506a", fontSize: 10, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
       </div>
 
+      {open && isMobile && (
+        <div className="dp-overlay" onClick={() => { setOpen(false); setShowMonthPicker(false); }} />
+      )}
+
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 999,
-          background: "#0f1c2e", border: "1px solid #1e2d45",
-          borderRadius: 12, padding: "16px 14px 12px",
-          boxShadow: "0 12px 40px rgba(0,0,0,.7)",
-          width: 290, animation: "dpFade .15s ease",
-        }}>
+        <div style={popupStyle}>
+          {/* Month nav */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#60a5fa", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: "0 6px" }}>‹</button>
-            <div
-              onClick={() => setShowMonthPicker(p => !p)}
-              style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}
-            >
+            <div onClick={() => setShowMonthPicker(p => !p)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, cursor: "pointer" }}>
               <span style={{ color: "#c9d4e8", fontWeight: 700, fontSize: 15, fontFamily: "inherit" }}>
                 {MONTHS_FULL[viewMonth]} {viewYear}
               </span>
@@ -142,17 +229,14 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>
                 {MONTHS_TH.map((m, i) => (
-                  <div
-                    key={i}
-                    className="dp-mth"
+                  <div key={i} className="dp-mth"
                     onClick={() => { setViewMonth(i); setShowMonthPicker(false); }}
                     style={{
                       textAlign: "center", padding: "7px 0", borderRadius: 6,
                       fontSize: 12, cursor: "pointer", fontFamily: "inherit",
                       background: i === viewMonth ? "#2563eb" : "transparent",
                       color: i === viewMonth ? "#fff" : "#a0b4cc",
-                      fontWeight: i === viewMonth ? 700 : 400,
-                      transition: "background .1s",
+                      fontWeight: i === viewMonth ? 700 : 400, transition: "background .1s",
                     }}
                   >{m}</div>
                 ))}
@@ -175,9 +259,7 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
               const isDisabled = (minD && d < minD) || (maxD && d > maxD);
               const isToday = dStr === todayStr;
               return (
-                <div
-                  key={i}
-                  className={isDisabled ? "" : "dp-cell"}
+                <div key={i} className={isDisabled ? "" : "dp-cell"}
                   onClick={() => !isDisabled && selectDay(day)}
                   style={{
                     textAlign: "center", padding: "5px 0 4px", borderRadius: 8,
@@ -185,8 +267,7 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
                     background: isSelected ? "#2563eb" : "transparent",
                     color: isDisabled ? "#253040" : isSelected ? "#fff" : isToday ? "#60a5fa" : "#c9d4e8",
                     fontWeight: isSelected || isToday ? 700 : 400,
-                    fontSize: 13, fontFamily: "inherit",
-                    transition: "background .1s",
+                    fontSize: 13, fontFamily: "inherit", transition: "background .1s",
                   }}
                 >
                   <div>{day}</div>
@@ -202,10 +283,10 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
           {value && (
             <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid #1e2d45", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: "#5a7090" }}>{formatDisplay(value)}</span>
-              <button
-                onClick={() => { onChange(""); setOpen(false); }}
-                style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 11, padding: "2px 6px", fontFamily: "inherit" }}
-              >ล้าง</button>
+              <button onClick={() => { onChange(""); setOpen(false); }}
+                style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 11, padding: "2px 6px", fontFamily: "inherit" }}>
+                ล้าง
+              </button>
             </div>
           )}
         </div>
@@ -214,55 +295,7 @@ function DatePicker({ value, onChange, minDate, maxDate }) {
   );
 }
 
-function fmtVal(n) {
-  if (!n || n === 0) return "–";
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
-  return n.toLocaleString();
-}
-
-// แสดงทุก row ตามจริง ไม่รวม — ใช้ก่อนกด Check (normal display)
-function processDataRaw(records) {
-  return records.map(r => ({
-    date: r.date, symbol: r.symbol, name: r.name,
-    buy: r.method === BUY ? r.value : 0,
-    sell: r.method === SELL ? r.value : 0,
-    closePrice: r.price, price: r.price,
-    methods: r.method,
-  })).filter(r => (r.buy + r.sell) > 0 || r.methods === "โอน");
-}
-
-// รวม buy+sell ของ date|symbol เดียวกัน — ใช้หลังกด Check (isAllChecked)
-function processDataAgg(records) {
-  const groups = {};
-  records.forEach((r) => {
-    const key = r.date + "|" + r.symbol;
-    if (!groups[key]) {
-      groups[key] = {
-        date: r.date, symbol: r.symbol,
-        names: new Set(),
-        buy: 0, sell: 0,
-        closePrice: r.price, price: r.price,
-        methods: new Set()
-      };
-    }
-    groups[key].names.add(r.name);
-    if (r.method === BUY) groups[key].buy += r.value;
-    else if (r.method === SELL) groups[key].sell += r.value;
-    groups[key].methods.add(r.method);
-    if (r.price > 0) {
-      groups[key].closePrice = r.price;
-      groups[key].price = r.price;
-    }
-  });
-  return Object.values(groups).map(g => ({
-    ...g,
-    name: [...g.names].join(" / "),
-    methods: [...g.methods].join("/"),
-  }));
-}
-
+// ─── SymbolSelect ────────────────────────────────────────
 function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked, hasData }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -280,41 +313,36 @@ function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked,
   const labelColor = isAllChecked ? "#c9d4e8" : (value ? "#60a5fa" : "#3a506a");
 
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div ref={ref} style={{ position: "relative", display: "inline-block", width: "100%" }}>
       <div
         onMouseDown={e => {
           e.preventDefault();
-          if (e.target.closest("[data-cb]")) {
-            onCheckboxClick && onCheckboxClick();
-            return;
-          }
+          if (e.target.closest("[data-cb]")) { onCheckboxClick && onCheckboxClick(); return; }
           if (hasData) setOpen(o => !o);
         }}
         style={{
           display: "flex", alignItems: "center", gap: 9,
           background: "#111d30", border: "1px solid #1e2d45",
-          borderRadius: 8, padding: "0 32px 0 10px", height: 32, minWidth: 160,
+          borderRadius: 8, padding: "0 32px 0 10px", height: 36,
           cursor: hasData ? "pointer" : "default",
           fontSize: 12, userSelect: "none", position: "relative",
+          boxSizing: "border-box", width: "100%",
         }}
       >
-        <div
-          data-cb="1"
-          style={{
-            width: 14, height: 14, borderRadius: 3, flexShrink: 0,
-            border: "1px solid #3a506a",
-            background: checked ? "#2563eb" : "#0b1422",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-          }}
-        >
+        <div data-cb="1" style={{
+          width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+          border: "1px solid #3a506a",
+          background: checked ? "#2563eb" : "#0b1422",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}>
           {checked && (
             <svg width="9" height="6" viewBox="0 0 9 6" fill="none">
               <path d="M1 3L3.5 5.5L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           )}
         </div>
-        <span style={{ flex: 1, color: labelColor, fontWeight: value && !isAllChecked ? 700 : 400 }}>
+        <span style={{ flex: 1, color: labelColor, fontWeight: value && !isAllChecked ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {label}
         </span>
         {hasData && (
@@ -334,15 +362,9 @@ function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked,
           maxHeight: 220, overflowY: "auto",
         }}>
           {symbols.map(s => (
-            <div
-              key={s}
+            <div key={s}
               onMouseDown={e => { e.preventDefault(); onChange(s); setOpen(false); }}
-              style={{
-                padding: "8px 14px", fontSize: 12, cursor: "pointer",
-                color: value === s ? "#60a5fa" : "#c9d4e8",
-                fontWeight: value === s ? 700 : 400,
-                background: "transparent",
-              }}
+              style={{ padding: "8px 14px", fontSize: 12, cursor: "pointer", color: value === s ? "#60a5fa" : "#c9d4e8", fontWeight: value === s ? 700 : 400, background: "transparent" }}
               onMouseEnter={e => e.currentTarget.style.background = "#1e3a5f"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
@@ -355,6 +377,7 @@ function SymbolSelect({ symbols, value, onChange, onCheckboxClick, isAllChecked,
   );
 }
 
+// ─── NameCell ────────────────────────────────────────────
 function NameCell({ name }) {
   const [show, setShow] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -364,72 +387,39 @@ function NameCell({ name }) {
   const parts = name.split(" / ");
   const isTruncated = parts.length > 1 || name.length > 22;
 
-  function handleMouseMove(e) {
-    setPos({ x: e.clientX, y: e.clientY });
-  }
-
   const inner = parts.length === 1 ? (
-    <span style={{
-      display: "block", maxWidth: 170, overflow: "hidden",
-      textOverflow: "ellipsis", whiteSpace: "nowrap",
-    }}>
-      {name}
-    </span>
+    <span style={{ display: "block", maxWidth: 170, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", margin: "0 auto" }}>{name}</span>
   ) : (
-    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-      <span style={{
-        maxWidth: 130, overflow: "hidden",
-        textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
-        {parts[0]}
-      </span>
-      <span style={{
-        flexShrink: 0,
-        background: "#1e3a5f", color: "#60a5fa",
-        fontSize: 10, fontWeight: 700,
-        borderRadius: 4, padding: "1px 5px", lineHeight: "16px",
-      }}>
-        +{parts.length - 1}
-      </span>
+    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+      <span style={{ maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parts[0]}</span>
+      <span style={{ flexShrink: 0, background: "#1e3a5f", color: "#60a5fa", fontSize: 10, fontWeight: 700, borderRadius: 4, padding: "1px 5px", lineHeight: "16px" }}>+{parts.length - 1}</span>
     </span>
   );
 
   if (!isTruncated) return inner;
 
   return (
-    <span
-      ref={ref}
-      style={{ cursor: "default", display: "block" }}
+    <span ref={ref} style={{ cursor: "default", display: "block", textAlign: "center" }}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
-      onMouseMove={handleMouseMove}
+      onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}
     >
       {inner}
       {show && (
         <div style={{
-          position: "fixed",
-          left: pos.x + 12,
-          top: pos.y + 12,
-          zIndex: 9999,
-          background: "#0f1c2e",
-          border: "1px solid #2563eb",
-          borderRadius: 8,
-          padding: "8px 12px",
-          boxShadow: "0 8px 32px rgba(0,0,0,.7)",
-          pointerEvents: "none",
-          maxWidth: 280,
+          position: "fixed", left: pos.x + 12, top: pos.y + 12, zIndex: 9999,
+          background: "#0f1c2e", border: "1px solid #2563eb", borderRadius: 8,
+          padding: "8px 12px", boxShadow: "0 8px 32px rgba(0,0,0,.7)",
+          pointerEvents: "none", maxWidth: 280,
         }}>
           {parts.map((p, i) => (
             <div key={i} style={{
-              color: "#c9d4e8", fontSize: 12,
-              padding: "2px 0",
+              color: "#c9d4e8", fontSize: 12, padding: "2px 0",
               borderBottom: i < parts.length - 1 ? "1px solid #1e2d45" : "none",
               paddingBottom: i < parts.length - 1 ? 4 : 0,
               marginBottom: i < parts.length - 1 ? 4 : 0,
               whiteSpace: "nowrap",
-            }}>
-              {p}
-            </div>
+            }}>{p}</div>
           ))}
         </div>
       )}
@@ -439,26 +429,28 @@ function NameCell({ name }) {
 
 function SortArrow({ col, sortCol, sortDir }) {
   const active = sortCol === col;
-  return (
-    <span style={{ marginLeft: 4, opacity: active ? 1 : 0.3, fontSize: 10 }}>
-      {active ? (sortDir === 1 ? "↑" : "↓") : "⇅"}
-    </span>
-  );
+  return <span style={{ marginLeft: 4, opacity: active ? 1 : 0.3, fontSize: 10 }}>{active ? (sortDir === 1 ? "↑" : "↓") : "⇅"}</span>;
 }
 
+// ─── Main Dashboard ──────────────────────────────────────
 export default function Form59Dashboard() {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("2026-04-03");
+  const winWidth = useWindowWidth();
+  // breakpoints
+  const isMobile  = winWidth < 600;   // phones
+  const isTablet  = winWidth < 900;   // tablets / small laptops
+  const isDesktop = winWidth >= 900;
 
+  const [startDate, setStartDate]     = useState("");
+  const [endDate, setEndDate]         = useState("2026-04-03");
   const [symbolFilter, setSymbolFilter] = useState("");
   const [isAllChecked, setIsAllChecked] = useState(false);
-  const [minValue, setMinValue] = useState("");
-  const [sortCol, setSortCol] = useState("date");
-  const [sortDir, setSortDir] = useState(-1);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
-
+  const [minValue, setMinValue]       = useState("");
+  const [sortCol, setSortCol]         = useState("date");
+  const [sortDir, setSortDir]         = useState(-1);
+  const [page, setPage]               = useState(1);
+  const [pageSize, setPageSize]       = useState(15);
   const [sumValueSymbols, setSumValueSymbols] = useState([]);
+  const [filtersOpen, setFiltersOpen] = useState(false); // mobile filter drawer
 
   const tableWrapRef = useRef(null);
 
@@ -467,8 +459,8 @@ export default function Form59Dashboard() {
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const wrapHeight = entry.contentRect.height;
-        const headerHeight = 76;
-        const rowHeight = 36.5;
+        const headerHeight = isMobile ? 60 : 76;
+        const rowHeight    = isMobile ? 40 : 36.5;
         let calculated = Math.floor((wrapHeight - headerHeight) / rowHeight);
         if (calculated < 5) calculated = 5;
         setPageSize(calculated);
@@ -476,73 +468,51 @@ export default function Form59Dashboard() {
     });
     observer.observe(tableWrapRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [isMobile]);
 
-  // rangeData: ข้อมูลทั้ง range → ใช้สำหรับ dropdown symbols
   const rangeData = useMemo(() => {
     let d = [...RAW_RECORDS];
     if (startDate) d = d.filter(r => r.date >= startDate);
-    if (endDate) d = d.filter(r => r.date <= endDate);
+    if (endDate)   d = d.filter(r => r.date <= endDate);
     const processed = processDataAgg(d);
     const minV = parseFloat(minValue) || 0;
     return minV > 0 ? processed.filter(r => (r.buy + r.sell) >= minV) : processed;
   }, [startDate, endDate, minValue]);
 
-  // filteredNoSymbol: แสดง raw rows ทุกอัน ไม่รวม — ก่อนกด Check
   const filteredNoSymbol = useMemo(() => {
     let d = [...RAW_RECORDS];
-
-    if (startDate && endDate) {
-      d = d.filter((r) => r.date >= startDate && r.date <= endDate);
-    } else if (startDate) {
-      d = d.filter((r) => r.date === startDate);
-    } else if (endDate) {
-      d = d.filter((r) => r.date === endDate);
-    }
-
+    if (startDate && endDate)    d = d.filter(r => r.date >= startDate && r.date <= endDate);
+    else if (startDate)          d = d.filter(r => r.date === startDate);
+    else if (endDate)            d = d.filter(r => r.date === endDate);
     const processed = processDataRaw(d);
     const minV = parseFloat(minValue) || 0;
     return minV > 0 ? processed.filter(r => (r.buy + r.sell) >= minV) : processed;
   }, [startDate, endDate, minValue]);
 
-  // aggregatedByDateSymbol: รวม buy+sell ของหุ้นซ้ำในวันเดียวกัน — ใช้หลังกด Check
   const aggregatedByDateSymbol = useMemo(() => {
     let d = [...RAW_RECORDS];
-    if (startDate && endDate) {
-      d = d.filter((r) => r.date >= startDate && r.date <= endDate);
-    } else if (startDate) {
-      d = d.filter((r) => r.date === startDate);
-    } else if (endDate) {
-      d = d.filter((r) => r.date === endDate);
-    }
+    if (startDate && endDate)    d = d.filter(r => r.date >= startDate && r.date <= endDate);
+    else if (startDate)          d = d.filter(r => r.date === startDate);
+    else if (endDate)            d = d.filter(r => r.date === endDate);
     const processed = processDataAgg(d);
     const minV = parseFloat(minValue) || 0;
     return minV > 0 ? processed.filter(r => (r.buy + r.sell) >= minV) : processed;
   }, [startDate, endDate, minValue]);
 
   function handleCheck() {
-    const allSyms = [...new Set(
-      rangeData.filter(r => (r.buy + r.sell) > 0).map(r => r.symbol)
-    )].sort();
+    const allSyms = [...new Set(rangeData.filter(r => (r.buy + r.sell) > 0).map(r => r.symbol))].sort();
     setSumValueSymbols(allSyms);
     setSymbolFilter("");
     setIsAllChecked(false);
     setPage(1);
+    if (isMobile) setFiltersOpen(false);
   }
 
   const filtered = useMemo(() => {
     let result;
-
-    if (isAllChecked) {
-      // หลังกด Check + ติ๊ก All → ใช้ข้อมูล aggregate (ซ้ำรวม, ไม่ซ้ำปกติ)
-      result = [...aggregatedByDateSymbol];
-    } else if (symbolFilter) {
-      // เลือก symbol เฉพาะ → ก็ใช้ aggregate เพื่อรวมซ้ำด้วย
-      result = aggregatedByDateSymbol.filter(r => r.symbol === symbolFilter);
-    } else {
-      // ปกติ (ยังไม่ tick) → raw rows ทุกอัน ไม่รวม
-      result = [...filteredNoSymbol];
-    }
+    if (isAllChecked)       result = [...aggregatedByDateSymbol];
+    else if (symbolFilter)  result = aggregatedByDateSymbol.filter(r => r.symbol === symbolFilter);
+    else                    result = [...filteredNoSymbol];
 
     return result.sort((a, b) => {
       let va, vb;
@@ -554,220 +524,239 @@ export default function Form59Dashboard() {
   }, [filteredNoSymbol, aggregatedByDateSymbol, symbolFilter, isAllChecked, sortCol, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const pageData = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const safePage   = Math.min(page, totalPages);
+  const pageData   = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   function handleSort(col) {
-    if (sortCol === col) setSortDir((d) => d * -1);
+    if (sortCol === col) setSortDir(d => d * -1);
     else { setSortCol(col); setSortDir(-1); }
     setPage(1);
   }
 
   function reset() {
-    setStartDate("");
-    setEndDate("2026-04-03");
-    setSymbolFilter("");
-    setIsAllChecked(false);
-    setSumValueSymbols([]);
-    setMinValue("");
-    setSortCol("date");
-    setSortDir(-1);
-    setPage(1);
+    setStartDate(""); setEndDate("2026-04-03");
+    setSymbolFilter(""); setIsAllChecked(false);
+    setSumValueSymbols([]); setMinValue("");
+    setSortCol("date"); setSortDir(-1); setPage(1);
   }
 
-  const S = {
-    wrap: {
-      background: "#0b1120",
-      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-      display: "flex",
-      flexDirection: "column",
-      fontFamily: "'DM Sans', sans-serif",
-      fontSize: 13,
-      color: "#c9d4e8",
-      overflow: "hidden"
-    },
-    topBar: {
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "10px 16px", background: "#0d1526",
-      borderBottom: "1px solid #1e2d45", flexWrap: "wrap",
-      flexShrink: 0
-    },
-    divider: { width: 1, height: 24, background: "#1e2d45", flexShrink: 0 },
-    fieldGroup: { display: "flex", flexDirection: "column", gap: 4 },
-    label: { fontSize: 10, color: "#5a7090", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 },
-    select: {
-      background: "#111d30", border: "1px solid #1e2d45",
-      borderRadius: 6, padding: "0 8px", height: 32,
-      color: "#c9d4e8", fontSize: 12, outline: "none",
-      cursor: "pointer", minWidth: 140, fontFamily: "inherit"
-    },
-    resetBtn: {
-      background: "transparent", border: "1px solid #1e2d45",
-      borderRadius: 6, height: 32, padding: "0 14px",
-      color: "#7a90b0", fontSize: 18, cursor: "pointer",
-      lineHeight: 1, flexShrink: 0
-    },
-    checkBtn: {
-      height: 32, padding: "0 16px",
-      background: "#2563eb", border: "none",
-      borderRadius: 6, color: "#fff",
-      fontSize: 12, fontWeight: 600,
-      cursor: "pointer", fontFamily: "inherit",
-      flexShrink: 0, transition: "background .15s",
-    },
-    tableWrap: {
-      flex: 1, minHeight: 0,
-      overflowX: "auto", overflowY: "auto",
-      background: "#0b1120"
-    },
-    table: { width: "100%", borderCollapse: "collapse", fontSize: 12 },
-    th: (align = "left") => ({
-      padding: "10px 14px", textAlign: align, color: "#5a7090", fontWeight: 600,
-      fontSize: 11, borderBottom: "1px solid #1e2d45", borderRight: "1px solid #1e2d45",
-      background: "#0d1526", whiteSpace: "nowrap", cursor: "pointer", userSelect: "none",
-      verticalAlign: "middle", position: "sticky", top: 0, zIndex: 10
-    }),
-    td: (align = "left") => ({
-      padding: "9px 14px", borderBottom: "1px solid #1e2d45", borderRight: "1px solid #1e2d45",
-      whiteSpace: "nowrap", color: "#c9d4e8", textAlign: align
-    }),
-    pagination: {
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "10px 16px", background: "#0d1526", borderTop: "1px solid #1e2d45",
-      fontSize: 11, color: "#5a7090", flexWrap: "wrap", gap: 8, flexShrink: 0
-    },
-    pageBtn: (active, disabled) => ({
-      background: active ? "rgba(37,99,235,0.15)" : "transparent",
-      border: `1px solid ${active ? "#2563eb" : "#1e2d45"}`,
-      borderRadius: 5, padding: "3px 9px",
-      color: disabled ? "#253040" : active ? "#60a5fa" : "#7a90b0",
-      fontSize: 11, cursor: disabled ? "default" : "pointer", fontFamily: "inherit"
-    }),
+  // ── Shared sub-styles ──
+  const label = { fontSize: 10, color: "#5a7090", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600, marginBottom: 3 };
+  const selectStyle = {
+    background: "#111d30", border: "1px solid #1e2d45",
+    borderRadius: 6, padding: "0 8px", height: 36,
+    color: "#c9d4e8", fontSize: 12, outline: "none",
+    cursor: "pointer", width: "100%", fontFamily: "inherit",
   };
+  const checkBtn = {
+    height: 36, padding: "0 18px",
+    background: "#2563eb", border: "none",
+    borderRadius: 6, color: "#fff",
+    fontSize: 12, fontWeight: 700,
+    cursor: "pointer", fontFamily: "inherit",
+    whiteSpace: "nowrap", flexShrink: 0,
+  };
+  const th = (align = "center") => ({
+    padding: isMobile ? "8px 8px" : "10px 14px",
+    textAlign: align, color: "#ffffff", fontWeight: 600,
+    fontSize: isMobile ? 10 : 11,
+    borderBottom: "1px solid #1e2d45", borderRight: "1px solid #1e2d45",
+    background: "#0d1526", whiteSpace: "nowrap",
+    cursor: "pointer", userSelect: "none",
+    verticalAlign: "middle", position: "sticky", top: 0, zIndex: 10,
+  });
+  const td = (align = "center") => ({
+    padding: isMobile ? "8px 8px" : "9px 14px",
+    borderBottom: "1px solid #1e2d45", borderRight: "1px solid #1e2d45",
+    whiteSpace: "nowrap", color: "#c9d4e8", textAlign: align,
+    fontSize: isMobile ? 11 : 12,
+  });
 
-  const pageStart = Math.max(1, Math.min(totalPages - 4, safePage - 2));
-  const pageNums = Array.from({ length: Math.min(5, totalPages) }, (_, i) => pageStart + i);
+  // ── pagination helpers ──
+  const pageStart = Math.max(1, Math.min(totalPages - (isMobile ? 2 : 4), safePage - (isMobile ? 1 : 2)));
+  const pageNums  = Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }, (_, i) => pageStart + i);
 
-  return (
-    <div style={S.wrap}>
-      {/* ── TOP BAR ── */}
-      <div style={S.topBar}>
-        <button style={S.resetBtn} onClick={reset} title="Reset filters">↺</button>
-        <div style={S.divider} />
-
-        {/* Start Date */}
-        <div style={S.fieldGroup}>
-          <span style={S.label}>Start Date</span>
-          <DatePicker
-            value={startDate}
-            onChange={v => { setStartDate(v); setPage(1); }}
-            maxDate={endDate || STATS.date_max}
-          />
+  // ── Filter panel (shared between top bar on desktop and drawer on mobile) ──
+  const FilterPanel = () => (
+    <>
+      {/* Row 1: Dates */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr 1fr" : "auto auto",
+        gap: 10,
+        alignItems: "end",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={label}>Start Date</span>
+          <DatePicker value={startDate} onChange={v => { setStartDate(v); setPage(1); }} maxDate={endDate || STATS.date_max} isMobile={isMobile} />
         </div>
-
-        {/* End Date */}
-        <div style={S.fieldGroup}>
-          <span style={S.label}>End Date</span>
-          <DatePicker
-            value={endDate}
-            onChange={v => { setEndDate(v); setPage(1); }}
-            minDate={startDate || STATS.date_min}
-            maxDate={STATS.date_max}
-          />
-        </div>
-
-        <div style={S.divider} />
-
-        {/* Sum Value */}
-        <div style={S.fieldGroup}>
-          <span style={S.label}>Sum Value</span>
-          <SymbolSelect
-            symbols={sumValueSymbols}
-            value={isAllChecked ? "" : symbolFilter}
-            onChange={(v) => {
-              setSymbolFilter(v);
-              setIsAllChecked(false);
-              setPage(1);
-            }}
-            onCheckboxClick={() => {
-              if (!isAllChecked) {
-                setIsAllChecked(true);
-                setSymbolFilter("");
-              } else {
-                setIsAllChecked(false);
-              }
-              setPage(1);
-            }}
-            isAllChecked={isAllChecked}
-            hasData={sumValueSymbols.length > 0}
-          />
-        </div>
-
-        <div style={S.divider} />
-
-        {/* Min Value + Check button */}
-        <div style={S.fieldGroup}>
-          <span style={S.label}>&nbsp;</span>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <select
-              style={S.select}
-              value={minValue}
-              onChange={e => { setMinValue(e.target.value); setPage(1); }}
-            >
-              <option value="">Min Value</option>
-              <option value="100">100 THB</option>
-              <option value="1000">1,000 THB</option>
-              <option value="10000">10,000 THB</option>
-              <option value="100000">100,000 THB</option>
-              <option value="500000">500,000 THB</option>
-              <option value="1000000">1,000,000 THB</option>
-              <option value="5000000">5,000,000 THB</option>
-              <option value="10000000">10,000,000 THB</option>
-              <option value="50000000">50,000,000 THB</option>
-              <option value="100000000">100,000,000 THB</option>
-            </select>
-
-            <button
-              style={S.checkBtn}
-              onClick={handleCheck}
-              onMouseEnter={e => e.currentTarget.style.background = "#1d4ed8"}
-              onMouseLeave={e => e.currentTarget.style.background = "#2563eb"}
-            >
-              Check
-            </button>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={label}>End Date</span>
+          <DatePicker value={endDate} onChange={v => { setEndDate(v); setPage(1); }} minDate={startDate || STATS.date_min} maxDate={STATS.date_max} isMobile={isMobile} />
         </div>
       </div>
 
+      {!isMobile && <div style={{ width: 1, height: 40, background: "#1e2d45", flexShrink: 0, alignSelf: "center" }} />}
+
+      {/* Sum Value */}
+      <div style={{ display: "flex", flexDirection: "column", minWidth: isMobile ? undefined : 170 }}>
+        <span style={label}>Sum Value</span>
+        <SymbolSelect
+          symbols={sumValueSymbols}
+          value={isAllChecked ? "" : symbolFilter}
+          onChange={v => { setSymbolFilter(v); setIsAllChecked(false); setPage(1); }}
+          onCheckboxClick={() => { setIsAllChecked(p => !p); setSymbolFilter(""); setPage(1); }}
+          isAllChecked={isAllChecked}
+          hasData={sumValueSymbols.length > 0}
+        />
+      </div>
+
+      {!isMobile && <div style={{ width: 1, height: 40, background: "#1e2d45", flexShrink: 0, alignSelf: "center" }} />}
+
+      {/* Min Value + Check */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <span style={label}>&nbsp;</span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <select style={selectStyle} value={minValue} onChange={e => { setMinValue(e.target.value); setPage(1); }}>
+            <option value="">Min Value</option>
+            <option value="100">100 THB</option>
+            <option value="1000">1,000 THB</option>
+            <option value="10000">10,000 THB</option>
+            <option value="100000">100,000 THB</option>
+            <option value="500000">500,000 THB</option>
+            <option value="1000000">1M THB</option>
+            <option value="5000000">5M THB</option>
+            <option value="10000000">10M THB</option>
+            <option value="50000000">50M THB</option>
+            <option value="100000000">100M THB</option>
+          </select>
+          <button style={checkBtn} onClick={handleCheck}
+            onMouseEnter={e => e.currentTarget.style.background = "#1d4ed8"}
+            onMouseLeave={e => e.currentTarget.style.background = "#2563eb"}
+          >Check</button>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div style={{
+      background: "#0b1120",
+      width: "100%", height: "100%",
+      minHeight: 0,
+      display: "flex", flexDirection: "column",
+      fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#c9d4e8",
+      overflow: "hidden",
+      boxSizing: "border-box",
+    }}>
+
+      {/* ── DESKTOP TOP BAR ── */}
+      {!isMobile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: isTablet ? "8px 12px" : "10px 16px",
+          background: "#0d1526", borderBottom: "1px solid #1e2d45",
+          flexWrap: "wrap", flexShrink: 0,
+        }}>
+          <button
+            onClick={reset}
+            title="Reset filters"
+            style={{
+              background: "transparent", border: "1px solid #1e2d45",
+              borderRadius: 6, height: 36, padding: "0 12px",
+              color: "#7a90b0", fontSize: 18, cursor: "pointer",
+              lineHeight: 1, flexShrink: 0,
+            }}
+          >↺</button>
+          <div style={{ width: 1, height: 24, background: "#1e2d45", flexShrink: 0 }} />
+          <FilterPanel />
+        </div>
+      )}
+
+      {/* ── MOBILE TOP BAR ── */}
+      {isMobile && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 12px", background: "#0d1526", borderBottom: "1px solid #1e2d45",
+          flexShrink: 0, gap: 8,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button onClick={reset} title="Reset"
+              style={{ background: "transparent", border: "1px solid #1e2d45", borderRadius: 6, height: 34, width: 34, color: "#7a90b0", fontSize: 18, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}
+            >↺</button>
+            {/* Quick date summary */}
+            <span style={{ fontSize: 11, color: "#5a7090" }}>
+              {endDate ? formatDisplay(endDate) : "All dates"}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {/* Active filter badge */}
+            {(startDate || minValue || symbolFilter || isAllChecked) && (
+              <span style={{ background: "#2563eb", borderRadius: 10, padding: "2px 7px", fontSize: 10, color: "#fff", fontWeight: 700 }}>
+                {[startDate && "Date", minValue && "Min", (symbolFilter || isAllChecked) && "Sym"].filter(Boolean).length} active
+              </span>
+            )}
+            <button
+              onClick={() => setFiltersOpen(o => !o)}
+              style={{
+                background: filtersOpen ? "#1e3a5f" : "#111d30",
+                border: `1px solid ${filtersOpen ? "#2563eb" : "#1e2d45"}`,
+                borderRadius: 6, height: 34, padding: "0 12px",
+                color: filtersOpen ? "#60a5fa" : "#7a90b0",
+                fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+              }}
+            >
+              ⚙ Filters {filtersOpen ? "▲" : "▼"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MOBILE FILTER DRAWER ── */}
+      {isMobile && filtersOpen && (
+        <div style={{
+          background: "#0d1526", borderBottom: "1px solid #1e2d45",
+          padding: "12px", display: "flex", flexDirection: "column", gap: 10,
+          flexShrink: 0, zIndex: 100,
+        }}>
+          <FilterPanel />
+        </div>
+      )}
+
       {/* ── TABLE ── */}
-      <div style={S.tableWrap} ref={tableWrapRef}>
-        <table style={S.table}>
+      <div style={{ flex: 1, minHeight: 0, overflowX: "auto", overflowY: "auto", background: "#0b1120" }} ref={tableWrapRef}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 12 }}>
           <thead>
             <tr>
-              <th rowSpan={2} style={{ ...S.th("center"), verticalAlign: "middle" }} onClick={() => handleSort("date")}>
+              <th rowSpan={2} style={{ ...th("center"), verticalAlign: "middle" }} onClick={() => handleSort("date")}>
                 Date <SortArrow col="date" sortCol={sortCol} sortDir={sortDir} />
               </th>
-              <th rowSpan={2} style={{ ...S.th("center"), verticalAlign: "middle" }} onClick={() => handleSort("symbol")}>
+              <th rowSpan={2} style={{ ...th("center"), verticalAlign: "middle" }} onClick={() => handleSort("symbol")}>
                 Symbol <SortArrow col="symbol" sortCol={sortCol} sortDir={sortDir} />
               </th>
-              <th rowSpan={2} style={{ ...S.th("center"), verticalAlign: "middle" }} onClick={() => handleSort("name")}>
-                Name <SortArrow col="name" sortCol={sortCol} sortDir={sortDir} />
-              </th>
-              <th colSpan={2} style={{ ...S.th("center"), borderBottom: "none", verticalAlign: "middle" }}>
-                Value
-              </th>
-              <th rowSpan={2} style={{ ...S.th("center"), verticalAlign: "middle" }} onClick={() => handleSort("closePrice")}>
-                Close Price <SortArrow col="closePrice" sortCol={sortCol} sortDir={sortDir} />
-              </th>
-              <th rowSpan={2} style={{ ...S.th("center"), verticalAlign: "middle" }} onClick={() => handleSort("price")}>
-                Last Price <SortArrow col="price" sortCol={sortCol} sortDir={sortDir} />
+              {/* Hide Name on very small screens */}
+              {!isMobile && (
+                <th rowSpan={2} style={{ ...th("center"), verticalAlign: "middle" }} onClick={() => handleSort("name")}>
+                  Name <SortArrow col="name" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+              )}
+              <th colSpan={2} style={{ ...th("center"), borderBottom: "none", verticalAlign: "middle" }}>Value</th>
+              {/* Hide Action Price on tablets and below */}
+              {!isTablet && (
+                <th rowSpan={2} style={{ ...th("center"), verticalAlign: "middle" }} onClick={() => handleSort("closePrice")}>
+                  Action Price <SortArrow col="closePrice" sortCol={sortCol} sortDir={sortDir} />
+                </th>
+              )}
+              <th rowSpan={2} style={{ ...th("center"), verticalAlign: "middle" }} onClick={() => handleSort("price")}>
+                {isMobile ? "Price" : "Last Price"} <SortArrow col="price" sortCol={sortCol} sortDir={sortDir} />
               </th>
             </tr>
             <tr>
-              <th style={{ ...S.th("center"), borderTop: "1px solid #1e2d45" }} onClick={() => handleSort("buy")}>
+              <th style={{ ...th("center"), borderTop: "1px solid #1e2d45" }} onClick={() => handleSort("buy")}>
                 Buy <SortArrow col="buy" sortCol={sortCol} sortDir={sortDir} />
               </th>
-              <th style={{ ...S.th("center"), borderTop: "1px solid #1e2d45" }} onClick={() => handleSort("sell")}>
+              <th style={{ ...th("center"), borderTop: "1px solid #1e2d45" }} onClick={() => handleSort("sell")}>
                 Sell <SortArrow col="sell" sortCol={sortCol} sortDir={sortDir} />
               </th>
             </tr>
@@ -775,28 +764,30 @@ export default function Form59Dashboard() {
           <tbody>
             {pageData.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#3a506a", fontSize: 14 }}>
+                <td colSpan={isMobile ? 5 : (isTablet ? 6 : 7)}
+                  style={{ padding: "60px", textAlign: "center", color: "#3a506a", fontSize: 14 }}>
                   ไม่พบข้อมูล
                 </td>
               </tr>
             ) : pageData.map((r, i) => {
               const isSelected = r.symbol === symbolFilter;
               return (
-                <tr
-                  key={i}
+                <tr key={i}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(30,100,200,0.06)"}
                   onMouseLeave={e => e.currentTarget.style.background = isSelected ? "rgba(37,99,235,0.06)" : "transparent"}
                   style={{ background: isSelected ? "rgba(37,99,235,0.06)" : "transparent" }}
                 >
-                  <td style={{ ...S.td("center"), color: "#5a7090", fontFamily: "monospace" }}>{r.date}</td>
-                  <td style={{ ...S.td("center"), color: "#60a5fa", fontWeight: 700, letterSpacing: "0.05em", fontFamily: "monospace" }}>{r.symbol}</td>
-                  <td style={{ ...S.td("center"), maxWidth: 180 }}>
-                    <NameCell name={r.name} />
-                  </td>
-                  <td style={{ ...S.td("center"), color: "#22c55e", fontWeight: 600, fontFamily: "monospace" }}>{r.buy ? fmtVal(r.buy) : "–"}</td>
-                  <td style={{ ...S.td("center"), color: "#ef4444", fontWeight: 600, fontFamily: "monospace" }}>{r.sell ? fmtVal(r.sell) : "–"}</td>
-                  <td style={{ ...S.td("center"), fontFamily: "monospace" }}>{r.closePrice > 0 ? r.closePrice.toFixed(2) : "–"}</td>
-                  <td style={{ ...S.td("center"), fontFamily: "monospace" }}>{r.price > 0 ? r.price.toFixed(2) : "–"}</td>
+                  <td style={{ ...td("center"), color: "#ffffff", fontFamily: "monospace" }}>{r.date}</td>
+                  <td style={{ ...td("center"), color: "#60a5fa", fontWeight: 700, letterSpacing: "0.05em", fontFamily: "monospace" }}>{r.symbol}</td>
+                  {!isMobile && (
+                    <td style={{ ...td("center"), maxWidth: 180 }}><NameCell name={r.name} /></td>
+                  )}
+                  <td style={{ ...td("center"), color: "#22c55e", fontWeight: 600, fontFamily: "monospace" }}>{r.buy ? fmtVal(r.buy) : "–"}</td>
+                  <td style={{ ...td("center"), color: "#ef4444", fontWeight: 600, fontFamily: "monospace" }}>{r.sell ? fmtVal(r.sell) : "–"}</td>
+                  {!isTablet && (
+                    <td style={{ ...td("center"), fontFamily: "monospace" }}>{r.closePrice > 0 ? r.closePrice.toFixed(2) : "–"}</td>
+                  )}
+                  <td style={{ ...td("center"), fontFamily: "monospace" }}>{r.price > 0 ? r.price.toFixed(2) : "–"}</td>
                 </tr>
               );
             })}
@@ -806,17 +797,54 @@ export default function Form59Dashboard() {
 
       {/* ── PAGINATION ── */}
       {totalPages > 1 && (
-        <div style={S.pagination}>
-          <span>
-            แสดง {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} จาก {filtered.length.toLocaleString()} รายการ
-          </span>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button style={S.pageBtn(false, safePage === 1)} disabled={safePage === 1} onClick={() => setPage(p => p - 1)}>←</button>
+        <div style={{
+          display: "flex", alignItems: "center",
+          justifyContent: isMobile ? "center" : "space-between",
+          padding: isMobile ? "8px 10px" : "10px 16px",
+          background: "#0d1526", borderTop: "1px solid #1e2d45",
+          fontSize: 11, color: "#5a7090",
+          flexWrap: "wrap", gap: 6, flexShrink: 0,
+        }}>
+          {!isMobile && (
+            <span>
+              แสดง {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} จาก {filtered.length.toLocaleString()} รายการ
+            </span>
+          )}
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <button
+              style={{ background: "transparent", border: "1px solid #1e2d45", borderRadius: 5, padding: "3px 9px", color: safePage === 1 ? "#253040" : "#7a90b0", fontSize: 11, cursor: safePage === 1 ? "default" : "pointer", fontFamily: "inherit" }}
+              disabled={safePage === 1} onClick={() => setPage(1)}
+            >«</button>
+            <button
+              style={{ background: "transparent", border: "1px solid #1e2d45", borderRadius: 5, padding: "3px 9px", color: safePage === 1 ? "#253040" : "#7a90b0", fontSize: 11, cursor: safePage === 1 ? "default" : "pointer", fontFamily: "inherit" }}
+              disabled={safePage === 1} onClick={() => setPage(p => p - 1)}
+            >←</button>
             {pageNums.map(p => (
-              <button key={p} style={S.pageBtn(p === safePage, false)} onClick={() => setPage(p)}>{p}</button>
+              <button key={p}
+                style={{
+                  background: p === safePage ? "rgba(37,99,235,0.15)" : "transparent",
+                  border: `1px solid ${p === safePage ? "#2563eb" : "#1e2d45"}`,
+                  borderRadius: 5, padding: "3px 9px",
+                  color: p === safePage ? "#60a5fa" : "#7a90b0",
+                  fontSize: 11, cursor: "pointer", fontFamily: "inherit",
+                }}
+                onClick={() => setPage(p)}
+              >{p}</button>
             ))}
-            <button style={S.pageBtn(false, safePage === totalPages)} disabled={safePage === totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+            <button
+              style={{ background: "transparent", border: "1px solid #1e2d45", borderRadius: 5, padding: "3px 9px", color: safePage === totalPages ? "#253040" : "#7a90b0", fontSize: 11, cursor: safePage === totalPages ? "default" : "pointer", fontFamily: "inherit" }}
+              disabled={safePage === totalPages} onClick={() => setPage(p => p + 1)}
+            >→</button>
+            <button
+              style={{ background: "transparent", border: "1px solid #1e2d45", borderRadius: 5, padding: "3px 9px", color: safePage === totalPages ? "#253040" : "#7a90b0", fontSize: 11, cursor: safePage === totalPages ? "default" : "pointer", fontFamily: "inherit" }}
+              disabled={safePage === totalPages} onClick={() => setPage(totalPages)}
+            >»</button>
           </div>
+          {isMobile && (
+            <span style={{ width: "100%", textAlign: "center", fontSize: 10 }}>
+              {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} / {filtered.length.toLocaleString()}
+            </span>
+          )}
         </div>
       )}
     </div>
