@@ -211,7 +211,7 @@ function DatePicker({ value, onChange, minDate, maxDate, isMobile }) {
           {/* Month nav */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#60a5fa", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: "0 6px" }}>‹</button>
-            <div onClick={() => setShowMonthPicker(p => !p)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, cursor: "pointer" }}>
+            <div onClick={() => setShowMonthPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
               <span style={{ color: "#c9d4e8", fontWeight: 700, fontSize: 15, fontFamily: "inherit" }}>
                 {MONTHS_FULL[viewMonth]} {viewYear}
               </span>
@@ -388,9 +388,9 @@ function NameCell({ name }) {
   const isTruncated = parts.length > 1 || name.length > 22;
 
   const inner = parts.length === 1 ? (
-    <span style={{ display: "block", maxWidth: 170, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", margin: "0 auto" }}>{name}</span>
+    <span style={{ display: "block", maxWidth: 170, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto" }}>{name}</span>
   ) : (
-    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+    <span style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "center" }}>
       <span style={{ maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parts[0]}</span>
       <span style={{ flexShrink: 0, background: "#1e3a5f", color: "#60a5fa", fontSize: 10, fontWeight: 700, borderRadius: 4, padding: "1px 5px", lineHeight: "16px" }}>+{parts.length - 1}</span>
     </span>
@@ -582,7 +582,7 @@ export default function Form59Dashboard() {
       {/* Row 1: Dates */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr 1fr" : "auto auto",
+        gridTemplateColumns: isMobile ? "1fr 1fr" : "160px 160px",
         gap: 10,
         alignItems: "end",
       }}>
@@ -642,12 +642,10 @@ export default function Form59Dashboard() {
   return (
     <div style={{
       background: "#0b1120",
-      width: "100%", height: "100%",
-      minHeight: 0,
+      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
       display: "flex", flexDirection: "column",
       fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#c9d4e8",
       overflow: "hidden",
-      boxSizing: "border-box",
     }}>
 
       {/* ── DESKTOP TOP BAR ── */}
