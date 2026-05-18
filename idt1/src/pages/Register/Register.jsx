@@ -302,7 +302,7 @@ export default function Register() {
                 <button 
                   onClick={() => setPaymentMethod("banktransfer")}
                   className={`flex-1 mx-1 justify-between items-center p-3 rounded-lg border transition-colors shrink-0 ${
-                    paymentMethod === "banktransfer" ? "border-blue-500 bg-blue-600/20" : "border-slate-700 bg-slate-800 hover:bg-slate-700"
+                    paymentMethod === "banktransfer" ? "border-slate-400 bg-slate-100 text-black" : "border-slate-700 bg-slate-800 hover:bg-slate-700"
                   }`}
                 >
                   <span className="text-sm font-medium">Bank Transfer</span>
@@ -312,7 +312,7 @@ export default function Register() {
                 <button 
                   onClick={() => setPaymentMethod("promptpay")}
                   className={`flex-1 mx-1 justify-between items-center p-3 rounded-lg border transition-colors shrink-0 ${
-                    paymentMethod === "promptpay" ? "border-blue-500 bg-blue-600/20" : "border-slate-700 bg-slate-800 hover:bg-slate-700"
+                    paymentMethod === "promptpay" ? "border-slate-400 bg-slate-100 text-black" : "border-slate-700 bg-slate-800 hover:bg-slate-700"
                   }`}
                 >
                   <span className="text-sm font-medium">QR PromptPay</span>
